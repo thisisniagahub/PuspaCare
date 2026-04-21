@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import Image from 'next/image'
 import { api } from '@/lib/api'
 import {
   Card,
@@ -578,14 +579,43 @@ export default function DashboardPage() {
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Papan Pemuka PUSPA
-          </h1>
-          <p className="mt-1 text-muted-foreground">
-            Ringkasan data dan statistik terkini organisasi anda.
-          </p>
+        {/* Hero Welcome Banner */}
+        <div className="mb-8 rounded-2xl bg-gradient-to-r from-purple-600 via-purple-700 to-emerald-600 p-6 text-white shadow-xl shadow-purple-600/20 sm:p-8">
+          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-5">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm ring-1 ring-white/30">
+                <Image
+                  src="/puspa-logo-official.png"
+                  alt="PUSPA Logo"
+                  width={52}
+                  height={52}
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <div className="min-w-0">
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                  Papan Pemuka PUSPA
+                </h1>
+                <p className="mt-1 text-sm text-purple-100 sm:text-base">
+                  Ringkasan data dan statistik terkini organisasi anda.
+                </p>
+                <p className="mt-1 text-xs text-purple-200/80">
+                  Pertubuhan Urus Peduli Asnaf KL & Selangor • PPM-006-14-14032020
+                </p>
+              </div>
+            </div>
+            <div className="hidden lg:flex items-center gap-4 text-sm">
+              <div className="flex flex-col items-center rounded-xl bg-white/15 px-4 py-3 backdrop-blur-sm">
+                <span className="text-2xl font-bold">{formatNumber(stats.jumlahAhliAsnaf)}</span>
+                <span className="text-xs text-purple-200">Ahli Asnaf</span>
+              </div>
+              <div className="flex flex-col items-center rounded-xl bg-white/15 px-4 py-3 backdrop-blur-sm">
+                <span className="text-2xl font-bold">{formatCurrency(stats.jumlahDonasi)}</span>
+                <span className="text-xs text-purple-200">Jumlah Donasi</span>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* ----------------------------------------------------------------- */}

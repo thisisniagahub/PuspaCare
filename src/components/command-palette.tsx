@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useMemo, useCallback } from 'react'
+import Image from 'next/image'
 import { useAppStore } from '@/stores/app-store'
 import {
   CommandDialog,
@@ -89,6 +90,16 @@ export function CommandPalette() {
 
   return (
     <CommandDialog open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen}>
+      <div className="flex items-center gap-2 px-4 pt-2 pb-1">
+        <Image
+          src="/puspa-logo-transparent.png"
+          alt="PUSPA"
+          width={20}
+          height={20}
+          className="object-contain opacity-70"
+        />
+        <span className="text-xs font-medium text-muted-foreground">PUSPA Command</span>
+      </div>
       <CommandInput
         placeholder="Cari modul, ciri, atau tetapan..."
         value={query}

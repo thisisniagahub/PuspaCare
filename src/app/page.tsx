@@ -1,12 +1,13 @@
 'use client'
 
-import { Suspense, useEffect, useState } from 'react'
+import { Suspense, useEffect } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import { AppSidebar } from '@/components/app-sidebar'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Toaster } from 'sonner'
-import { Menu, Moon, Sun, Flower2, Command, AlertTriangle, RefreshCw } from 'lucide-react'
+import Image from 'next/image'
+import { Menu, Moon, Sun, Command } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { CommandPalette } from '@/components/command-palette'
 
@@ -80,74 +81,31 @@ const viewLabels: Record<string, string> = {
 }
 
 function ViewRenderer({ view }: { view: string }) {
-  const [hasError, setHasError] = useState(false)
-  const [error, setError] = useState<Error | null>(null)
-
-  const handleRetry = () => {
-    setHasError(false)
-    setError(null)
-  }
-
-  // Reset error when view changes
-  useEffect(() => {
-    setHasError(false)
-    setError(null)
-  }, [view])
-
-  if (hasError && error) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 p-8">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-          <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
-        </div>
-        <div className="text-center space-y-2">
-          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
-            Ralat Pemuatan Modul
-          </h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
-            {error.message}
-          </p>
-        </div>
-        <Button variant="outline" onClick={handleRetry} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Cuba Lagi
-        </Button>
-      </div>
-    )
-  }
-
-  try {
-    switch (view) {
-      case 'dashboard': return <Dashboard />
-      case 'members': return <Members />
-      case 'cases': return <Cases />
-      case 'programmes': return <Programmes />
-      case 'donations': return <Donations />
-      case 'disbursements': return <Disbursements />
-      case 'compliance': return <Compliance />
-      case 'admin': return <Admin />
-      case 'reports': return <Reports />
-      case 'activities': return <Activities />
-      case 'ai': return <AITools />
-      case 'volunteers': return <Volunteers />
-      case 'donors': return <Donors />
-      case 'documents': return <Documents />
-      case 'openclaw-mcp': return <MCPServers />
-      case 'openclaw-plugins': return <Plugins />
-      case 'openclaw-integrations': return <Integrations />
-      case 'openclaw-terminal': return <TerminalPage />
-      case 'openclaw-agents': return <Agents />
-      case 'openclaw-models': return <Models />
-      case 'openclaw-automation': return <Automation />
-      case 'ekyc': return <EKYC />
-      case 'tapsecure': return <TapSecure />
-      default: return <Dashboard />
-    }
-  } catch (err) {
-    const e = err instanceof Error ? err : new Error(String(err))
-    setError(e)
-    setHasError(true)
-    return null
+  switch (view) {
+    case 'dashboard': return <Dashboard />
+    case 'members': return <Members />
+    case 'cases': return <Cases />
+    case 'programmes': return <Programmes />
+    case 'donations': return <Donations />
+    case 'disbursements': return <Disbursements />
+    case 'compliance': return <Compliance />
+    case 'admin': return <Admin />
+    case 'reports': return <Reports />
+    case 'activities': return <Activities />
+    case 'ai': return <AITools />
+    case 'volunteers': return <Volunteers />
+    case 'donors': return <Donors />
+    case 'documents': return <Documents />
+    case 'openclaw-mcp': return <MCPServers />
+    case 'openclaw-plugins': return <Plugins />
+    case 'openclaw-integrations': return <Integrations />
+    case 'openclaw-terminal': return <TerminalPage />
+    case 'openclaw-agents': return <Agents />
+    case 'openclaw-models': return <Models />
+    case 'openclaw-automation': return <Automation />
+    case 'ekyc': return <EKYC />
+    case 'tapsecure': return <TapSecure />
+    default: return <Dashboard />
   }
 }
 
@@ -176,7 +134,13 @@ export default function Home() {
                 <Menu className="h-5 w-5" />
               </Button>
               <div className="flex items-center gap-2 text-sm">
-                <Flower2 className="h-4 w-4 text-purple-600 hidden sm:block" />
+                <Image
+                  src="/puspa-logo-transparent.png"
+                  alt="PUSPA"
+                  width={24}
+                  height={24}
+                  className="hidden sm:block object-contain"
+                />
                 <span className="font-medium truncate max-w-xs sm:max-w-md">
                   {viewLabels[currentView] || 'Dashboard'}
                 </span>
@@ -209,7 +173,13 @@ export default function Home() {
         <footer className="border-t bg-background px-4 lg:px-6 py-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Flower2 className="h-3 w-3 text-purple-600" />
+              <Image
+                src="/puspa-logo-transparent.png"
+                alt="PUSPA"
+                width={18}
+                height={18}
+                className="object-contain opacity-70"
+              />
               <span>© 2026 PUSPA — Pertubuhan Urus Peduli Asnaf KL & Selangor</span>
             </div>
             <div className="flex items-center gap-3">

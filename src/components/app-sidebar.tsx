@@ -2,6 +2,7 @@
 
 import { useAppStore } from '@/stores/app-store';
 import type { ViewId } from '@/types';
+import Image from 'next/image';
 import {
   LayoutDashboard,
   Users,
@@ -24,7 +25,6 @@ import {
   Cpu,
   Clock,
   X,
-  Flower2,
   ScanFace,
   Fingerprint,
 } from 'lucide-react';
@@ -120,15 +120,22 @@ const NAV_SECTIONS: NavSection[] = [
 function SidebarBrand() {
   return (
     <div className="flex items-center gap-3 px-5 py-5">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-600 text-white shadow-lg shadow-purple-600/25">
-        <Flower2 className="h-5 w-5" />
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white shadow-lg shadow-purple-600/15 ring-1 ring-purple-100 dark:ring-purple-800/40">
+        <Image
+          src="/puspa-logo-transparent.png"
+          alt="PUSPA Logo"
+          width={36}
+          height={36}
+          className="object-contain"
+          priority
+        />
       </div>
       <div className="flex flex-col">
         <span className="text-lg font-bold tracking-tight text-foreground">
           PUSPA
         </span>
         <span className="text-[11px] leading-tight text-muted-foreground">
-          Urus Peduli Asnaf
+          Pertubuhan Urus Peduli Asnaf
         </span>
       </div>
     </div>
@@ -217,11 +224,20 @@ function SidebarFooter() {
   return (
     <div className="mt-auto px-5 py-4">
       <Separator className="mb-4 bg-border/50" />
-      <div className="flex flex-col gap-0.5">
-        <span className="text-xs font-medium text-foreground">
-          PUSPA KL &amp; Selangor
-        </span>
-        <span className="text-[11px] text-muted-foreground">v2.1.0</span>
+      <div className="flex items-center gap-3">
+        <Image
+          src="/puspa-logo-transparent.png"
+          alt="PUSPA"
+          width={24}
+          height={24}
+          className="opacity-60"
+        />
+        <div className="flex flex-col gap-0.5">
+          <span className="text-xs font-medium text-foreground">
+            PUSPA KL &amp; Selangor
+          </span>
+          <span className="text-[11px] text-muted-foreground">v2.1.0 • PPM-006-14-14032020</span>
+        </div>
       </div>
     </div>
   );

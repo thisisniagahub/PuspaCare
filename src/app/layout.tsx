@@ -19,7 +19,8 @@ export const metadata: Metadata = {
   keywords: ["PUSPA", "NGO", "asnaf", "zakat", "kebajikan", "Malaysia", "pengurusan"],
   authors: [{ name: "PUSPA" }],
   icons: {
-    icon: "/logo.svg",
+    icon: "/puspa-logo-official.png",
+    apple: "/puspa-logo-official.png",
   },
 };
 
