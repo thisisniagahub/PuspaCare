@@ -25,6 +25,8 @@ import {
   Clock,
   X,
   Flower2,
+  ScanFace,
+  Fingerprint,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -78,6 +80,13 @@ const NAV_SECTIONS: NavSection[] = [
     items: [
       { id: 'compliance' as ViewId, label: 'Dashboard Compliance', icon: ShieldCheck },
       { id: 'reports' as ViewId, label: 'Laporan Kewangan', icon: BarChart3 },
+    ],
+  },
+  {
+    title: 'eKYC & Sekuriti',
+    items: [
+      { id: 'ekyc' as ViewId, label: 'eKYC Verification', icon: ScanFace },
+      { id: 'tapsecure' as ViewId, label: 'TapSecure', icon: Fingerprint },
     ],
   },
   {

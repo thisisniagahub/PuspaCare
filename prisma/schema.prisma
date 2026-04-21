@@ -26,6 +26,8 @@ model User {
   notifications Notification[]
   createdCases Case[]          @relation("CaseCreator")
   assignedCases Case[]         @relation("CaseAssignee")
+  deviceBindings DeviceBinding[]
+  securityLogs   SecurityLog[]
 }
 
 // ============ MEMBER / ASNAF (Phase 3) ============
@@ -56,6 +58,7 @@ model Member {
   cases            Case[]
   householdMembers HouseholdMember[]
   disbursements    Disbursement[]
+  eKYCVerification EKYCVerification?
 }
 
 model HouseholdMember {
@@ -396,4 +399,92 @@ model Capture {
   userId    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ============ eKYC — BNM AMLA COMPLIANT VERIFICATION ============
+
+model EKYCVerification {
+  id                String   @id @default(cuid())
+  memberId          String   @unique
+  member            Member   @relation(fields: [memberId], references: [id])
+
+  // IC Images (stored as base64 data URIs)
+  icFrontUrl        String?
+  icBackUrl         String?
+
+  // OCR Results extracted from IC
+  icName            String?
+  icNumber          String?
+  icAddress         String?
+  icDateOfBirth     DateTime?
+  icGender          String?
+
+  // Selfie / Liveness Detection
+  selfieUrl         String?
+  livenessScore     Float?   // 0-100 confidence score
+  livenessMethod    String?  // blink, smile, turn_head, multi_challenge
+  faceMatchScore    Float?   // 0-100 similarity between IC photo and selfie
+
+  // Verification Status
+  status            String   @default("pending") // pending, processing, verified, rejected, expired
+  verifiedBy        String?
+  verifiedAt        DateTime?
+  rejectionReason   String?
+
+  // BNM AMLA Compliance
+  bnmCompliant      Boolean  @default(false)
+  amlaScreening     String?  // pass, fail, pending, review
+  riskLevel         String?  // low, medium, high
+  screeningNotes    String?
+
+  // Wallet / eWallet Integration
+  walletEnabled     Boolean  @default(false)
+  walletLimit       Float    @default(200) // RM200 default before eKYC
+  previousLimit     Float    @default(200)
+  limitUpgradedAt   DateTime?
+  bankTransferEnabled Boolean @default(false)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+// ============ TAPSECURE — DEVICE & SECURITY MANAGEMENT ============
+
+model DeviceBinding {
+  id                String   @id @default(cuid())
+  userId            String
+  user              User     @relation(fields: [userId], references: [id])
+
+  deviceName        String?
+  deviceType        String?  // mobile, desktop, tablet
+  deviceFingerprint String?
+  userAgent         String?
+  ipAddress         String?
+  location          String?
+
+  isPrimary         Boolean  @default(false)
+  isTrusted         Boolean  @default(false)
+  isActive          Boolean  @default(true)
+  otpVerified       Boolean  @default(false)
+
+  lastUsedAt        DateTime?
+  boundAt           DateTime @default(now())
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model SecurityLog {
+  id                String   @id @default(cuid())
+  userId            String?
+  user              User?    @relation(fields: [userId], references: [id])
+
+  action            String   // login, device_bind, device_unbind, biometric_setup, transaction_verify, otp_sent, otp_verified, etc.
+  method            String?  // password, webauthn, device_bind, face, fingerprint, otp
+  deviceFingerprint String?
+  ipAddress         String?
+  userAgent         String?
+  status            String   @default("success") // success, failed, blocked
+  details           String?  // JSON
+
+  createdAt         DateTime @default(now())
 }

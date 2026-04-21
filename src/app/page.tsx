@@ -33,6 +33,8 @@ const TerminalPage = lazy(() => import('@/modules/openclaw/terminal'))
 const Agents = lazy(() => import('@/modules/openclaw/agents'))
 const Models = lazy(() => import('@/modules/openclaw/models'))
 const Automation = lazy(() => import('@/modules/openclaw/automation'))
+const EKYC = lazy(() => import('@/modules/ekyc/page'))
+const TapSecure = lazy(() => import('@/modules/tapsecure/page'))
 
 function PageLoader() {
   return (
@@ -74,6 +76,8 @@ const viewLabels: Record<string, string> = {
   'openclaw-agents': 'OpenClaw — Ejen AI',
   'openclaw-models': 'OpenClaw — Penyedia Model',
   'openclaw-automation': 'OpenClaw — Automasi',
+  'ekyc': 'eKYC Verification',
+  'tapsecure': 'TapSecure',
 }
 
 function ViewRenderer({ view }: { view: string }) {
@@ -99,6 +103,8 @@ function ViewRenderer({ view }: { view: string }) {
     case 'openclaw-agents': return <Agents />
     case 'openclaw-models': return <Models />
     case 'openclaw-automation': return <Automation />
+    case 'ekyc': return <EKYC />
+    case 'tapsecure': return <TapSecure />
     default: return <Dashboard />
   }
 }
