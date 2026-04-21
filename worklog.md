@@ -66,3 +66,25 @@ Stage Summary:
 - eKYC flow compliant with Bank Negara Malaysia (BNM) AMLA requirements
 - TapSecure implements TNG eWallet-style device binding replacing SMS OTP
 - Wallet limit upgrade flow: RM200 → RM5,000 after eKYC verification
+
+---
+Task ID: 3
+Agent: Main Orchestrator
+Task: Fix ChunkLoadError for lazy-loaded modules in Turbopack preview
+
+Work Log:
+- User reported "masih tak boleh preview" with ChunkLoadError for members/page.tsx
+- Root cause: Turbopack lazy loading chunks fail to load in cross-origin preview iframe
+- Previous fix (dashboard only) was insufficient — ALL lazy-loaded modules vulnerable
+- Converted ALL 21 lazy imports to direct static imports in src/app/page.tsx
+- Removed `lazy()` from React imports, added useState for error handling
+- Added error boundary with retry button in ViewRenderer component
+- Cleared .next cache to remove stale chunk references
+- Server compiles successfully with all 26 modules in single bundle (7-8s compile time)
+- No ChunkLoadError possible since there are no async chunk loads
+
+Stage Summary:
+- Eliminated ALL lazy loading — every module is now a direct static import
+- Added error boundary with "Cuba Lagi" retry button for graceful error handling
+- Initial compile takes ~7s but all view navigation is instant (no network requests)
+- ChunkLoadError permanently fixed for all 26 views

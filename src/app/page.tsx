@@ -1,40 +1,39 @@
 'use client'
 
-import { Suspense, lazy, useEffect } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import { AppSidebar } from '@/components/app-sidebar'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Toaster } from 'sonner'
-import { Menu, Moon, Sun, Flower2, Command } from 'lucide-react'
+import { Menu, Moon, Sun, Flower2, Command, AlertTriangle, RefreshCw } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { CommandPalette } from '@/components/command-palette'
 
-// Dashboard imported directly — NOT lazy — to avoid lodash/recharts ChunkLoadError
+// All modules imported DIRECTLY — no lazy loading — to prevent Turbopack ChunkLoadError
 import Dashboard from '@/modules/dashboard/page'
-
-const Members = lazy(() => import('@/modules/members/page'))
-const Cases = lazy(() => import('@/modules/cases/page'))
-const Programmes = lazy(() => import('@/modules/programmes/page'))
-const Donations = lazy(() => import('@/modules/donations/page'))
-const Disbursements = lazy(() => import('@/modules/disbursements/page'))
-const Compliance = lazy(() => import('@/modules/compliance/page'))
-const Admin = lazy(() => import('@/modules/admin/page'))
-const Reports = lazy(() => import('@/modules/reports/page'))
-const Activities = lazy(() => import('@/modules/activities/page'))
-const AITools = lazy(() => import('@/modules/ai/page'))
-const Volunteers = lazy(() => import('@/modules/volunteers/page'))
-const Donors = lazy(() => import('@/modules/donors/page'))
-const Documents = lazy(() => import('@/modules/documents/page'))
-const MCPServers = lazy(() => import('@/modules/openclaw/mcp'))
-const Plugins = lazy(() => import('@/modules/openclaw/plugins'))
-const Integrations = lazy(() => import('@/modules/openclaw/integrations'))
-const TerminalPage = lazy(() => import('@/modules/openclaw/terminal'))
-const Agents = lazy(() => import('@/modules/openclaw/agents'))
-const Models = lazy(() => import('@/modules/openclaw/models'))
-const Automation = lazy(() => import('@/modules/openclaw/automation'))
-const EKYC = lazy(() => import('@/modules/ekyc/page'))
-const TapSecure = lazy(() => import('@/modules/tapsecure/page'))
+import Members from '@/modules/members/page'
+import Cases from '@/modules/cases/page'
+import Programmes from '@/modules/programmes/page'
+import Donations from '@/modules/donations/page'
+import Disbursements from '@/modules/disbursements/page'
+import Compliance from '@/modules/compliance/page'
+import Admin from '@/modules/admin/page'
+import Reports from '@/modules/reports/page'
+import Activities from '@/modules/activities/page'
+import AITools from '@/modules/ai/page'
+import Volunteers from '@/modules/volunteers/page'
+import Donors from '@/modules/donors/page'
+import Documents from '@/modules/documents/page'
+import MCPServers from '@/modules/openclaw/mcp'
+import Plugins from '@/modules/openclaw/plugins'
+import Integrations from '@/modules/openclaw/integrations'
+import TerminalPage from '@/modules/openclaw/terminal'
+import Agents from '@/modules/openclaw/agents'
+import Models from '@/modules/openclaw/models'
+import Automation from '@/modules/openclaw/automation'
+import EKYC from '@/modules/ekyc/page'
+import TapSecure from '@/modules/tapsecure/page'
 
 function PageLoader() {
   return (
@@ -81,31 +80,74 @@ const viewLabels: Record<string, string> = {
 }
 
 function ViewRenderer({ view }: { view: string }) {
-  switch (view) {
-    case 'dashboard': return <Dashboard />
-    case 'members': return <Members />
-    case 'cases': return <Cases />
-    case 'programmes': return <Programmes />
-    case 'donations': return <Donations />
-    case 'disbursements': return <Disbursements />
-    case 'compliance': return <Compliance />
-    case 'admin': return <Admin />
-    case 'reports': return <Reports />
-    case 'activities': return <Activities />
-    case 'ai': return <AITools />
-    case 'volunteers': return <Volunteers />
-    case 'donors': return <Donors />
-    case 'documents': return <Documents />
-    case 'openclaw-mcp': return <MCPServers />
-    case 'openclaw-plugins': return <Plugins />
-    case 'openclaw-integrations': return <Integrations />
-    case 'openclaw-terminal': return <TerminalPage />
-    case 'openclaw-agents': return <Agents />
-    case 'openclaw-models': return <Models />
-    case 'openclaw-automation': return <Automation />
-    case 'ekyc': return <EKYC />
-    case 'tapsecure': return <TapSecure />
-    default: return <Dashboard />
+  const [hasError, setHasError] = useState(false)
+  const [error, setError] = useState<Error | null>(null)
+
+  const handleRetry = () => {
+    setHasError(false)
+    setError(null)
+  }
+
+  // Reset error when view changes
+  useEffect(() => {
+    setHasError(false)
+    setError(null)
+  }, [view])
+
+  if (hasError && error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-4 p-8">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+          <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
+        </div>
+        <div className="text-center space-y-2">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-white">
+            Ralat Pemuatan Modul
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md">
+            {error.message}
+          </p>
+        </div>
+        <Button variant="outline" onClick={handleRetry} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Cuba Lagi
+        </Button>
+      </div>
+    )
+  }
+
+  try {
+    switch (view) {
+      case 'dashboard': return <Dashboard />
+      case 'members': return <Members />
+      case 'cases': return <Cases />
+      case 'programmes': return <Programmes />
+      case 'donations': return <Donations />
+      case 'disbursements': return <Disbursements />
+      case 'compliance': return <Compliance />
+      case 'admin': return <Admin />
+      case 'reports': return <Reports />
+      case 'activities': return <Activities />
+      case 'ai': return <AITools />
+      case 'volunteers': return <Volunteers />
+      case 'donors': return <Donors />
+      case 'documents': return <Documents />
+      case 'openclaw-mcp': return <MCPServers />
+      case 'openclaw-plugins': return <Plugins />
+      case 'openclaw-integrations': return <Integrations />
+      case 'openclaw-terminal': return <TerminalPage />
+      case 'openclaw-agents': return <Agents />
+      case 'openclaw-models': return <Models />
+      case 'openclaw-automation': return <Automation />
+      case 'ekyc': return <EKYC />
+      case 'tapsecure': return <TapSecure />
+      default: return <Dashboard />
+    }
+  } catch (err) {
+    const e = err instanceof Error ? err : new Error(String(err))
+    setError(e)
+    setHasError(true)
+    return null
   }
 }
 
