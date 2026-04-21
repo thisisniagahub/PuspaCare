@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, lazy, useEffect, useState } from 'react'
+import { Suspense, lazy, useEffect } from 'react'
 import { useAppStore } from '@/stores/app-store'
 import { AppSidebar } from '@/components/app-sidebar'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { Toaster } from 'sonner'
 import { Menu, Moon, Sun, Flower2, Command } from 'lucide-react'
 import { useTheme } from 'next-themes'
+import { CommandPalette } from '@/components/command-palette'
 
 // Dashboard imported directly — NOT lazy — to avoid lodash/recharts ChunkLoadError
 import Dashboard from '@/modules/dashboard/page'
@@ -105,8 +106,6 @@ function ViewRenderer({ view }: { view: string }) {
 export default function Home() {
   const { currentView, toggleSidebar, setCommandPaletteOpen } = useAppStore()
   const { theme, setTheme } = useTheme()
-  const [key, setKey] = useState(0)
-
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -117,10 +116,6 @@ export default function Home() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [setCommandPaletteOpen])
-
-  useEffect(() => {
-    setKey((k) => k + 1)
-  }, [currentView])
 
   return (
     <div className="min-h-screen bg-background flex">
@@ -159,7 +154,7 @@ export default function Home() {
           </div>
         </header>
         <main className="flex-1 overflow-auto">
-          <Suspense fallback={<PageLoader />} key={key}>
+          <Suspense fallback={<PageLoader />} key={currentView}>
             <ViewRenderer view={currentView} />
           </Suspense>
         </main>
@@ -178,6 +173,7 @@ export default function Home() {
         </footer>
       </div>
       <Toaster position="top-right" richColors />
+      <CommandPalette />
     </div>
   )
 }

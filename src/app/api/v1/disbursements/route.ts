@@ -62,7 +62,6 @@ export async function GET(request: NextRequest) {
           case: { select: { id: true, caseNumber: true, title: true } },
           programme: { select: { id: true, name: true } },
           member: { select: { id: true, name: true, memberNumber: true } },
-          approver: { select: { id: true, name: true } },
         },
       }),
       db.disbursement.count({ where }),

@@ -9,13 +9,9 @@ const toggleSchema = z.object({
 
 export async function GET(_request: NextRequest) {
   try {
-    const [checklistItems, overallStats] = await Promise.all([
+    const [checklistItems] = await Promise.all([
       db.complianceChecklist.findMany({
         orderBy: [{ category: 'asc' }, { order: 'asc' }],
-      }),
-      db.complianceChecklist.aggregate({
-        _count: { id: true },
-        _sum: { isCompleted: true },
       }),
     ]);
 

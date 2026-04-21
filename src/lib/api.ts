@@ -1,5 +1,13 @@
 const API_BASE = '/api/v1'
 
+// All API routes return { success: boolean, data?: T, error?: string, message?: string }
+interface ApiResponse<T> {
+  success: boolean
+  data?: T
+  error?: string
+  message?: string
+}
+
 interface FetchOptions extends RequestInit {
   params?: Record<string, string | number | undefined>
 }
@@ -33,7 +41,14 @@ export async function apiFetch<T>(endpoint: string, options: FetchOptions = {}):
     throw new Error(error.message || `HTTP ${response.status}`)
   }
 
-  return response.json()
+  const json: ApiResponse<T> = await response.json()
+
+  if (!json.success) {
+    throw new Error(json.error || json.message || 'Request failed')
+  }
+
+  // Unwrap the data envelope — callers receive the payload directly
+  return json.data as T
 }
 
 export const api = {

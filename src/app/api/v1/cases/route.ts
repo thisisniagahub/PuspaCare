@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
           programme: { select: { id: true, name: true } },
           creator: { select: { id: true, name: true } },
           assignee: { select: { id: true, name: true } },
-          notes: true,
-          documents: true,
+          caseNotes: true,
+          caseDocuments: true,
         },
       }),
       db.case.count({ where }),
@@ -102,6 +102,8 @@ export async function POST(request: NextRequest) {
         programme: true,
         creator: true,
         assignee: true,
+        caseNotes: true,
+        caseDocuments: true,
       },
     });
 
@@ -157,6 +159,8 @@ export async function PUT(request: NextRequest) {
         programme: true,
         creator: true,
         assignee: true,
+        caseNotes: true,
+        caseDocuments: true,
       },
     });
 

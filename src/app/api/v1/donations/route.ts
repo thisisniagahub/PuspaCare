@@ -71,10 +71,6 @@ export async function GET(request: NextRequest) {
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
         take: pageSize,
-        include: {
-          programme: { select: { id: true, name: true } },
-          case: { select: { id: true, caseNumber: true, title: true } },
-        },
       }),
       db.donation.count({ where }),
     ]);
@@ -147,7 +143,6 @@ export async function POST(request: NextRequest) {
       },
       include: {
         programme: true,
-        case: true,
       },
     });
 
@@ -199,7 +194,6 @@ export async function PUT(request: NextRequest) {
       data: dataToUpdate,
       include: {
         programme: true,
-        case: true,
       },
     });
 
