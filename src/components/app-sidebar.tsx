@@ -321,19 +321,15 @@ function NavGroupRenderer({
 
       {/* Navigation items */}
       <div className="flex flex-col gap-0.5">
-        {group.items.map((item, idx) => {
-          const isSubItem = group.subGroup && idx > 0;
-
-          return (
-            <NavItemButton
-              key={item.id}
-              item={item}
-              isActive={currentView === item.id}
-              onClick={() => onNavigate(item.id)}
-              collapsed={collapsed}
-            />
-          );
-        })}
+        {group.items.map((item) => (
+          <NavItemButton
+            key={item.id}
+            item={item}
+            isActive={currentView === item.id}
+            onClick={() => onNavigate(item.id)}
+            collapsed={collapsed}
+          />
+        ))}
       </div>
 
       {/* Bottom spacer for all groups except last */}
@@ -437,7 +433,7 @@ function SidebarContent({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="relative flex h-full flex-col bg-card">
+      <div className="relative flex h-full flex-col bg-card overflow-hidden">
         {/* Brand header */}
         <SidebarBrand collapsed={isCollapsed} />
 
@@ -459,7 +455,7 @@ function SidebarContent({
         <Separator className="mx-4" />
 
         {/* Navigation */}
-        <ScrollArea className="flex-1 py-1">
+        <ScrollArea className="flex-1 py-1 min-h-0">
           <nav className="flex flex-col gap-0" aria-label="Navigasi utama">
             {NAV_GROUPS.map((group, idx) => (
               <NavGroupRenderer
