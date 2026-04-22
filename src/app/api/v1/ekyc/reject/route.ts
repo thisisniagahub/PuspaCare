@@ -7,7 +7,7 @@ import { z } from 'zod'
 const rejectSchema = z.object({
   id: z.string().optional(),
   memberId: z.string().optional(),
-  reason: z.string().min(1, 'Sebab penolakan diperlukan'),
+  reason: z.string().min(1, 'Sebab penolakan diperlukan').max(1000, 'Sebab penolakan terlalu panjang'),
 }).refine(data => data.id || data.memberId, {
   message: 'ID pengesahan atau ID ahli diperlukan',
 })
@@ -27,6 +27,7 @@ export async function POST(request: NextRequest) {
         include: {
           member: {
             select: {
+              id: true,
               name: true,
               ic: true,
               memberNumber: true,
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
         include: {
           member: {
             select: {
+              id: true,
               name: true,
               ic: true,
               memberNumber: true,
@@ -64,16 +66,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Reject the verification
+    // Check if already rejected with the same reason
+    if (verification.status === 'rejected' && verification.rejectionReason === validated.reason) {
+      return NextResponse.json(
+        { success: false, error: 'Pengesahan eKYC telah ditolak dengan sebab yang sama' },
+        { status: 400 }
+      )
+    }
+
+    // Reject the verification via Prisma
     const updated = await db.eKYCVerification.update({
       where: { id: verification.id },
       data: {
         status: 'rejected',
         rejectionReason: validated.reason,
+        // Disable wallet features on rejection
+        walletEnabled: false,
+        bankTransferEnabled: false,
       },
       include: {
         member: {
           select: {
+            id: true,
             name: true,
             ic: true,
             memberNumber: true,
@@ -94,7 +108,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    console.error('Ralat menolak eKYC:', error)
+    console.error('Error rejecting eKYC:', error)
     return NextResponse.json(
       { success: false, error: 'Gagal menolak pengesahan eKYC' },
       { status: 500 }

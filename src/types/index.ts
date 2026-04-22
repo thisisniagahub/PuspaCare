@@ -24,6 +24,7 @@ export type ViewId =
   | 'openclaw-automation'
   | 'ekyc'
   | 'tapsecure'
+  | 'docs'
 
 export interface NavItem {
   id: ViewId

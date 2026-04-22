@@ -19,21 +19,21 @@ const ekycCreateSchema = z.object({
   faceMatchScore: z.number().min(0).max(100).optional(),
 })
 
-// ─── GET: Retrieve eKYC verifications ─────────────────────────
+// ─── GET: Retrieve eKYC verifications (paginated, searchable, filterable) ──
 
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
     const memberId = searchParams.get('memberId')
-    const status = searchParams.get('status')
 
+    // If memberId is provided, return single record (bypass pagination)
     if (memberId) {
-      // Return single EKYC verification for a specific member
       const verification = await db.eKYCVerification.findUnique({
         where: { memberId },
         include: {
           member: {
             select: {
+              id: true,
               name: true,
               ic: true,
               memberNumber: true,
@@ -52,29 +52,85 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: true, data: verification })
     }
 
-    // Return all verifications, optionally filtered by status
+    // Paginated list with search, filter, and sort
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10))
+    const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10)))
+    const search = searchParams.get('search') || ''
+    const status = searchParams.get('status') || ''
+    const riskLevel = searchParams.get('riskLevel') || ''
+    const sortBy = searchParams.get('sortBy') || 'createdAt'
+    const sortOrder = searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc'
+
     const where: Record<string, unknown> = {}
+
+    if (search) {
+      where.OR = [
+        { icName: { contains: search, mode: 'insensitive' } },
+        { icNumber: { contains: search, mode: 'insensitive' } },
+        { icAddress: { contains: search, mode: 'insensitive' } },
+        { member: {
+          name: { contains: search, mode: 'insensitive' },
+        }},
+        { member: {
+          memberNumber: { contains: search, mode: 'insensitive' },
+        }},
+        { member: {
+          ic: { contains: search, mode: 'insensitive' },
+        }},
+      ]
+    }
+
     if (status) {
       where.status = status
     }
 
-    const verifications = await db.eKYCVerification.findMany({
-      where,
-      include: {
-        member: {
-          select: {
-            name: true,
-            ic: true,
-            memberNumber: true,
+    if (riskLevel) {
+      where.riskLevel = riskLevel
+    }
+
+    const allowedSortFields = [
+      'createdAt',
+      'updatedAt',
+      'status',
+      'riskLevel',
+      'livenessScore',
+      'faceMatchScore',
+      'walletLimit',
+      'verifiedAt',
+    ]
+    const sortField = allowedSortFields.includes(sortBy) ? sortBy : 'createdAt'
+
+    const [verifications, total] = await Promise.all([
+      db.eKYCVerification.findMany({
+        where,
+        orderBy: { [sortField]: sortOrder },
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+        include: {
+          member: {
+            select: {
+              id: true,
+              name: true,
+              ic: true,
+              memberNumber: true,
+              phone: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    })
+      }),
+      db.eKYCVerification.count({ where }),
+    ])
 
-    return NextResponse.json({ success: true, data: verifications })
+    return NextResponse.json({
+      success: true,
+      data: verifications,
+      total,
+      page,
+      pageSize,
+      totalPages: Math.ceil(total / pageSize),
+    })
   } catch (error) {
-    console.error('Ralat memuatkan pengesahan eKYC:', error)
+    console.error('Error fetching eKYC verifications:', error)
     return NextResponse.json(
       { success: false, error: 'Gagal memuatkan data pengesahan eKYC' },
       { status: 500 }
@@ -116,6 +172,14 @@ export async function POST(request: NextRequest) {
     })
 
     if (existing) {
+      // Don't allow updating already-verified records
+      if (existing.status === 'verified') {
+        return NextResponse.json(
+          { success: false, error: 'Tidak boleh mengemaskini pengesahan eKYC yang telah disahkan' },
+          { status: 400 }
+        )
+      }
+
       // Update existing record
       const updated = await db.eKYCVerification.update({
         where: { id: existing.id },
@@ -132,13 +196,16 @@ export async function POST(request: NextRequest) {
           livenessMethod: validated.livenessMethod ?? existing.livenessMethod,
           faceMatchScore: validated.faceMatchScore ?? existing.faceMatchScore,
           status: 'pending',
+          rejectionReason: null, // Clear previous rejection reason on resubmission
         },
         include: {
           member: {
             select: {
+              id: true,
               name: true,
               ic: true,
               memberNumber: true,
+              phone: true,
             },
           },
         },
@@ -169,9 +236,11 @@ export async function POST(request: NextRequest) {
       include: {
         member: {
           select: {
+            id: true,
             name: true,
             ic: true,
             memberNumber: true,
+            phone: true,
           },
         },
       },
@@ -185,7 +254,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    console.error('Ralat mencipta pengesahan eKYC:', error)
+    console.error('Error creating eKYC verification:', error)
     return NextResponse.json(
       { success: false, error: 'Gagal mencipta pengesahan eKYC' },
       { status: 500 }

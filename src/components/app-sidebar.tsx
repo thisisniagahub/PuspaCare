@@ -27,6 +27,7 @@ import {
   X,
   ScanFace,
   Fingerprint,
+  BookOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -96,6 +97,12 @@ const NAV_SECTIONS: NavSection[] = [
       { id: 'volunteers' as ViewId, label: 'Sukarelawan', icon: UserCheck },
       { id: 'donors' as ViewId, label: 'Penderma', icon: Gift },
       { id: 'documents' as ViewId, label: 'Dokumen', icon: FolderOpen },
+    ],
+  },
+  {
+    title: 'Sokongan',
+    items: [
+      { id: 'docs' as ViewId, label: '📚 Panduan', icon: BookOpen },
     ],
   },
   {

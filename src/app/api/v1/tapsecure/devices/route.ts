@@ -1,11 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { z } from 'zod';
 
-// GET /api/v1/tapsecure/devices — Return all device bindings with user data
-export async function GET() {
+// ─── Schemas ───────────────────────────────────────────────────────
+
+const deviceBindSchema = z.object({
+  userId: z.string().min(1, 'ID pengguna diperlukan'),
+  deviceName: z.string().optional(),
+  deviceType: z.enum(['mobile', 'desktop', 'tablet']).optional(),
+  deviceFingerprint: z.string().optional(),
+  userAgent: z.string().optional(),
+  ipAddress: z.string().optional(),
+  location: z.string().optional(),
+});
+
+// ─── GET /api/v1/tapsecure/devices ────────────────────────────────
+// List all active device bindings with user data, optionally filtered by userId
+
+export async function GET(request: NextRequest) {
   try {
+    const searchParams = request.nextUrl.searchParams;
+    const userId = searchParams.get('userId');
+
+    const where: Record<string, unknown> = { isActive: true };
+    if (userId) where.userId = userId;
+
     const devices = await db.deviceBinding.findMany({
-      where: { isActive: true },
+      where,
       include: {
         user: {
           select: { name: true, email: true },
@@ -27,29 +48,16 @@ export async function GET() {
   }
 }
 
-// POST /api/v1/tapsecure/devices — Create new device binding
+// ─── POST /api/v1/tapsecure/devices ───────────────────────────────
+// Bind a new device to a user
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      userId,
-      deviceName,
-      deviceType,
-      deviceFingerprint,
-      userAgent,
-      ipAddress,
-      location,
-    } = body;
+    const validated = deviceBindSchema.parse(body);
 
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'ID pengguna diperlukan' },
-        { status: 400 }
-      );
-    }
-
-    // Check if user exists
-    const user = await db.user.findUnique({ where: { id: userId } });
+    // Verify user exists
+    const user = await db.user.findUnique({ where: { id: validated.userId } });
     if (!user) {
       return NextResponse.json(
         { success: false, error: 'Pengguna tidak dijumpai' },
@@ -57,23 +65,41 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check existing active devices for this user
-    const existingDevices = await db.deviceBinding.count({
-      where: { userId, isActive: true },
+    // Check for duplicate fingerprint on the same user
+    if (validated.deviceFingerprint) {
+      const duplicate = await db.deviceBinding.findFirst({
+        where: {
+          userId: validated.userId,
+          deviceFingerprint: validated.deviceFingerprint,
+          isActive: true,
+        },
+      });
+
+      if (duplicate) {
+        return NextResponse.json(
+          { success: false, error: 'Peranti ini sudah diikat dengan akaun anda' },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Count existing active devices for this user
+    const activeDeviceCount = await db.deviceBinding.count({
+      where: { userId: validated.userId, isActive: true },
     });
 
-    const isFirstDevice = existingDevices === 0;
+    const isFirstDevice = activeDeviceCount === 0;
 
     // Create device binding
     const device = await db.deviceBinding.create({
       data: {
-        userId,
-        deviceName: deviceName || null,
-        deviceType: deviceType || null,
-        deviceFingerprint: deviceFingerprint || null,
-        userAgent: userAgent || null,
-        ipAddress: ipAddress || null,
-        location: location || null,
+        userId: validated.userId,
+        deviceName: validated.deviceName || null,
+        deviceType: validated.deviceType || null,
+        deviceFingerprint: validated.deviceFingerprint || null,
+        userAgent: validated.userAgent || null,
+        ipAddress: validated.ipAddress || null,
+        location: validated.location || null,
         isPrimary: isFirstDevice,
         isTrusted: isFirstDevice,
         otpVerified: isFirstDevice,
@@ -89,16 +115,17 @@ export async function POST(request: NextRequest) {
     // Create security log
     await db.securityLog.create({
       data: {
-        userId,
+        userId: validated.userId,
         action: 'device_bind',
         method: 'device_bind',
-        deviceFingerprint: deviceFingerprint || null,
-        ipAddress: ipAddress || null,
-        userAgent: userAgent || null,
+        deviceFingerprint: validated.deviceFingerprint || null,
+        ipAddress: validated.ipAddress || null,
+        userAgent: validated.userAgent || null,
         status: 'success',
         details: JSON.stringify({
           deviceId: device.id,
-          deviceName: deviceName || 'Peranti Tidak Dikenali',
+          deviceName: validated.deviceName || 'Peranti Tidak Dikenali',
+          deviceType: validated.deviceType || 'unknown',
           isFirstDevice,
         }),
       },
@@ -106,6 +133,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: device }, { status: 201 });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Pengesahan gagal', details: error.errors },
+        { status: 400 }
+      );
+    }
     console.error('Error creating device binding:', error);
     return NextResponse.json(
       { success: false, error: 'Gagal mengikat peranti baharu' },
@@ -114,7 +147,9 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// DELETE /api/v1/tapsecure/devices?id=xxx — Soft delete a device binding
+// ─── DELETE /api/v1/tapsecure/devices?id=xxx ──────────────────────
+// Soft-delete (deactivate) a device binding
+
 export async function DELETE(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
@@ -142,11 +177,26 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Soft delete
+    // Soft delete — set isActive to false
     await db.deviceBinding.update({
       where: { id },
-      data: { isActive: false },
+      data: { isActive: false, isPrimary: false },
     });
+
+    // If the removed device was primary, promote the most recent active device
+    if (device.isPrimary) {
+      const nextPrimary = await db.deviceBinding.findFirst({
+        where: { userId: device.userId, isActive: true },
+        orderBy: { lastUsedAt: 'desc' },
+      });
+
+      if (nextPrimary) {
+        await db.deviceBinding.update({
+          where: { id: nextPrimary.id },
+          data: { isPrimary: true },
+        });
+      }
+    }
 
     // Create security log
     await db.securityLog.create({
@@ -155,10 +205,13 @@ export async function DELETE(request: NextRequest) {
         action: 'device_unbind',
         method: 'device_bind',
         deviceFingerprint: device.deviceFingerprint || null,
+        ipAddress: device.ipAddress || null,
+        userAgent: device.userAgent || null,
         status: 'success',
         details: JSON.stringify({
           deviceId: device.id,
           deviceName: device.deviceName || 'Peranti Tidak Dikenali',
+          deviceType: device.deviceType || 'unknown',
           wasPrimary: device.isPrimary,
         }),
       },

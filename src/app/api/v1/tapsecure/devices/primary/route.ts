@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { z } from 'zod';
 
-// PUT /api/v1/tapsecure/devices/primary — Set a device as primary
+// ─── Schemas ───────────────────────────────────────────────────────
+
+const setPrimarySchema = z.object({
+  id: z.string().min(1, 'ID peranti diperlukan'),
+});
+
+// ─── PUT /api/v1/tapsecure/devices/primary ────────────────────────
+// Set a specific device as the primary device for its user
+
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id } = body;
+    const { id } = setPrimarySchema.parse(body);
 
-    if (!id) {
-      return NextResponse.json(
-        { success: false, error: 'ID peranti diperlukan' },
-        { status: 400 }
-      );
-    }
-
-    // Find the device to be set as primary
+    // Find the target device
     const device = await db.deviceBinding.findUnique({ where: { id } });
     if (!device) {
       return NextResponse.json(
@@ -30,32 +32,43 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Unset primary on all other devices for the same user
-    await db.deviceBinding.updateMany({
-      where: {
-        userId: device.userId,
-        isPrimary: true,
-        id: { not: id },
-      },
-      data: { isPrimary: false },
-    });
+    // If already primary, return early
+    if (device.isPrimary) {
+      return NextResponse.json({
+        success: true,
+        data: device,
+        message: 'Peranti ini sudah ditetapkan sebagai peranti utama',
+      });
+    }
 
-    // Set the specified device as primary
-    const updatedDevice = await db.deviceBinding.update({
-      where: { id },
-      data: { isPrimary: true },
-      include: {
-        user: {
-          select: { name: true, email: true },
+    // Use a transaction to atomically swap primary status
+    const updatedDevice = await db.$transaction(async (tx) => {
+      // Unset primary on all other active devices for this user
+      await tx.deviceBinding.updateMany({
+        where: {
+          userId: device.userId,
+          isPrimary: true,
         },
-      },
+        data: { isPrimary: false },
+      });
+
+      // Set the specified device as primary
+      return tx.deviceBinding.update({
+        where: { id },
+        data: { isPrimary: true },
+        include: {
+          user: {
+            select: { name: true, email: true },
+          },
+        },
+      });
     });
 
     // Create security log
     await db.securityLog.create({
       data: {
         userId: device.userId,
-        action: 'device_bind',
+        action: 'set_primary_device',
         method: 'device_bind',
         deviceFingerprint: device.deviceFingerprint || null,
         ipAddress: device.ipAddress || null,
@@ -64,6 +77,7 @@ export async function PUT(request: NextRequest) {
         details: JSON.stringify({
           deviceId: device.id,
           deviceName: device.deviceName || 'Peranti Tidak Dikenali',
+          deviceType: device.deviceType || 'unknown',
           setAsPrimary: true,
         }),
       },
@@ -71,6 +85,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: updatedDevice });
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Pengesahan gagal', details: error.errors },
+        { status: 400 }
+      );
+    }
     console.error('Error setting primary device:', error);
     return NextResponse.json(
       { success: false, error: 'Gagal menetapkan peranti utama' },

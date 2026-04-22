@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/dialog'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
+import { Progress } from '@/components/ui/progress'
 import {
   BarChart3,
   Wallet,
@@ -51,7 +52,16 @@ import {
   Bot,
   User,
   FileText,
+  AlertTriangle,
+  TrendingDown,
+  Target,
+  Globe,
+  RefreshCw,
+  BrainCircuit,
+  ChevronRight,
+  ShieldCheck,
 } from 'lucide-react'
+import { api } from '@/lib/api'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -77,6 +87,115 @@ interface CommLog {
   type: string
   notes: string
   date: string
+}
+
+interface AnalyticsCard {
+  type: string
+  title: string
+  description: string
+  icon: React.ReactNode
+  color: string
+  gradient: string
+}
+
+interface DonorChurnData {
+  summary: {
+    totalDonors: number
+    atRisk: number
+    lowRisk: number
+    moderateRisk: number
+    highRisk: number
+    churnRate: number
+  }
+  donors: Array<{
+    id: string
+    name: string
+    riskLevel: string
+    riskScore: number
+    lastDonation: string
+    averageAmount: number
+    frequency: string
+    tenureMonths: number
+    reason: string
+    recommendation: string
+  }>
+  insights: string[]
+}
+
+interface FraudData {
+  summary: {
+    totalDisbursements: number
+    flagged: number
+    reviewRequired: number
+    cleared: number
+    riskLevel: string
+  }
+  flaggedItems: Array<{
+    id: string
+    type: string
+    reference: string
+    amount: number
+    recipient: string
+    programme?: string
+    payee?: string
+    category?: string
+    donor?: string
+    method?: string
+    date: string
+    riskScore: number
+    anomalies: string[]
+    status: string
+    recommendedAction: string
+  }>
+  insights: string[]
+}
+
+interface ProgrammeEffectivenessData {
+  summary: {
+    averageScore: number
+    totalProgrammes: number
+    highlyEffective: number
+    effective: number
+    needsImprovement: number
+    totalBeneficiaries: number
+  }
+  programmes: Array<{
+    id: string
+    name: string
+    status: string
+    effectivenessScore: number
+    budgetUtilization: number
+    beneficiarySatisfaction: number
+    costPerBeneficiary: number
+    impactMetrics: Record<string, string>
+    strengths: string[]
+    improvements: string[]
+    trend: string
+    trendPercentage: number
+  }>
+  insights: string[]
+}
+
+interface SDGData {
+  summary: {
+    totalSDGsCovered: number
+    primarySDGs: number
+    secondarySDGs: number
+    alignmentScore: number
+  }
+  sdgs: Array<{
+    goalNumber: number
+    title: string
+    titleEn: string
+    color: string
+    alignmentLevel: string
+    alignmentScore: number
+    contribution: string
+    programmes: string[]
+    metrics: Array<{ name: string; value: string; target: string }>
+    initiatives: string[]
+  }>
+  insights: string[]
 }
 
 // ─── Mock Data ───────────────────────────────────────────────────────────────
@@ -113,23 +232,7 @@ const reportTypes: ReportType[] = [
 1. **Program AsnafCare** telah berjaya membantu **89 keluarga** di kawasan Hulu Klang
 2. **Kempen Ramadhan 2026** mengumpul **RM 125,000** - melebihi sasaran sebanyak 25%
 3. **Kelas Tilawah Dewasa** mencatatkan kehadiran purata **92%** setiap sesi
-4. **Program Mentoring Belia** melibatkan **34 orang** belia berusia 18-25 tahun
-
----
-
-## Cabaran Dikenal Pasti
-
-- Keperluan peningkatan sistem pengurusan data ahli
-- Perluasan liputan program ke kawasan Setapak dan Wangsa Maju
-- Pengurusan perbelanjaan operasi yang lebih cekap
-
----
-
-## Cadangan Tindakan
-
-- Melaksanakan sistem digital bersepadu menjelang Q3 2026
-- Menubuhkan cawangan di kawasan Setapak
-- Mengadakan program penjanaan pendapatan untuk asnaf`,
+4. **Program Mentoring Belia** melibatkan **34 orang** belia berusia 18-25 tahun`,
   },
   {
     id: 'finance',
@@ -151,32 +254,10 @@ const reportTypes: ReportType[] = [
 | └ Donasi Individu | 142,300 | 49.9% |
 | └ Derma Korporat | 89,200 | 31.2% |
 | └ Geran Kerajaan | 38,500 | 13.5% |
-| └ Pendapatan Lain | 15,450 | 5.4% |
 | **Perbelanjaan Jumlah** | **231,780** | 100% |
 | └ Bantuan Langsung (BMT) | 128,400 | 55.4% |
 | └ Program & Aktiviti | 52,300 | 22.6% |
-| └ Operasi & Pentadbiran | 38,080 | 16.4% |
-| └ Pembangunan | 13,000 | 5.6% |
-| **Baki Bersih** | **RM 53,670** | — |
-
----
-
-## Taburan Bantuan Mengikut Kategori
-
-- **Keperluan Asas (Makanan)**: RM 52,800 (41.1%)
-- **Pendidikan**: RM 34,200 (26.6%)
-- **Kesihatan**: RM 22,500 (17.5%)
-- **Perumahan**: RM 12,600 (9.8%)
-- **Keperluan Khas**: RM 6,300 (4.9%)
-
----
-
-## Analisis Trend
-
-- Pendapatan donasi meningkat **22%** berbanding suku tahun sebelumnya
-- Nisbah perbelanjaan program: **81.4%** (melebihi piawaian MBF 75%)
-- Baki wang tunai semasa: **RM 89,230**
-- Rizab kecemasan mencukupi untuk **3.2 bulan** operasi`,
+| **Baki Bersih** | **RM 53,670** | — |`,
   },
   {
     id: 'programme',
@@ -188,55 +269,11 @@ const reportTypes: ReportType[] = [
 
 ## Status Program Aktif — April 2026
 
----
-
-## Program Berjalan
-
-### 1. AsnafCare (Bantuan Makanan Bulanan)
-- **Status**: 🟢 Aktif
-- **Penerima**: 89 keluarga
-- **Anggaran Bulanan**: RM 18,200
-- **Kawasan**: Hulu Klang, Gombak, Ampang
-- **Penilaian**: 4.5/5.0
-
-### 2. Pusat Sunnah Preschool
-- **Status**: 🟢 Aktif
-- **Pelajar**: 24 kanak-kanak
-- **Anggaran Bulanan**: RM 8,500
-- **Kadar Kehadiran**: 94%
-- **Penilaian**: 4.8/5.0
-
-### 3. Kelas Tilawah Dewasa
-- **Status**: 🟢 Aktif
-- **Peserta**: 67 orang
-- **Sesi Seminggu**: 3 sesi
-- **Tahap Hafazan Purata**: 3 Juz
-- **Penilaian**: 4.3/5.0
-
-### 4. Mentoring Belia PUSPA
-- **Status**: 🟡 Sedang Berjalan
-- **Mentee**: 34 belia
-- **Mentor**: 12 sukarelawan
-- **Program Intensif**: Julai 2026
-- **Penilaian**: 4.0/5.0
-
-### 5. Klinik Kesihatan Komuniti
-- **Status**: 🟡 Pendekatan Rakan Strategik
-- **Rakan Kongsi**: Klinik Nurain
-- **Peserta Discaj**: 156 orang
-- **Sesi Bulanan**: 2 sesi
-- **Penilaian**: 4.2/5.0
-
----
-
-## Program Akan Datang
-
-| Program | Tarikh | Anggaran | Status |
-|---------|--------|----------|--------|
-| Kem Ibadah Remaja | 15 Jun 2026 | RM 12,000 | Perancangan |
-| Bazar Amal PUSPA | 20 Jul 2026 | RM 5,000 | Sokongan |
-| Program Back-to-School | 15 Ogos 2026 | RM 25,000 | Permohonan |
-| Waqaf Al-Quran | 1 Sept 2026 | RM 30,000 | kutipan dana |`,
+### 1. AsnafCare - 🟢 Aktif - 89 keluarga - Penilaian: 4.5/5.0
+### 2. Pusat Sunnah Preschool - 🟢 Aktif - 24 pelajar - Penilaian: 4.8/5.0
+### 3. Kelas Tilawah Dewasa - 🟢 Aktif - 67 peserta - Penilaian: 4.3/5.0
+### 4. Mentoring Belia PUSPA - 🟡 Sedang Berjalan - 34 belia - Penilaian: 4.0/5.0
+### 5. Klinik Kesihatan Komuniti - 🟡 Pendekatan Rakan Strategik - Penilaian: 4.2/5.0`,
   },
   {
     id: 'demographic',
@@ -246,10 +283,6 @@ const reportTypes: ReportType[] = [
     color: 'from-violet-500 to-purple-600',
     report: `# 👥 Demografi Ahli PUSPA
 
-## Analisis Demografi — April 2026
-
----
-
 ## Ringkasan Keahlian
 
 | Kategori | Bilangan | Peratus |
@@ -257,56 +290,50 @@ const reportTypes: ReportType[] = [
 | Jumlah Ahli Berdaftar | 342 | 100% |
 | Ahli Aktif | 287 | 83.9% |
 | Ahli Tidak Aktif | 55 | 16.1% |
-| Ahli Baru (2026) | 38 | 11.1% |
-
----
-
-## Taburan Mengikut Jantina
-
-- **Lelaki**: 148 orang (43.3%)
-- **Perempuan**: 194 orang (56.7%)
-
----
-
-## Taburan Mengikut Umur
-
-| Kumpulan Umur | Bilangan | Peratus |
-|---------------|----------|---------|
-| 18 - 25 tahun | 42 | 12.3% |
-| 26 - 35 tahun | 78 | 22.8% |
-| 36 - 45 tahun | 89 | 26.0% |
-| 46 - 55 tahun | 72 | 21.1% |
-| 56 tahun ke atas | 61 | 17.8% |
-
----
 
 ## Taburan Mengikut Lokasi
-
-| Kawasan | Bilangan | Peratus |
+| Kawasan | Bilangan | Percent |
 |---------|----------|---------|
 | Hulu Klang | 98 | 28.7% |
 | Gombak | 85 | 24.9% |
 | Ampang | 72 | 21.1% |
 | Setapak | 45 | 13.2% |
-| Wangsa Maju | 28 | 8.2% |
-| Lain-lain | 14 | 4.1% |
+| Wangsa Maju | 28 | 8.2% |`,
+  },
+]
 
----
-
-## Taburan Mengikut Kategori Ahli
-
-- **Ahli Biasa**: 198 (57.9%)
-- **Ahli Sukarelawan**: 87 (25.4%)
-- **Ahli Penderma Tetap**: 42 (12.3%)
-- **Ahli Sejahtera (BMT)**: 15 (4.4%)
-
----
-
-## Statistik Menarik
-
-- Purata tempoh keahlian: **2.3 tahun**
-- Kadar pengekalan ahli: **89.2%**
-- Ahli dengan sumbangan aktif: **67%**`,
+const analyticsCards: AnalyticsCard[] = [
+  {
+    type: 'donor_churn',
+    title: 'Ramalan Perpindahan Penderma',
+    description: 'Kenal pasti penderma berisiko tinggi untuk berhenti menderma',
+    icon: <TrendingDown className="h-6 w-6" />,
+    color: 'text-rose-600',
+    gradient: 'from-rose-500 to-orange-500',
+  },
+  {
+    type: 'fraud_detection',
+    title: 'Pengesanan Penipuan',
+    description: 'Kesan anomali dan transaksi mencurigakan secara automatik',
+    icon: <ShieldCheck className="h-6 w-6" />,
+    color: 'text-amber-600',
+    gradient: 'from-amber-500 to-yellow-500',
+  },
+  {
+    type: 'programme_effectiveness',
+    title: 'Keberkesanan Program',
+    description: 'Nilaikan prestasi dan impak setiap program PUSPA',
+    icon: <Target className="h-6 w-6" />,
+    color: 'text-emerald-600',
+    gradient: 'from-emerald-500 to-teal-500',
+  },
+  {
+    type: 'sdg_alignment',
+    title: 'Penjajaran SDG',
+    description: 'Pemetaan sumbangan PUSPA terhadap Matlamat Pembangunan Mampan',
+    icon: <Globe className="h-6 w-6" />,
+    color: 'text-sky-600',
+    gradient: 'from-sky-500 to-cyan-500',
   },
 ]
 
@@ -318,19 +345,6 @@ const initialMessages: ChatMessage[] = [
       'Assalamualaikum! Saya pembantu AI PUSPA. Bagaimana saya boleh membantu anda hari ini?',
     timestamp: new Date(Date.now() - 120000),
   },
-  {
-    id: '2',
-    role: 'user',
-    content: 'Berapakah jumlah ahli asnaf yang aktif?',
-    timestamp: new Date(Date.now() - 60000),
-  },
-  {
-    id: '3',
-    role: 'ai',
-    content:
-      'Berdasarkan data semasa, terdapat **127 ahli asnaf aktif** yang berdaftar dalam sistem PUSPA. Daripada jumlah tersebut, 45 adalah dari kawasan Hulu Klang, 38 dari Gombak, dan 44 dari Ampang dan kawasan sekitarnya.',
-    timestamp: new Date(Date.now() - 30000),
-  },
 ]
 
 const quickQuestions = [
@@ -339,17 +353,6 @@ const quickQuestions = [
   'Berapakah jumlah donasi bulan ini?',
   'Siapakah penerima bantuan terbesar?',
 ]
-
-const aiResponses: Record<string, string> = {
-  'Berapakah jumlah ahli aktif?':
-    'Berdasarkan rekod terkini, PUSPA mempunyai **287 ahli aktif** daripada jumlah 342 ahli berdaftar. Ini mewakili kadar penglibatan sebanyak **83.9%**. Penambahan 12 ahli baru dicatatkan pada bulan ini, dengan majoriti dari kawasan Hulu Klang dan Gombak.',
-  'Senaraikan program yang aktif':
-    'Pada masa ini, PUSPA mempunyai **5 program aktif**:\n\n1. **AsnafCare** — Bantuan makanan bulanan untuk 89 keluarga\n2. **Pusat Sunnah Preschool** — 24 pelajar prasekolah\n3. **Kelas Tilawah Dewasa** — 67 peserta aktif\n4. **Mentoring Belia PUSPA** — 34 belia dan 12 mentor\n5. **Klinik Kesihatan Komuniti** — Rakan strategik dengan Klinik Nurain',
-  'Berapakah jumlah donasi bulan ini?':
-    'Jumlah donasi yang dikutip pada bulan ini ialah **RM 45,230**. Taburan:\n\n- Donasi individu: RM 28,500 (63.0%)\n- Derma korporat: RM 12,100 (26.7%)\n- Derma online: RM 3,400 (7.5%)\n- Lain-lain: RM 1,230 (2.7%)\n\nTerima kasih kepada **89 penderma** yang menyumbang bulan ini. 🎉',
-  'Siapakah penerima bantuan terbesar?':
-    'Penerima bantuan terbesar bagi suku tahun ini ialah **Program AsnafCare** dengan jumlah peruntukan sebanyak **RM 52,800**. Program ini memberikan bantuan makanan bulanan kepada **89 keluarga asnaf** di tiga kawasan utama. Purata bantuan per keluarga ialah **RM 593 sebulan**.',
-}
 
 const initialCommLogs: CommLog[] = [
   {
@@ -378,7 +381,6 @@ const initialCommLogs: CommLog[] = [
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 function formatMarkdown(text: string) {
-  // Very simple markdown renderer for display
   return text
     .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold mt-4 mb-1">$1</h3>')
     .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold mt-5 mb-2">$1</h2>')
@@ -389,6 +391,41 @@ function formatMarkdown(text: string) {
     .replace(/\n\n/g, '<br/><br/>')
     .replace(/\n/g, '<br/>')
     .replace(/^---$/gm, '<hr class="my-4 border-muted" />')
+}
+
+function getRiskBadge(level: string) {
+  const map: Record<string, { color: string; label: string }> = {
+    TINGGI: { color: 'bg-red-100 text-red-700 border-red-200', label: 'Tinggi' },
+    SEDERHANA: { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Sederhana' },
+    SEDANG: { color: 'bg-amber-100 text-amber-700 border-amber-200', label: 'Sederhana' },
+    RENDAH: { color: 'bg-emerald-100 text-emerald-700 border-emerald-200', label: 'Rendah' },
+  }
+  const info = map[level] || { color: 'bg-slate-100 text-slate-600 border-slate-200', label: level }
+  return <Badge variant="outline" className={info.color}>{info.label}</Badge>
+}
+
+function getStatusBadge(status: string) {
+  const s = status.toUpperCase()
+  if (s.includes('SEMERAH') || s.includes('BERSIH')) {
+    return <Badge className="bg-emerald-100 text-emerald-700 border-0">Sudah Bersih</Badge>
+  }
+  if (s.includes('SEMAKAN')) {
+    return <Badge className="bg-amber-100 text-amber-700 border-0">Menunggu Semakan</Badge>
+  }
+  return <Badge variant="outline">{status}</Badge>
+}
+
+function getTrendIcon(trend: string) {
+  if (trend === 'meningkat') return <span className="text-emerald-600 font-medium">↑ Meningkat</span>
+  if (trend === 'menurun') return <span className="text-red-600 font-medium">↓ Menurun</span>
+  return <span className="text-slate-500 font-medium">→ Stabil</span>
+}
+
+function getScoreColor(score: number) {
+  if (score >= 4.5) return 'text-emerald-600'
+  if (score >= 4.0) return 'text-teal-600'
+  if (score >= 3.5) return 'text-amber-600'
+  return 'text-red-600'
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────────
@@ -405,12 +442,19 @@ export default function AIToolsPage() {
   const [isGeneratingCustom, setIsGeneratingCustom] = useState(false)
   const [copied, setCopied] = useState(false)
 
-  // Chat state
+  // Chat state (connected to backend)
   const [messages, setMessages] = useState<ChatMessage[]>(initialMessages)
   const [chatInput, setChatInput] = useState('')
   const [isChatSending, setIsChatSending] = useState(false)
   const [isListening, setIsListening] = useState(false)
+  const [chatContext, setChatContext] = useState('')
   const chatEndRef = useRef<HTMLDivElement>(null)
+
+  // Analytics state
+  const [selectedAnalytics, setSelectedAnalytics] = useState<string | null>(null)
+  const [analyticsData, setAnalyticsData] = useState<DonorChurnData | FraudData | ProgrammeEffectivenessData | SDGData | null>(null)
+  const [analyticsLoading, setAnalyticsLoading] = useState(false)
+  const [analyticsError, setAnalyticsError] = useState('')
 
   // Member tools state
   const [icInput, setIcInput] = useState('')
@@ -492,10 +536,11 @@ export default function AIToolsPage() {
     }, 3000)
   }, [customPrompt])
 
+  // ── Real AI Chat via backend ──
   const handleSendChat = useCallback(
-    (text?: string) => {
+    async (text?: string) => {
       const messageText = text || chatInput.trim()
-      if (!messageText) return
+      if (!messageText || isChatSending) return
 
       const userMsg: ChatMessage = {
         id: `u-${Date.now()}`,
@@ -507,21 +552,32 @@ export default function AIToolsPage() {
       setChatInput('')
       setIsChatSending(true)
 
-      setTimeout(() => {
-        const matchedResponse = aiResponses[messageText]
+      try {
+        const response = await api.post<{ response: string; tokens: { input: number; output: number; total: number } }>(
+          '/ai/chat',
+          { message: messageText, context: chatContext || undefined }
+        )
+
         const aiMsg: ChatMessage = {
           id: `a-${Date.now()}`,
           role: 'ai',
-          content:
-            matchedResponse ||
-            `Terima kasih atas soalan anda. Saya akan menganalisis data yang berkaitan dan kembali kepada anda dengan maklumat yang terperinci. Sila hubungi pentadbir PUSPA jika anda memerlukan maklumat segera.\n\n_Soalan anda: "${messageText}"_ telah direkodkan dalam sistem.`,
+          content: response.response,
           timestamp: new Date(),
         }
         setMessages((prev) => [...prev, aiMsg])
+      } catch {
+        const aiMsg: ChatMessage = {
+          id: `a-${Date.now()}`,
+          role: 'ai',
+          content: 'Maaf, saya mengalami masalah teknikal. Sila cuba lagi dalam beberapa saat. Jika masalah berterusan, hubungi pentadbir sistem.',
+          timestamp: new Date(),
+        }
+        setMessages((prev) => [...prev, aiMsg])
+      } finally {
         setIsChatSending(false)
-      }, 1500)
+      }
     },
-    [chatInput]
+    [chatInput, chatContext, isChatSending]
   )
 
   const handleQuickQuestion = useCallback(
@@ -534,7 +590,6 @@ export default function AIToolsPage() {
   const handleMicToggle = useCallback(() => {
     setIsListening((prev) => {
       if (!prev) {
-        // Mock: start listening
         setTimeout(() => {
           setIsListening(false)
           setChatInput('Berapakah jumlah program yang aktif?')
@@ -543,6 +598,422 @@ export default function AIToolsPage() {
       return !prev
     })
   }, [])
+
+  // ── Analytics Fetcher ──
+  const fetchAnalytics = useCallback(async (type: string) => {
+    setSelectedAnalytics(type)
+    setAnalyticsData(null)
+    setAnalyticsError('')
+    setAnalyticsLoading(true)
+
+    try {
+      const data = await api.get<DonorChurnData | FraudData | ProgrammeEffectivenessData | SDGData>(
+        '/ai/analytics',
+        { type }
+      )
+      setAnalyticsData(data)
+    } catch {
+      setAnalyticsError('Gagal menjana analitik. Sila cuba lagi.')
+    } finally {
+      setAnalyticsLoading(false)
+    }
+  }, [])
+
+  // ── Render Analytics Detail ──
+  const renderAnalyticsDetail = () => {
+    if (analyticsLoading) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 space-y-4">
+          <BrainCircuit className="h-12 w-12 text-violet-500 animate-pulse" />
+          <p className="text-sm text-slate-500 animate-pulse">AI sedang menganalisis data...</p>
+        </div>
+      )
+    }
+
+    if (analyticsError) {
+      return (
+        <div className="flex flex-col items-center justify-center py-16 space-y-4">
+          <AlertTriangle className="h-12 w-12 text-red-400" />
+          <p className="text-sm text-red-500">{analyticsError}</p>
+          <Button variant="outline" size="sm" onClick={() => selectedAnalytics && fetchAnalytics(selectedAnalytics)}>
+            <RefreshCw className="h-4 w-4 mr-2" /> Cuba Semula
+          </Button>
+        </div>
+      )
+    }
+
+    if (!analyticsData) return null
+
+    if (selectedAnalytics === 'donor_churn') {
+      const data = analyticsData as DonorChurnData
+      const s = data.summary
+      return (
+        <div className="space-y-6">
+          {/* Summary */}
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {[
+              { label: 'Jumlah Penderma', value: s.totalDonors, color: 'text-slate-700' },
+              { label: 'Berisiko', value: s.atRisk, color: 'text-red-600' },
+              { label: 'Risiko Rendah', value: s.lowRisk, color: 'text-amber-600' },
+              { label: 'Risiko Sederhana', value: s.moderateRisk, color: 'text-orange-600' },
+              { label: 'Risiko Tinggi', value: s.highRisk, color: 'text-red-700' },
+            ].map((item) => (
+              <div key={item.label} className="bg-slate-50 rounded-lg p-3 text-center">
+                <p className="text-2xl font-bold">{item.value}</p>
+                <p className="text-xs text-muted-foreground">{item.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <div className="bg-rose-50 rounded-lg p-4">
+            <p className="text-sm text-rose-700">
+              <strong>Kadar Perpindahan:</strong> {s.churnRate}% — {s.churnRate > 10 ? 'Melebihi sasaran 10%. Tindakan segera diperlukan.' : 'Dalam had yang boleh diterima.'}
+            </p>
+          </div>
+
+          {/* Donor List */}
+          <ScrollArea className="max-h-[400px]">
+            <div className="space-y-3">
+              {data.donors.map((d) => (
+                <Card key={d.id} className="border shadow-none">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-medium text-sm">{d.name}</h4>
+                          {getRiskBadge(d.riskLevel)}
+                          <Badge variant="outline" className="text-xs">
+                            Skor: {d.riskScore}/100
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                          <span>Purata: RM {d.averageAmount}</span>
+                          <span>{d.frequency}</span>
+                          <span>{d.tenureMonths} bulan</span>
+                          <span>Terakhir: {d.lastDonation}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">{d.reason}</p>
+                        <div className="mt-2 px-3 py-2 bg-violet-50 rounded-md">
+                          <p className="text-xs text-violet-700"><strong>Cadangan:</strong> {d.recommendation}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+
+          {/* Insights */}
+          <Card className="bg-slate-50 border-0">
+            <CardContent className="p-4">
+              <h4 className="text-sm font-semibold mb-2">💡 Wawasan AI</h4>
+              <ul className="space-y-1.5">
+                {data.insights.map((insight, i) => (
+                  <li key={i} className="text-xs text-slate-600 flex gap-2">
+                    <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 text-violet-500" />
+                    {insight}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
+    if (selectedAnalytics === 'fraud_detection') {
+      const data = analyticsData as FraudData
+      const s = data.summary
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Jumlah Transaksi', value: s.totalDisbursements },
+              { label: 'Ditanda', value: s.flagged, color: 'text-red-600' },
+              { label: 'Perlu Semakan', value: s.reviewRequired, color: 'text-amber-600' },
+              { label: 'Sudah Bersih', value: s.cleared, color: 'text-emerald-600' },
+            ].map((item) => (
+              <div key={item.label} className="bg-slate-50 rounded-lg p-3 text-center">
+                <p className={`text-2xl font-bold ${item.color || ''}`}>{item.value}</p>
+                <p className="text-xs text-muted-foreground">{item.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <ScrollArea className="max-h-[400px]">
+            <div className="space-y-3">
+              {data.flaggedItems.map((item) => (
+                <Card key={item.id} className="border shadow-none">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-medium text-sm">{item.reference}</h4>
+                          {getStatusBadge(item.status)}
+                          <Badge variant="outline" className="text-xs">Skor: {item.riskScore}/100</Badge>
+                        </div>
+                        <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground">
+                          <span>{item.type}</span>
+                          <span className="font-semibold text-slate-700">RM {item.amount.toLocaleString()}</span>
+                          <span>{item.recipient || item.payee || item.donor}</span>
+                          <span>{item.date}</span>
+                        </div>
+                        <div className="mt-2">
+                          <p className="text-xs font-medium text-amber-700 mb-1">Anomali dikesan:</p>
+                          <ul className="space-y-0.5">
+                            {item.anomalies.map((a, i) => (
+                              <li key={i} className="text-xs text-slate-600 flex gap-1.5">
+                                <AlertTriangle className="h-3 w-3 mt-0.5 shrink-0 text-amber-500" />
+                                {a}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                        <div className="mt-2 px-3 py-2 bg-violet-50 rounded-md">
+                          <p className="text-xs text-violet-700"><strong>Tindakan:</strong> {item.recommendedAction}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <Card className="bg-slate-50 border-0">
+            <CardContent className="p-4">
+              <h4 className="text-sm font-semibold mb-2">💡 Wawasan AI</h4>
+              <ul className="space-y-1.5">
+                {data.insights.map((insight, i) => (
+                  <li key={i} className="text-xs text-slate-600 flex gap-2">
+                    <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 text-violet-500" />
+                    {insight}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
+    if (selectedAnalytics === 'programme_effectiveness') {
+      const data = analyticsData as ProgrammeEffectivenessData
+      const s = data.summary
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+            {[
+              { label: 'Skor Purata', value: s.averageScore.toFixed(1), color: 'text-violet-600' },
+              { label: 'Jumlah Program', value: s.totalProgrammes },
+              { label: 'Sangat Berkesan', value: s.highlyEffective, color: 'text-emerald-600' },
+              { label: 'Berkesan', value: s.effective, color: 'text-teal-600' },
+              { label: 'Perlu Peningkatan', value: s.needsImprovement, color: 'text-amber-600' },
+            ].map((item) => (
+              <div key={item.label} className="bg-slate-50 rounded-lg p-3 text-center">
+                <p className={`text-2xl font-bold ${item.color || ''}`}>{item.value}</p>
+                <p className="text-xs text-muted-foreground">{item.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <ScrollArea className="max-h-[500px]">
+            <div className="space-y-4">
+              {data.programmes.map((prog) => (
+                <Card key={prog.id} className="border shadow-none">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h4 className="font-medium text-sm">{prog.name}</h4>
+                          <Badge variant="outline" className="text-xs">{prog.status}</Badge>
+                        </div>
+                        <div className="flex items-center gap-1 mt-1 text-xs">
+                          {getTrendIcon(prog.trend)}
+                          <span className="text-muted-foreground ml-1">({prog.trendPercentage > 0 ? '+' : ''}{prog.trendPercentage}%)</span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-2xl font-bold ${getScoreColor(prog.effectivenessScore)}`}>
+                          {prog.effectivenessScore}
+                        </p>
+                        <p className="text-[10px] text-muted-foreground">/5.0</p>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="text-center bg-slate-50 rounded-lg p-2">
+                        <p className="text-lg font-bold text-slate-700">{prog.budgetUtilization}%</p>
+                        <p className="text-[10px] text-muted-foreground">Utilisasi Belanjawan</p>
+                      </div>
+                      <div className="text-center bg-slate-50 rounded-lg p-2">
+                        <p className="text-lg font-bold text-slate-700">{prog.beneficiarySatisfaction}%</p>
+                        <p className="text-[10px] text-muted-foreground">Kepuasan</p>
+                      </div>
+                      <div className="text-center bg-slate-50 rounded-lg p-2">
+                        <p className="text-lg font-bold text-slate-700">RM {prog.costPerBeneficiary}</p>
+                        <p className="text-[10px] text-muted-foreground">Kos/Penerima</p>
+                      </div>
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-medium text-slate-700 mb-1">Metrik Impak:</p>
+                      <div className="grid grid-cols-2 gap-1">
+                        {Object.entries(prog.impactMetrics).map(([key, val]) => (
+                          <div key={key} className="flex justify-between text-xs bg-slate-50 rounded px-2 py-1">
+                            <span className="text-muted-foreground">{key}</span>
+                            <span className="font-medium">{val}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <div className="bg-emerald-50 rounded-lg p-2">
+                        <p className="text-xs font-medium text-emerald-700 mb-1">Kekuatan:</p>
+                        {prog.strengths.map((str, i) => (
+                          <p key={i} className="text-xs text-emerald-600 flex gap-1"><Check className="h-3 w-3 mt-0.5 shrink-0" />{str}</p>
+                        ))}
+                      </div>
+                      <div className="bg-amber-50 rounded-lg p-2">
+                        <p className="text-xs font-medium text-amber-700 mb-1">Penambahbaikan:</p>
+                        {prog.improvements.map((imp, i) => (
+                          <p key={i} className="text-xs text-amber-600 flex gap-1"><ChevronRight className="h-3 w-3 mt-0.5 shrink-0" />{imp}</p>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <Card className="bg-slate-50 border-0">
+            <CardContent className="p-4">
+              <h4 className="text-sm font-semibold mb-2">💡 Wawasan AI</h4>
+              <ul className="space-y-1.5">
+                {data.insights.map((insight, i) => (
+                  <li key={i} className="text-xs text-slate-600 flex gap-2">
+                    <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 text-violet-500" />
+                    {insight}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
+    if (selectedAnalytics === 'sdg_alignment') {
+      const data = analyticsData as SDGData
+      const s = data.summary
+      return (
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'SDG Diliputi', value: s.totalSDGsCovered, color: 'text-sky-600' },
+              { label: 'SDG Utama', value: s.primarySDGs, color: 'text-violet-600' },
+              { label: 'SDG Sekunder', value: s.secondarySDGs, color: 'text-teal-600' },
+              { label: 'Skor Penjajaran', value: `${s.alignmentScore}%`, color: 'text-emerald-600' },
+            ].map((item) => (
+              <div key={item.label} className="bg-slate-50 rounded-lg p-3 text-center">
+                <p className={`text-2xl font-bold ${item.color || ''}`}>{item.value}</p>
+                <p className="text-xs text-muted-foreground">{item.label}</p>
+              </div>
+            ))}
+          </div>
+
+          <ScrollArea className="max-h-[500px]">
+            <div className="space-y-3">
+              {data.sdgs.map((sdg) => (
+                <Card key={sdg.goalNumber} className="border shadow-none overflow-hidden">
+                  <CardContent className="p-4 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div
+                        className="h-12 w-12 rounded-lg flex items-center justify-center text-white font-bold text-lg shrink-0"
+                        style={{ backgroundColor: sdg.color }}
+                      >
+                        {sdg.goalNumber}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-medium text-sm">{sdg.title}</h4>
+                          <Badge
+                            className={sdg.alignmentLevel === 'UTAMA' ? 'bg-violet-100 text-violet-700 border-0' : 'bg-slate-100 text-slate-600 border-0'}
+                          >
+                            {sdg.alignmentLevel}
+                          </Badge>
+                          <Badge variant="outline" className="text-xs">Skor: {sdg.alignmentScore}%</Badge>
+                        </div>
+                        <p className="text-xs text-muted-foreground">{sdg.titleEn}</p>
+                      </div>
+                    </div>
+
+                    <Progress value={sdg.alignmentScore} className="h-2" />
+
+                    <p className="text-xs text-slate-600">{sdg.contribution}</p>
+
+                    <div className="flex flex-wrap gap-1">
+                      {sdg.programmes.map((p) => (
+                        <Badge key={p} variant="secondary" className="text-[10px]">{p}</Badge>
+                      ))}
+                    </div>
+
+                    <div>
+                      <p className="text-xs font-medium text-slate-700 mb-1.5">Metrik:</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                        {sdg.metrics.map((m) => (
+                          <div key={m.name} className="bg-slate-50 rounded-lg p-2">
+                            <p className="text-xs font-medium text-slate-700">{m.name}</p>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <span className="text-sm font-bold">{m.value}</span>
+                              <span className="text-[10px] text-muted-foreground">/ {m.target}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <details className="group">
+                      <summary className="text-xs text-violet-600 cursor-pointer font-medium hover:text-violet-800">
+                        Lihat inisiatif dan cadangan
+                      </summary>
+                      <ul className="mt-2 space-y-1">
+                        {sdg.initiatives.map((init, i) => (
+                          <li key={i} className="text-xs text-slate-600 flex gap-1.5">
+                            <Check className="h-3 w-3 mt-0.5 shrink-0 text-emerald-500" />
+                            {init}
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <Card className="bg-slate-50 border-0">
+            <CardContent className="p-4">
+              <h4 className="text-sm font-semibold mb-2">💡 Wawasan AI</h4>
+              <ul className="space-y-1.5">
+                {data.insights.map((insight, i) => (
+                  <li key={i} className="text-xs text-slate-600 flex gap-2">
+                    <ChevronRight className="h-3 w-3 mt-0.5 shrink-0 text-violet-500" />
+                    {insight}
+                  </li>
+                ))}
+              </ul>
+            </CardContent>
+          </Card>
+        </div>
+      )
+    }
+
+    return null
+  }
 
   // ── Eligibility Check ──
   const handleCheckEligibility = useCallback(() => {
@@ -671,28 +1142,35 @@ export default function AIToolsPage() {
           onValueChange={setActiveTab}
           className="w-full"
         >
-          {/* Sub-navigation Tabs */}
-          <TabsList className="w-full grid grid-cols-3 mb-6 h-auto p-1 bg-slate-100 rounded-xl">
+          {/* Sub-navigation Tabs — 4 tabs now */}
+          <TabsList className="w-full grid grid-cols-4 mb-6 h-auto p-1 bg-slate-100 rounded-xl">
             <TabsTrigger
               value="laporan"
               className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 transition-all"
             >
-              <FileText className="h-4 w-4 mr-2 hidden sm:inline-block" />
-              Laporan AI
+              <FileText className="h-4 w-4 mr-1.5 hidden sm:inline-block" />
+              <span className="text-xs sm:text-sm">Laporan</span>
             </TabsTrigger>
             <TabsTrigger
               value="sembang"
               className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 transition-all"
             >
-              <MessageSquare className="h-4 w-4 mr-2 hidden sm:inline-block" />
-              Sembang AI
+              <MessageSquare className="h-4 w-4 mr-1.5 hidden sm:inline-block" />
+              <span className="text-xs sm:text-sm">Sembang</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="analitik"
+              className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 transition-all"
+            >
+              <BrainCircuit className="h-4 w-4 mr-1.5 hidden sm:inline-block" />
+              <span className="text-xs sm:text-sm">Analitik AI</span>
             </TabsTrigger>
             <TabsTrigger
               value="alat"
               className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 transition-all"
             >
-              <Search className="h-4 w-4 mr-2 hidden sm:inline-block" />
-              Alat Ahli
+              <Search className="h-4 w-4 mr-1.5 hidden sm:inline-block" />
+              <span className="text-xs sm:text-sm">Alat Ahli</span>
             </TabsTrigger>
           </TabsList>
 
@@ -700,7 +1178,6 @@ export default function AIToolsPage() {
           {/* TAB 1: LAPORAN AI                                                   */}
           {/* ════════════════════════════════════════════════════════════════════ */}
           <TabsContent value="laporan" className="space-y-8">
-            {/* Report Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {reportTypes.map((report) => (
                 <Card
@@ -745,7 +1222,6 @@ export default function AIToolsPage() {
               ))}
             </div>
 
-            {/* Custom Prompt Section */}
             <Card className="border-0 bg-white shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
@@ -753,8 +1229,7 @@ export default function AIToolsPage() {
                   Prompt Tersuai
                 </CardTitle>
                 <CardDescription>
-                  Masukkan soalan atau pertanyaan anda untuk menjana laporan
-                  khas
+                  Masukkan soalan atau pertanyaan anda untuk menjana laporan khas
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -770,21 +1245,13 @@ export default function AIToolsPage() {
                   </p>
                   <Button
                     onClick={handleCustomGenerate}
-                    disabled={
-                      !customPrompt.trim() || isGeneratingCustom
-                    }
+                    disabled={!customPrompt.trim() || isGeneratingCustom}
                     className="bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-700 hover:to-purple-800 text-white shadow-md shadow-purple-200"
                   >
                     {isGeneratingCustom ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Menjana...
-                      </>
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Menjana...</>
                     ) : (
-                      <>
-                        <Sparkles className="h-4 w-4 mr-2" />
-                        Jana Laporan
-                      </>
+                      <><Sparkles className="h-4 w-4 mr-2" />Jana Laporan</>
                     )}
                   </Button>
                 </div>
@@ -794,9 +1261,7 @@ export default function AIToolsPage() {
                     <div className="h-3 w-3 rounded-full bg-violet-500 animate-bounce [animation-delay:0ms]" />
                     <div className="h-3 w-3 rounded-full bg-purple-500 animate-bounce [animation-delay:150ms]" />
                     <div className="h-3 w-3 rounded-full bg-fuchsia-500 animate-bounce [animation-delay:300ms]" />
-                    <span className="text-sm text-slate-500 ml-2">
-                      AI sedang menganalisis data...
-                    </span>
+                    <span className="text-sm text-slate-500 ml-2">AI sedang menganalisis data...</span>
                   </div>
                 )}
 
@@ -804,40 +1269,22 @@ export default function AIToolsPage() {
                   <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-6">
                     <div
                       className="prose prose-sm max-w-none text-slate-700"
-                      dangerouslySetInnerHTML={{
-                        __html: formatMarkdown(customResponse),
-                      }}
+                      dangerouslySetInnerHTML={{ __html: formatMarkdown(customResponse) }}
                     />
                     <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={async () => {
-                          await navigator.clipboard.writeText(customResponse)
-                        }}
-                        className="text-xs"
-                      >
-                        <Copy className="h-3 w-3 mr-1" />
-                        Salin
+                      <Button variant="outline" size="sm" onClick={async () => { await navigator.clipboard.writeText(customResponse) }} className="text-xs">
+                        <Copy className="h-3 w-3 mr-1" />Salin
                       </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          const blob = new Blob([customResponse], {
-                            type: 'text/markdown',
-                          })
-                          const url = URL.createObjectURL(blob)
-                          const a = document.createElement('a')
-                          a.href = url
-                          a.download = 'laporan-tersuai-puspa.md'
-                          a.click()
-                          URL.revokeObjectURL(url)
-                        }}
-                        className="text-xs"
-                      >
-                        <Download className="h-3 w-3 mr-1" />
-                        Muat Turun
+                      <Button variant="outline" size="sm" onClick={() => {
+                        const blob = new Blob([customResponse], { type: 'text/markdown' })
+                        const url = URL.createObjectURL(blob)
+                        const a = document.createElement('a')
+                        a.href = url
+                        a.download = 'laporan-tersuai-puspa.md'
+                        a.click()
+                        URL.revokeObjectURL(url)
+                      }} className="text-xs">
+                        <Download className="h-3 w-3 mr-1" />Muat Turun
                       </Button>
                     </div>
                   </div>
@@ -847,7 +1294,7 @@ export default function AIToolsPage() {
           </TabsContent>
 
           {/* ════════════════════════════════════════════════════════════════════ */}
-          {/* TAB 2: SEMBANG AI                                                   */}
+          {/* TAB 2: SEMBANG AI (Connected to backend)                             */}
           {/* ════════════════════════════════════════════════════════════════════ */}
           <TabsContent value="sembang">
             <Card className="border-0 bg-white shadow-sm overflow-hidden flex flex-col">
@@ -856,19 +1303,42 @@ export default function AIToolsPage() {
                   <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
                     <Bot className="h-5 w-5 text-white" />
                   </div>
-                  <div>
+                  <div className="flex-1">
                     <CardTitle className="text-white">
                       Pembantu AI PUSPA
                     </CardTitle>
                     <CardDescription className="text-violet-200">
-                      Sedia membantu anda 24/7
+                      Disambungkan ke AI — Sedia membantu anda 24/7
                     </CardDescription>
                   </div>
+                  <Badge className="bg-emerald-500/20 text-emerald-100 border-emerald-400/30">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 mr-1.5 inline-block animate-pulse" />
+                    Dalam Talian
+                  </Badge>
                 </div>
               </CardHeader>
 
+              {/* Context selector */}
+              <div className="px-4 pt-3 pb-2 border-b bg-slate-50">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-muted-foreground whitespace-nowrap">Konteks:</Label>
+                  <Select value={chatContext} onValueChange={setChatContext}>
+                    <SelectTrigger className="h-8 text-xs w-full">
+                      <SelectValue placeholder="Pilih konteks..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tiada konteks khas</SelectItem>
+                      <SelectItem value="kewangan">Data Kewangan</SelectItem>
+                      <SelectItem value="ahli">Data Ahli & Keahlian</SelectItem>
+                      <SelectItem value="program">Data Program</SelectItem>
+                      <SelectItem value="derma">Data Derma & Penderma</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
               {/* Quick Questions */}
-              <div className="px-4 pt-4 pb-2 border-b">
+              <div className="px-4 pt-3 pb-2 border-b">
                 <p className="text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
                   Soalan Pantas
                 </p>
@@ -880,6 +1350,7 @@ export default function AIToolsPage() {
                       size="sm"
                       className="text-xs border-violet-200 text-violet-700 hover:bg-violet-50 hover:border-violet-300"
                       onClick={() => handleQuickQuestion(q)}
+                      disabled={isChatSending}
                     >
                       {q}
                     </Button>
@@ -894,9 +1365,7 @@ export default function AIToolsPage() {
                     {messages.map((msg) => (
                       <div
                         key={msg.id}
-                        className={`flex gap-3 ${
-                          msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-                        }`}
+                        className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
                       >
                         <Avatar
                           className={`h-8 w-8 shrink-0 ${
@@ -912,11 +1381,7 @@ export default function AIToolsPage() {
                                 : 'text-white text-xs'
                             }
                           >
-                            {msg.role === 'user' ? (
-                              <User className="h-4 w-4" />
-                            ) : (
-                              <Sparkles className="h-4 w-4" />
-                            )}
+                            {msg.role === 'user' ? <User className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
                           </AvatarFallback>
                         </Avatar>
                         <div
@@ -926,16 +1391,10 @@ export default function AIToolsPage() {
                               : 'bg-slate-100 text-slate-800 rounded-tl-sm'
                           }`}
                         >
-                          <div
-                            dangerouslySetInnerHTML={{
-                              __html: formatMarkdown(msg.content),
-                            }}
-                          />
+                          <div dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
                           <p
                             className={`text-[10px] mt-2 ${
-                              msg.role === 'user'
-                                ? 'text-violet-200'
-                                : 'text-slate-400'
+                              msg.role === 'user' ? 'text-violet-200' : 'text-slate-400'
                             }`}
                           >
                             {msg.timestamp.toLocaleTimeString('ms-MY', {
@@ -991,6 +1450,7 @@ export default function AIToolsPage() {
                         handleSendChat()
                       }
                     }}
+                    disabled={isChatSending}
                   />
                   <Button
                     size="icon"
@@ -1003,7 +1463,7 @@ export default function AIToolsPage() {
                 </div>
                 {isListening && (
                   <p className="text-xs text-red-500 text-center mt-2 animate-pulse">
-                    🎤 Mendengar... sila bercakap sekarang
+                    Mendengar... sila bercakap sekarang
                   </p>
                 )}
               </div>
@@ -1011,7 +1471,99 @@ export default function AIToolsPage() {
           </TabsContent>
 
           {/* ════════════════════════════════════════════════════════════════════ */}
-          {/* TAB 3: ALAT AHLI                                                    */}
+          {/* TAB 3: ANALITIK AI (NEW)                                             */}
+          {/* ════════════════════════════════════════════════════════════════════ */}
+          <TabsContent value="analitik" className="space-y-6">
+            {!selectedAnalytics ? (
+              <>
+                <div className="text-center mb-6">
+                  <h2 className="text-xl font-bold text-slate-900">Analitik AI PUSPA</h2>
+                  <p className="text-sm text-slate-500 mt-1">
+                    Dikuasakan oleh kecerdasan buatan untuk wawasan yang lebih mendalam
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {analyticsCards.map((card) => (
+                    <Card
+                      key={card.type}
+                      className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 bg-white overflow-hidden"
+                      onClick={() => fetchAnalytics(card.type)}
+                    >
+                      <div
+                        className={`h-2 bg-gradient-to-r ${card.gradient} opacity-80 group-hover:opacity-100 transition-opacity`}
+                      />
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between">
+                          <div
+                            className={`p-3 rounded-xl bg-gradient-to-br ${card.gradient} text-white shadow-lg`}
+                          >
+                            {card.icon}
+                          </div>
+                          <Badge variant="secondary" className="bg-violet-50 text-violet-700 border-0">
+                            AI
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-lg mt-3 text-slate-900">
+                          {card.title}
+                        </CardTitle>
+                        <CardDescription className="text-slate-500">
+                          {card.description}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-0">
+                        <Button
+                          variant="outline"
+                          className="w-full border-violet-200 text-violet-700 hover:bg-violet-50 hover:border-violet-300 group-hover:bg-violet-50 transition-colors"
+                        >
+                          <BrainCircuit className="h-4 w-4 mr-2" />
+                          Mula Analisis
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mb-4"
+                  onClick={() => {
+                    setSelectedAnalytics(null)
+                    setAnalyticsData(null)
+                  }}
+                >
+                  ← Kembali ke Senarai Analitik
+                </Button>
+
+                <Card className="border-0 bg-white shadow-sm">
+                  <CardHeader className="border-b">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {analyticsCards.find((c) => c.type === selectedAnalytics)?.icon}
+                        {analyticsCards.find((c) => c.type === selectedAnalytics)?.title}
+                      </CardTitle>
+                      <Button variant="outline" size="sm" onClick={() => selectedAnalytics && fetchAnalytics(selectedAnalytics)} disabled={analyticsLoading}>
+                        <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${analyticsLoading ? 'animate-spin' : ''}`} />
+                        Muat Semula
+                      </Button>
+                    </div>
+                    <CardDescription>
+                      {analyticsCards.find((c) => c.type === selectedAnalytics)?.description}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="pt-4">
+                    {renderAnalyticsDetail()}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+
+          {/* ════════════════════════════════════════════════════════════════════ */}
+          {/* TAB 4: ALAT AHLI                                                    */}
           {/* ════════════════════════════════════════════════════════════════════ */}
           <TabsContent value="alat">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -1024,104 +1576,45 @@ export default function AIToolsPage() {
                       <Search className="h-5 w-5" />
                     </div>
                     <div>
-                      <CardTitle className="text-base">
-                        Semakan Kelayakan Program
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        Semak kelayakan ahli untuk program PUSPA
-                      </CardDescription>
+                      <CardTitle className="text-base">Semakan Kelayakan Program</CardTitle>
+                      <CardDescription className="text-xs">Semak kelayakan ahli untuk program PUSPA</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-slate-700">
-                      No. Kad Pengenalan Ahli
-                    </Label>
+                    <Label className="text-sm font-medium text-slate-700">No. Kad Pengenalan</Label>
                     <Input
-                      placeholder="Contoh: 850101-14-5123"
-                      className="mt-1.5 border-slate-200 focus:border-cyan-400 focus:ring-cyan-200"
+                      placeholder="Masukkan no. IC (contoh: 901234567890)"
                       value={icInput}
                       onChange={(e) => setIcInput(e.target.value)}
+                      className="mt-1.5"
                     />
                   </div>
                   <Button
                     onClick={handleCheckEligibility}
                     disabled={!icInput.trim() || isCheckingEligibility}
-                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-600 hover:from-blue-600 hover:to-cyan-700 text-white shadow-md shadow-cyan-200"
+                    className="w-full"
                   >
-                    {isCheckingEligibility ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Menyemak...
-                      </>
-                    ) : (
-                      <>
-                        <Search className="h-4 w-4 mr-2" />
-                        Semak Kelayakan
-                      </>
-                    )}
+                    {isCheckingEligibility ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Menyemak...</> : <><Search className="h-4 w-4 mr-2" />Semak Kelayakan</>}
                   </Button>
-
                   {icResult && (
-                    <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                    <div className="space-y-3 mt-4 pt-4 border-t">
                       <div className="flex items-center gap-2">
-                        <Badge
-                          className={`${
-                            icResult.eligible
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}
-                        >
-                          {icResult.eligible ? '✓ Layak' : '✗ Tidak Layak'}
-                        </Badge>
-                        <span className="text-sm text-slate-500">
-                          Program yang tersedia
-                        </span>
+                        {icResult.eligible ? <Check className="h-5 w-5 text-emerald-600" /> : <AlertTriangle className="h-5 w-5 text-red-500" />}
+                        <span className="font-medium">{icResult.eligible ? 'Layak' : 'Tidak Layak'}</span>
                       </div>
-                      <div className="space-y-2">
-                        {icResult.programmes.map((p, i) => (
-                          <div
-                            key={i}
-                            className="flex items-center justify-between p-2.5 rounded-lg bg-white border border-slate-100"
-                          >
-                            <div className="flex-1 min-w-0 mr-3">
-                              <p className="text-sm font-medium text-slate-800 truncate">
-                                {p.name}
-                              </p>
-                              <div className="mt-1 flex items-center gap-2">
-                                <div className="flex-1 h-1.5 rounded-full bg-slate-100 max-w-[100px]">
-                                  <div
-                                    className={`h-full rounded-full ${
-                                      p.score >= 70
-                                        ? 'bg-emerald-500'
-                                        : p.score >= 50
-                                        ? 'bg-amber-500'
-                                        : 'bg-red-400'
-                                    }`}
-                                    style={{ width: `${p.score}%` }}
-                                  />
-                                </div>
-                                <span className="text-xs text-slate-500">
-                                  {p.score}%
-                                </span>
-                              </div>
-                            </div>
-                            <Badge
-                              variant="outline"
-                              className={`text-[10px] shrink-0 ${
-                                p.status === 'Layak'
-                                  ? 'border-emerald-300 text-emerald-700 bg-emerald-50'
-                                  : p.status === 'Perlu Semakan'
-                                  ? 'border-amber-300 text-amber-700 bg-amber-50'
-                                  : 'border-red-300 text-red-700 bg-red-50'
-                              }`}
-                            >
-                              {p.status}
-                            </Badge>
+                      {icResult.programmes.map((p, i) => (
+                        <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-50">
+                          <div>
+                            <p className="text-sm font-medium">{p.name}</p>
+                            <p className="text-xs text-muted-foreground">Skor: {p.score}%</p>
                           </div>
-                        ))}
-                      </div>
+                          <Badge variant={p.status === 'Layak' ? 'default' : p.status === 'Perlu Semakan' ? 'secondary' : 'outline'} className={p.status === 'Layak' ? 'bg-emerald-600' : ''}>
+                            {p.status}
+                          </Badge>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>
@@ -1131,113 +1624,45 @@ export default function AIToolsPage() {
               <Card className="border-0 bg-white shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-orange-200">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-lg shadow-green-200">
                       <Calculator className="h-5 w-5" />
                     </div>
                     <div>
-                      <CardTitle className="text-base">
-                        Kalkulator Bantuan Kewangan
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        Kira jumlah BMT yang layak diterima
-                      </CardDescription>
+                      <CardTitle className="text-base">Kalkulator Bantuan Kewangan</CardTitle>
+                      <CardDescription className="text-xs">Anggar jumlah bantuan BMT yang sesuai</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">
-                        Bilangan Isi Rumah
-                      </Label>
-                      <Input
-                        type="number"
-                        min="1"
-                        max="15"
-                        className="mt-1.5 border-slate-200 focus:border-amber-400 focus:ring-amber-200"
-                        value={calcHouseholdSize}
-                        onChange={(e) =>
-                          setCalcHouseholdSize(e.target.value)
-                        }
-                      />
+                      <Label className="text-xs text-muted-foreground">Saiz Isi Rumah</Label>
+                      <Input type="number" value={calcHouseholdSize} onChange={(e) => setCalcHouseholdSize(e.target.value)} className="mt-1" />
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">
-                        Pendapatan Bulanan (RM)
-                      </Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        className="mt-1.5 border-slate-200 focus:border-amber-400 focus:ring-amber-200"
-                        value={calcIncome}
-                        onChange={(e) =>
-                          setCalcIncome(e.target.value)
-                        }
-                      />
+                      <Label className="text-xs text-muted-foreground">Pendapatan (RM)</Label>
+                      <Input type="number" value={calcIncome} onChange={(e) => setCalcIncome(e.target.value)} className="mt-1" />
                     </div>
                     <div>
-                      <Label className="text-sm font-medium text-slate-700">
-                        Perbelanjaan Bulanan (RM)
-                      </Label>
-                      <Input
-                        type="number"
-                        min="0"
-                        className="mt-1.5 border-slate-200 focus:border-amber-400 focus:ring-amber-200"
-                        value={calcExpenses}
-                        onChange={(e) =>
-                          setCalcExpenses(e.target.value)
-                        }
-                      />
+                      <Label className="text-xs text-muted-foreground">Perbelanjaan (RM)</Label>
+                      <Input type="number" value={calcExpenses} onChange={(e) => setCalcExpenses(e.target.value)} className="mt-1" />
                     </div>
                   </div>
-                  <Button
-                    onClick={handleCalculate}
-                    disabled={isCalculating}
-                    className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white shadow-md shadow-orange-200"
-                  >
-                    {isCalculating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Mengira...
-                      </>
-                    ) : (
-                      <>
-                        <Calculator className="h-4 w-4 mr-2" />
-                        Kira Bantuan
-                      </>
-                    )}
+                  <Button onClick={handleCalculate} disabled={isCalculating} className="w-full">
+                    {isCalculating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Mengira...</> : <><Calculator className="h-4 w-4 mr-2" />Kira Bantuan</>}
                   </Button>
-
                   {calcResult && (
-                    <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-center py-2">
-                        <p className="text-sm text-slate-500 mb-1">
-                          Jumlah BMT Yang Layak
-                        </p>
-                        <p className="text-3xl font-bold text-amber-600">
-                          RM {calcResult.amount.toLocaleString('ms-MY')}
-                        </p>
-                        <p className="text-xs text-slate-400">sebulan</p>
+                    <div className="space-y-2 mt-4 pt-4 border-t">
+                      <div className="text-center p-3 bg-emerald-50 rounded-lg">
+                        <p className="text-2xl font-bold text-emerald-700">RM {calcResult.amount.toLocaleString()}</p>
+                        <p className="text-xs text-emerald-600">Anggaran Bantuan Bulanan</p>
                       </div>
-                      <Separator />
-                      <div className="space-y-2">
-                        <p className="text-sm font-medium text-slate-700">
-                          Kategori Bantuan:
-                        </p>
-                        {Object.entries(calcResult.breakdown).map(
-                          ([key, val]) => (
-                            <div
-                              key={key}
-                              className="flex justify-between items-center text-sm"
-                            >
-                              <span className="text-slate-600">{key}</span>
-                              <span className="font-medium text-slate-800">
-                                RM {val.toLocaleString('ms-MY')}
-                              </span>
-                            </div>
-                          )
-                        )}
-                      </div>
+                      {Object.entries(calcResult.breakdown).map(([key, val]) => (
+                        <div key={key} className="flex justify-between items-center p-2 rounded-lg bg-slate-50">
+                          <span className="text-sm">{key}</span>
+                          <span className="font-medium text-sm">RM {val.toLocaleString()}</span>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </CardContent>
@@ -1247,141 +1672,46 @@ export default function AIToolsPage() {
               <Card className="border-0 bg-white shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white shadow-lg shadow-teal-200">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-orange-200">
                       <ClipboardList className="h-5 w-5" />
                     </div>
                     <div>
-                      <CardTitle className="text-base">
-                        Penilaian Kebajikan
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        Nilai tahap kebajikan ahli dalam 5 dimensi
-                      </CardDescription>
+                      <CardTitle className="text-base">Penilaian Kebajikan</CardTitle>
+                      <CardDescription className="text-xs">Nilaikan tahap kebajikan ahli berdasarkan 5 dimensi</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-5">
-                  <div className="space-y-4">
-                    {[
-                      {
-                        key: 'pendapatan' as const,
-                        label: 'Pendapatan',
-                        desc: '1 = Sangat Rendah, 10 = Sangat Tinggi',
-                      },
-                      {
-                        key: 'perumahan' as const,
-                        label: 'Perumahan',
-                        desc: '1 = Tidak Memuaskan, 10 = Sangat Baik',
-                      },
-                      {
-                        key: 'kesihatan' as const,
-                        label: 'Kesihatan',
-                        desc: '1 = Sangat Lemah, 10 = Sangat Sihat',
-                      },
-                      {
-                        key: 'pendidikan' as const,
-                        label: 'Pendidikan',
-                        desc: '1 = Tiada Akses, 10 = Akses Penuh',
-                      },
-                      {
-                        key: 'sokonganSosial' as const,
-                        label: 'Sokongan Sosial',
-                        desc: '1 = Tiada, 10 = Sangat Kuat',
-                      },
-                    ].map((item) => (
-                      <div key={item.key} className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <Label className="text-sm font-medium text-slate-700">
-                            {item.label}
-                          </Label>
-                          <span className="text-sm font-bold text-violet-600">
-                            {welfareSliders[item.key]}/10
-                          </span>
-                        </div>
-                        <Slider
-                          min={1}
-                          max={10}
-                          step={1}
-                          value={[welfareSliders[item.key]]}
-                          onValueChange={(val) =>
-                            setWelfareSliders((prev) => ({
-                              ...prev,
-                              [item.key]: val[0],
-                            }))
-                          }
-                          className="[&_[role=slider]]:bg-violet-600 [&_[role=slider]]:border-violet-600 [&>span:first-child]:bg-slate-200"
-                        />
-                        <p className="text-[10px] text-slate-400">{item.desc}</p>
+                <CardContent className="space-y-4">
+                  {[
+                    { key: 'pendapatan' as const, label: 'Pendapatan', desc: '1 (Rendah) → 5 (Tinggi)' },
+                    { key: 'perumahan' as const, label: 'Perumahan', desc: '1 (Tidak Stabil) → 5 (Stabil)' },
+                    { key: 'kesihatan' as const, label: 'Kesihatan', desc: '1 (Lemah) → 5 (Baik)' },
+                    { key: 'pendidikan' as const, label: 'Pendidikan', desc: '1 (Rendah) → 5 (Tinggi)' },
+                    { key: 'sokonganSosial' as const, label: 'Sokongan Sosial', desc: '1 (Terpencil) → 5 (Kuat)' },
+                  ].map((item) => (
+                    <div key={item.key} className="space-y-1">
+                      <div className="flex justify-between">
+                        <Label className="text-sm font-medium">{item.label}</Label>
+                        <span className="text-xs text-muted-foreground">{welfareSliders[item.key]}/5</span>
                       </div>
-                    ))}
-                  </div>
-                  <Button
-                    onClick={handleAssessWelfare}
-                    disabled={isAssessing}
-                    className="w-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white shadow-md shadow-teal-200"
-                  >
-                    {isAssessing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        Menilai...
-                      </>
-                    ) : (
-                      <>
-                        <ClipboardList className="h-4 w-4 mr-2" />
-                        Jalankan Penilaian
-                      </>
-                    )}
+                      <Slider
+                        value={[welfareSliders[item.key]]}
+                        onValueChange={([v]) => setWelfareSliders((prev) => ({ ...prev, [item.key]: v }))}
+                        min={1} max={5} step={1}
+                      />
+                    </div>
+                  ))}
+                  <Button onClick={handleAssessWelfare} disabled={isAssessing} className="w-full">
+                    {isAssessing ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Menilai...</> : <><ClipboardList className="h-4 w-4 mr-2" />Nilai Kebajikan</>}
                   </Button>
-
                   {welfareResult && (
-                    <div className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                      <div className="text-center py-2">
-                        <p className="text-sm text-slate-500 mb-1">
-                          Skor Kebajikan Keseluruhan
-                        </p>
-                        <p
-                          className={`text-4xl font-bold ${
-                            welfareResult.score >= 80
-                              ? 'text-emerald-600'
-                              : welfareResult.score >= 60
-                              ? 'text-amber-600'
-                              : welfareResult.score >= 40
-                              ? 'text-orange-600'
-                              : 'text-red-600'
-                          }`}
-                        >
-                          {welfareResult.score}/100
-                        </p>
-                        <div className="mt-2 mx-auto w-48 h-3 rounded-full bg-slate-200 overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-700 ${
-                              welfareResult.score >= 80
-                                ? 'bg-emerald-500'
-                                : welfareResult.score >= 60
-                                ? 'bg-amber-500'
-                                : welfareResult.score >= 40
-                                ? 'bg-orange-500'
-                                : 'bg-red-500'
-                            }`}
-                            style={{
-                              width: `${welfareResult.score}%`,
-                            }}
-                          />
-                        </div>
+                    <div className="space-y-3 mt-4 pt-4 border-t">
+                      <div className="text-center p-3 bg-amber-50 rounded-lg">
+                        <p className="text-3xl font-bold text-amber-700">{welfareResult.score}/100</p>
+                        <p className="text-xs text-amber-600">Skor Kebajikan</p>
                       </div>
-                      <Separator />
-                      <div>
-                        <p className="text-sm font-medium text-slate-700 mb-1">
-                          Cadangan:
-                        </p>
-                        <div
-                          className="text-sm text-slate-600 leading-relaxed"
-                          dangerouslySetInnerHTML={{
-                            __html: formatMarkdown(
-                              welfareResult.recommendation
-                            ),
-                          }}
-                        />
+                      <div className="p-3 bg-slate-50 rounded-lg">
+                        <div className="text-sm" dangerouslySetInnerHTML={{ __html: formatMarkdown(welfareResult.recommendation) }} />
                       </div>
                     </div>
                   )}
@@ -1393,117 +1723,49 @@ export default function AIToolsPage() {
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white shadow-lg shadow-pink-200">
-                      <MessageSquare className="h-5 w-5" />
+                      <FileText className="h-5 w-5" />
                     </div>
                     <div>
-                      <CardTitle className="text-base">
-                        Log Komunikasi
-                      </CardTitle>
-                      <CardDescription className="text-xs">
-                        Rekod semua komunikasi dengan ahli
-                      </CardDescription>
+                      <CardTitle className="text-base">Log Komunikasi</CardTitle>
+                      <CardDescription className="text-xs">Rekod interaksi dengan ahli dan pihak berkepentingan</CardDescription>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  <div className="space-y-3">
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">
-                        Nama Ahli
-                      </Label>
-                      <Input
-                        placeholder="Masukkan nama ahli"
-                        className="mt-1.5 border-slate-200 focus:border-rose-400 focus:ring-rose-200"
-                        value={commName}
-                        onChange={(e) => setCommName(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">
-                        Jenis Komunikasi
-                      </Label>
-                      <Select
-                        value={commType}
-                        onValueChange={setCommType}
-                      >
-                        <SelectTrigger className="mt-1.5 border-slate-200 focus:border-rose-400 focus:ring-rose-200">
-                          <SelectValue placeholder="Pilih jenis" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Panggilan">
-                            📞 Panggilan
-                          </SelectItem>
-                          <SelectItem value="Lawatan">
-                            🏠 Lawatan
-                          </SelectItem>
-                          <SelectItem value="Email">
-                            📧 Email
-                          </SelectItem>
-                          <SelectItem value="WhatsApp">
-                            💬 WhatsApp
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium text-slate-700">
-                        Catatan
-                      </Label>
-                      <Textarea
-                        placeholder="Masukkan catatan komunikasi..."
-                        className="mt-1.5 min-h-[80px] resize-none border-slate-200 focus:border-rose-400 focus:ring-rose-200"
-                        value={commNotes}
-                        onChange={(e) => setCommNotes(e.target.value)}
-                      />
-                    </div>
-                    <Button
-                      onClick={handleAddCommLog}
-                      disabled={
-                        !commName.trim() || !commType || !commNotes.trim()
-                      }
-                      className="w-full bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white shadow-md shadow-pink-200"
-                    >
-                      <MessageSquare className="h-4 w-4 mr-2" />
-                      Tambah Rekod
-                    </Button>
+                  <div className="grid grid-cols-1 gap-2">
+                    <Input placeholder="Nama" value={commName} onChange={(e) => setCommName(e.target.value)} />
+                    <Select value={commType} onValueChange={setCommType}>
+                      <SelectTrigger><SelectValue placeholder="Jenis komunikasi" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Lawatan">Lawatan</SelectItem>
+                        <SelectItem value="Panggilan">Panggilan</SelectItem>
+                        <SelectItem value="Email">Email</SelectItem>
+                        <SelectItem value="WhatsApp">WhatsApp</SelectItem>
+                        <SelectItem value="Mesyuarat">Mesyuarat</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Textarea placeholder="Catatan..." value={commNotes} onChange={(e) => setCommNotes(e.target.value)} className="min-h-[60px]" />
                   </div>
-
+                  <Button onClick={handleAddCommLog} disabled={!commName.trim() || !commType || !commNotes.trim()} className="w-full">
+                    Tambah Rekod
+                  </Button>
                   <Separator />
-
-                  {/* Recent Logs */}
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium text-slate-700 mb-2">
-                      Rekod Terkini
-                    </p>
-                    <ScrollArea className="h-[220px]">
-                      <div className="space-y-2 pr-2">
-                        {commLogs.map((log) => (
-                          <div
-                            key={log.id}
-                            className="p-3 rounded-lg border border-slate-100 bg-slate-50/50 hover:bg-slate-50 transition-colors"
-                          >
-                            <div className="flex items-start justify-between mb-1">
-                              <p className="text-sm font-medium text-slate-800">
-                                {log.name}
-                              </p>
-                              <Badge
-                                variant="outline"
-                                className="text-[10px] shrink-0 ml-2"
-                              >
-                                {log.type}
-                              </Badge>
+                  <ScrollArea className="max-h-[200px]">
+                    <div className="space-y-2">
+                      {commLogs.map((log) => (
+                        <div key={log.id} className="p-2 bg-slate-50 rounded-lg">
+                          <div className="flex items-center justify-between">
+                            <span className="text-sm font-medium">{log.name}</span>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="secondary" className="text-[10px]">{log.type}</Badge>
+                              <span className="text-[10px] text-muted-foreground">{log.date}</span>
                             </div>
-                            <p className="text-xs text-slate-500 line-clamp-2">
-                              {log.notes}
-                            </p>
-                            <p className="text-[10px] text-slate-400 mt-1">
-                              {log.date}
-                            </p>
                           </div>
-                        ))}
-                      </div>
-                    </ScrollArea>
-                  </div>
+                          <p className="text-xs text-muted-foreground mt-1 line-clamp-2">{log.notes}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
                 </CardContent>
               </Card>
             </div>
@@ -1511,91 +1773,42 @@ export default function AIToolsPage() {
         </Tabs>
       </div>
 
-      {/* ════════════════════════════════════════════════════════════════════ */}
-      {/* Report Generation Dialog                                              */}
-      {/* ════════════════════════════════════════════════════════════════════ */}
+      {/* Report Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
+        <DialogContent className="max-w-2xl max-h-[80vh]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-violet-600" />
               {selectedReport?.title}
             </DialogTitle>
             <DialogDescription>
-              Laporan dijana secara automatik berdasarkan data terkini
+              Laporan dijana oleh AI pada {new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' })}
             </DialogDescription>
           </DialogHeader>
-
-          <div className="flex-1 overflow-hidden">
-            {isGenerating ? (
-              <div className="flex flex-col items-center justify-center py-20 space-y-6">
-                <div className="relative">
-                  <div className="h-16 w-16 rounded-full border-4 border-violet-200 animate-ping absolute inset-0 opacity-30" />
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center">
-                    <Sparkles className="h-7 w-7 text-white animate-spin" />
-                  </div>
+          <ScrollArea className="max-h-[60vh]">
+            <div className="p-2">
+              {isGenerating ? (
+                <div className="flex items-center justify-center py-16 space-x-3">
+                  <div className="h-3 w-3 rounded-full bg-violet-500 animate-bounce [animation-delay:0ms]" />
+                  <div className="h-3 w-3 rounded-full bg-purple-500 animate-bounce [animation-delay:150ms]" />
+                  <div className="h-3 w-3 rounded-full bg-fuchsia-500 animate-bounce [animation-delay:300ms]" />
+                  <span className="text-sm text-slate-500 ml-2">Menjana laporan...</span>
                 </div>
-                <div className="text-center space-y-2">
-                  <p className="text-lg font-semibold text-slate-700">
-                    AI sedang menjana laporan...
-                  </p>
-                  <p className="text-sm text-slate-400">
-                    Menganalisis data PUSPA dan menyusun maklumat
-                  </p>
-                </div>
-                <div className="flex gap-1.5">
-                  <div
-                    className="h-2 w-2 rounded-full bg-violet-500 animate-bounce"
-                    style={{ animationDelay: '0ms' }}
-                  />
-                  <div
-                    className="h-2 w-2 rounded-full bg-purple-500 animate-bounce"
-                    style={{ animationDelay: '150ms' }}
-                  />
-                  <div
-                    className="h-2 w-2 rounded-full bg-fuchsia-500 animate-bounce"
-                    style={{ animationDelay: '300ms' }}
-                  />
-                </div>
-              </div>
-            ) : generatedReport ? (
-              <ScrollArea className="h-[55vh]">
+              ) : (
                 <div
-                  className="prose prose-sm max-w-none text-slate-700 pr-4"
-                  dangerouslySetInnerHTML={{
-                    __html: formatMarkdown(generatedReport),
-                  }}
+                  className="prose prose-sm max-w-none text-slate-700"
+                  dangerouslySetInnerHTML={{ __html: formatMarkdown(generatedReport) }}
                 />
-              </ScrollArea>
-            ) : null}
-          </div>
-
-          {!isGenerating && generatedReport && (
+              )}
+            </div>
+          </ScrollArea>
+          {generatedReport && !isGenerating && (
             <div className="flex gap-2 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={handleCopyReport}
-                className="flex-1"
-              >
-                {copied ? (
-                  <>
-                    <Check className="h-4 w-4 mr-2" />
-                    Disalin!
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Salin Laporan
-                  </>
-                )}
+              <Button variant="outline" size="sm" onClick={handleCopyReport} className="text-xs">
+                {copied ? <><Check className="h-3 w-3 mr-1" />Disalin</> : <><Copy className="h-3 w-3 mr-1" />Salin</>}
               </Button>
-              <Button
-                variant="outline"
-                onClick={handleDownloadReport}
-                className="flex-1"
-              >
-                <Download className="h-4 w-4 mr-2" />
-                Muat Turun (.md)
+              <Button variant="outline" size="sm" onClick={handleDownloadReport} className="text-xs">
+                <Download className="h-3 w-3 mr-1" />Muat Turun
               </Button>
             </div>
           )}

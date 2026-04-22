@@ -35,6 +35,7 @@ import Models from '@/modules/openclaw/models'
 import Automation from '@/modules/openclaw/automation'
 import EKYC from '@/modules/ekyc/page'
 import TapSecure from '@/modules/tapsecure/page'
+import Docs from '@/modules/docs/page'
 
 function PageLoader() {
   return (
@@ -63,7 +64,7 @@ const viewLabels: Record<string, string> = {
   disbursements: 'Pengurusan Pembayaran',
   compliance: 'Dashboard Compliance',
   admin: 'Pentadbiran',
-  reports: 'Laporan Kewangan',
+  reports: 'Pusat Laporan & Pematuhan',
   activities: 'Pengurusan Aktiviti',
   ai: 'Alat AI',
   volunteers: 'Pengurusan Sukarelawan',
@@ -78,6 +79,7 @@ const viewLabels: Record<string, string> = {
   'openclaw-automation': 'OpenClaw — Automasi',
   'ekyc': 'eKYC Verification',
   'tapsecure': 'TapSecure',
+  docs: 'Panduan PUSPA',
 }
 
 function ViewRenderer({ view }: { view: string }) {
@@ -105,6 +107,7 @@ function ViewRenderer({ view }: { view: string }) {
     case 'openclaw-automation': return <Automation />
     case 'ekyc': return <EKYC />
     case 'tapsecure': return <TapSecure />
+    case 'docs': return <Docs />
     default: return <Dashboard />
   }
 }

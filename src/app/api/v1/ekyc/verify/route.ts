@@ -7,6 +7,8 @@ import { z } from 'zod'
 const verifySchema = z.object({
   id: z.string().optional(),
   memberId: z.string().optional(),
+  riskLevel: z.enum(['low', 'medium', 'high']).optional(),
+  screeningNotes: z.string().optional(),
 }).refine(data => data.id || data.memberId, {
   message: 'ID pengesahan atau ID ahli diperlukan',
 })
@@ -26,6 +28,7 @@ export async function POST(request: NextRequest) {
         include: {
           member: {
             select: {
+              id: true,
               name: true,
               ic: true,
               memberNumber: true,
@@ -39,6 +42,7 @@ export async function POST(request: NextRequest) {
         include: {
           member: {
             select: {
+              id: true,
               name: true,
               ic: true,
               memberNumber: true,
@@ -87,25 +91,35 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Perform verification
+    // Determine wallet limit based on risk level
+    const walletLimitByRisk: Record<string, number> = {
+      low: 5000,
+      medium: 3000,
+      high: 1000,
+    }
+    const newWalletLimit = walletLimitByRisk[validated.riskLevel || 'low'] ?? 5000
+
+    // Perform verification via Prisma
     const updated = await db.eKYCVerification.update({
       where: { id: verification.id },
       data: {
         status: 'verified',
         bnmCompliant: true,
         amlaScreening: 'pass',
-        riskLevel: 'low',
-        walletLimit: 5000,
+        riskLevel: validated.riskLevel || 'low',
+        screeningNotes: validated.screeningNotes || null,
+        walletLimit: newWalletLimit,
         previousLimit: verification.walletLimit,
         limitUpgradedAt: new Date(),
         walletEnabled: true,
-        bankTransferEnabled: true,
+        bankTransferEnabled: validated.riskLevel !== 'high',
         verifiedAt: new Date(),
         verifiedBy: 'system',
       },
       include: {
         member: {
           select: {
+            id: true,
             name: true,
             ic: true,
             memberNumber: true,
@@ -117,7 +131,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: updated,
-      message: 'Pengesahan eKYC berjaya. Had dompet dinaikkan kepada RM5,000.',
+      message: `Pengesahan eKYC berjaya. Had dompet dinaikkan kepada RM${newWalletLimit.toLocaleString()}.`,
     })
   } catch (error) {
     if (error instanceof z.ZodError) {
@@ -126,7 +140,7 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       )
     }
-    console.error('Ralat mengesahkan eKYC:', error)
+    console.error('Error verifying eKYC:', error)
     return NextResponse.json(
       { success: false, error: 'Gagal mengesahkan eKYC' },
       { status: 500 }

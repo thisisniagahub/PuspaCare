@@ -32,6 +32,7 @@ model User {
   assignedCases Case[]         @relation("CaseAssignee")
   deviceBindings DeviceBinding[]
   securityLogs   SecurityLog[]
+  securitySettings SecuritySettings?
 }
 
 // ============ MEMBER / ASNAF (Phase 3) ============
@@ -109,6 +110,7 @@ model Programme {
   disbursements Disbursement[]
   activities    Activity[]
   impactMetrics ImpactMetric[]
+  volunteerDeployments VolunteerDeployment[]
 }
 
 // ============ CASE WORKFLOW ============
@@ -467,6 +469,19 @@ model EKYCVerification {
 
 // ============ TAPSECURE — DEVICE & SECURITY MANAGEMENT ============
 
+model SecuritySettings {
+  id                    String   @id @default(cuid())
+  userId                String   @unique
+  user                  User     @relation(fields: [userId], references: [id])
+
+  biometricTransactions Boolean  @default(false)
+  boundDeviceOnly       Boolean  @default(false)
+  sessionTimeout        Int      @default(30) // minutes
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
 model DeviceBinding {
   id                String   @id @default(cuid())
   userId            String
@@ -504,4 +519,197 @@ model SecurityLog {
   details           String?  // JSON
 
   createdAt         DateTime @default(now())
+}
+
+// ============ VOLUNTEER MANAGEMENT (TIER 2) ============
+
+model Volunteer {
+  id              String   @id @default(cuid())
+  volunteerNumber String   @unique // auto: VOL-XXXX
+  name            String
+  ic              String   @unique
+  phone           String
+  email           String?
+  address         String?
+  city            String?
+  state           String?
+  occupation      String?
+  skills          String?  // JSON array: ["teaching", "medical", "driving"]
+  availability    String?  // weekday, weekend, anytime
+  emergencyContact String?
+  emergencyPhone  String?
+  status          String   @default("active") // active, inactive, blacklisted
+  joinedAt        DateTime @default(now())
+  totalHours      Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  deployments     VolunteerDeployment[]
+  hourLogs        VolunteerHourLog[]
+  certificates    VolunteerCertificate[]
+
+  @@index([status])
+  @@index([volunteerNumber])
+}
+
+model VolunteerDeployment {
+  id             String   @id @default(cuid())
+  volunteerId    String
+  volunteer      Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  programmeId    String?
+  programme      Programme? @relation(fields: [programmeId], references: [id])
+  activityId     String?
+  role           String   @default("participant") // coordinator, participant, lead
+  status         String   @default("assigned") // assigned, confirmed, completed, cancelled
+  startDate      DateTime
+  endDate        DateTime?
+  location       String?
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([volunteerId])
+  @@index([status])
+}
+
+model VolunteerHourLog {
+  id              String   @id @default(cuid())
+  volunteerId     String
+  volunteer       Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  deploymentId    String?
+  date            DateTime
+  hours           Float
+  activity        String?  // description of work done
+  approvedBy      String?
+  approvedAt      DateTime?
+  status          String   @default("pending") // pending, approved, rejected
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([volunteerId])
+  @@index([status])
+}
+
+model VolunteerCertificate {
+  id              String   @id @default(cuid())
+  volunteerId     String
+  volunteer       Volunteer @relation(fields: [volunteerId], references: [id], onDelete: Cascade)
+  certificateNumber String @unique // auto: CERT-XXXX
+  title           String
+  description     String?
+  issuedAt        DateTime @default(now())
+  totalHours      Float    @default(0)
+  issuedBy        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// ============ DONOR CRM (TIER 2) ============
+
+model Donor {
+  id              String   @id @default(cuid())
+  donorNumber     String   @unique // auto: DNR-XXXX
+  name            String
+  ic              String?
+  phone           String?
+  email           String?
+  address         String?
+  city            String?
+  state           String?
+  segment         String   @default("occasional") // major, regular, occasional, lapsed
+  preferredContact String? // email, phone, whatsapp
+  isAnonymous     Boolean  @default(false)
+  notes           String?
+  totalDonated    Float    @default(0)
+  donationCount   Int      @default(0)
+  firstDonationAt DateTime?
+  lastDonationAt  DateTime?
+  status          String   @default("active") // active, inactive
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  communications  DonorCommunication[]
+  taxReceipts      TaxReceipt[]
+
+  @@index([segment])
+  @@index([status])
+}
+
+model DonorCommunication {
+  id          String   @id @default(cuid())
+  donorId     String
+  donor       Donor    @relation(fields: [donorId], references: [id], onDelete: Cascade)
+  type        String   // email, phone, whatsapp, letter
+  subject     String
+  content     String?
+  status      String   @default("sent") // draft, sent, failed
+  sentAt      DateTime?
+  sentBy      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([donorId])
+}
+
+model TaxReceipt {
+  id                String   @id @default(cuid())
+  receiptNumber     String   @unique // auto: TR-YYYY-XXXX
+  donorId           String
+  donor             Donor    @relation(fields: [donorId], references: [id])
+  donationId        String?
+  amount            Float
+  donationDate      DateTime
+  purpose           String   @default("Sumbangan amal kepada PUSPA")
+  lhdnRef           String?  // LHDN approval reference
+  issuedAt          DateTime @default(now())
+  issuedBy          String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([donorId])
+  @@index([receiptNumber])
+}
+
+// ============ DOCUMENT MANAGEMENT (TIER 2) ============
+
+model Document {
+  id            String   @id @default(cuid())
+  title         String
+  description   String?
+  category      String   // registration, governance, financial, compliance, operations, programme
+  subcategory   String?
+  fileName      String
+  fileSize      Int      @default(0)
+  mimeType      String?
+  fileUrl       String?  // Supabase Storage URL
+  version       Int      @default(1)
+  status        String   @default("active") // active, archived, deleted
+  uploadedBy    String?
+  expiryDate    DateTime?
+  tags          String?  // JSON array
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([category])
+  @@index([status])
+}
+
+// ============ BRANCH / MULTI-BRANCH (TIER 3) ============
+
+model Branch {
+  id            String   @id @default(cuid())
+  name          String
+  code          String   @unique // KL, SEL, PEN, JOH
+  address       String?
+  city          String?
+  state         String?
+  phone         String?
+  email         String?
+  headName      String?
+  headPhone     String?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([code])
 }
