@@ -35,6 +35,7 @@ import {
   Package,
 } from 'lucide-react'
 import { useAppStore } from '@/stores/app-store'
+import { cn } from '@/lib/utils'
 import {
   BarChart,
   Bar,
