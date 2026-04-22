@@ -114,3 +114,27 @@ Stage Summary:
 - Dashboard hero banner features gradient background with live stat counters
 - All Flower2 icon references replaced with actual PUSPA logo
 - Clean build with zero lint errors
+
+---
+Task ID: 5
+Agent: Main Orchestrator
+Task: Fix Vercel buildCommand length error and optimize Supabase integration
+
+Work Log:
+- User reported Vercel error: `buildCommand` should NOT be longer than 256 characters
+- Root cause: vercel.json had 295+ char inline shell script with sed commands
+- Fixed vercel.json: buildCommand now calls `bash scripts/prepare-production.sh` (33 chars)
+- Updated prepare-production.sh:
+  - Auto-detects SUPABASE_DB_URL from Vercel Supabase Integration
+  - Falls back to DATABASE_URL + DIRECT_URL for manual Supabase config
+  - Dynamically switches Prisma schema provider (sqlite ↔ postgresql) during build
+  - Restores schema after build for clean git checkout
+- Updated .env.example: documents both Vercel integration and manual Supabase setup options
+- Verified: lint passes with 0 errors, 4 pre-existing warnings
+- Committed and pushed to GitHub main branch (3b59992)
+
+Stage Summary:
+- Vercel buildCommand fixed: 33 chars (was 295+)
+- Build script supports both Vercel Supabase Integration (auto) and manual setup
+- No changes needed to Prisma schema or app code — build-time switching handles everything
+- Ready for Vercel auto-deploy from GitHub
