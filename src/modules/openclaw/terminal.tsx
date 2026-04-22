@@ -29,8 +29,8 @@ export default function TerminalPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><TerminalSquare className="h-6 w-6" />Terminal</h1>
-          <p className="text-muted-foreground mt-1">Terminal actions kekal di OpenClaw live console, status di sini datang terus dari VPS</p>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><TerminalSquare className="h-6 w-6" />Console Operator</h1>
+          <p className="text-muted-foreground mt-1">Aksi operator kekal di live console, status di sini datang terus dari VPS</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></Button>
@@ -47,14 +47,14 @@ export default function TerminalPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Live handoff</CardTitle>
-          <CardDescription>PUSPA tunjuk runtime truth, execution sebenar stay di OpenClaw control panel</CardDescription>
+          <CardDescription>PUSPA tunjuk runtime truth, execution sebenar stay di control panel live</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div className="flex flex-wrap gap-2">
             <Badge variant="outline" className="gap-1"><MonitorSmartphone className="h-3 w-3" />{snapshot?.controlUrl || 'https://operator.gangniaga.my'}</Badge>
             <Badge variant={snapshot?.gateway.connected ? 'default' : 'outline'}>{snapshot?.gateway.status || 'unknown'}</Badge>
           </div>
-          <p className="text-muted-foreground">Ini elak fake terminal dalam app. Bila klik console, operator terus masuk permukaan live OpenClaw.</p>
+          <p className="text-muted-foreground">Ini elak fake terminal dalam app. Bila klik console, operator terus masuk permukaan live sebenar.</p>
         </CardContent>
       </Card>
     </div>

@@ -29,8 +29,8 @@ export default function ModelsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><Brain className="h-6 w-6" />Model</h1>
-          <p className="text-muted-foreground mt-1">Live model config dan auth footprint dari OpenClaw VPS</p>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><Brain className="h-6 w-6" />Enjin Model</h1>
+          <p className="text-muted-foreground mt-1">Live model config dan auth footprint dari AI Ops VPS</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></Button>
@@ -47,7 +47,7 @@ export default function ModelsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Fallback chain</CardTitle>
-          <CardDescription>Ini live chain yang PUSPA akan tengok dari bridge</CardDescription>
+          <CardDescription>Ini live fallback chain yang PUSPA baca dari bridge</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-2">
           {(snapshot?.models.fallbacks ?? []).map((model) => <Badge key={model} variant="outline">{model}</Badge>)}

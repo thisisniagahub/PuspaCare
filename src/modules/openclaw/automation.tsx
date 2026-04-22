@@ -31,8 +31,8 @@ export default function AutomationPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><Workflow className="h-6 w-6" />Automation</h1>
-          <p className="text-muted-foreground mt-1">Cron dan background task live dari OpenClaw VPS</p>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><Workflow className="h-6 w-6" />Automasi Latar</h1>
+          <p className="text-muted-foreground mt-1">Cron dan background task live dari AI Ops VPS</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></Button>

@@ -35,7 +35,7 @@ export default function AgentsPage() {
             <Bot className="h-6 w-6" />
             Ejen AI
           </h1>
-          <p className="text-muted-foreground mt-1">Live agents dari OpenClaw VPS, bukan mock list</p>
+          <p className="text-muted-foreground mt-1">Live worker AI dari VPS, bukan mock list</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}>
@@ -53,7 +53,7 @@ export default function AgentsPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3">
-        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Agent dirs</p><p className="text-2xl font-bold">{snapshot?.agents.length ?? 0}</p></CardContent></Card>
+        <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Worker profiles</p><p className="text-2xl font-bold">{snapshot?.agents.length ?? 0}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Aktif baru-baru ini</p><p className="text-2xl font-bold">{activeAgents}</p></CardContent></Card>
         <Card><CardContent className="p-4"><p className="text-sm text-muted-foreground">Gateway</p><p className="text-2xl font-bold">{snapshot?.gateway.connected ? 'LIVE' : loading ? '...' : 'OFFLINE'}</p></CardContent></Card>
       </div>

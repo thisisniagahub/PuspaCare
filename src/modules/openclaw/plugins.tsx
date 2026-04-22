@@ -29,8 +29,8 @@ export default function PluginsPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><Plug className="h-6 w-6" />Plugins</h1>
-          <p className="text-muted-foreground mt-1">Plugin entries dan webhook routes live dari config OpenClaw</p>
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><Plug className="h-6 w-6" />Sambungan</h1>
+          <p className="text-muted-foreground mt-1">Plugin entries dan webhook routes live dari config AI Ops</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={load} disabled={loading}><RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} /></Button>
@@ -42,7 +42,7 @@ export default function PluginsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Plugin entries</CardTitle>
-            <CardDescription>Terus baca dari `/root/.openclaw/openclaw.json`</CardDescription>
+            <CardDescription>Terus baca dari config gateway operasi</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {(snapshot?.plugins.entries ?? []).map((plugin) => (

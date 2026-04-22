@@ -28,15 +28,15 @@ export default function IntegrationsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><Link2 className="h-6 w-6" />Integrasi</h1>
-        <p className="text-muted-foreground mt-1">OpenClaw dalam PUSPA2 sekarang baca live VPS bridge</p>
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><Link2 className="h-6 w-6" />Gateway & Channel</h1>
+        <p className="text-muted-foreground mt-1">PUSPA baca runtime AI Ops live dari VPS bridge</p>
       </div>
 
       <Card className="border-primary/20">
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-3">
             <div>
-              <CardTitle className="text-base flex items-center gap-2"><Server className="h-4 w-4" />OpenClaw VPS Gateway</CardTitle>
+              <CardTitle className="text-base flex items-center gap-2"><Server className="h-4 w-4" />Gateway Operasi VPS</CardTitle>
               <CardDescription>Sambungan real ke operator.gangniaga.my</CardDescription>
             </div>
             <div className="flex items-center gap-2">
@@ -53,7 +53,7 @@ export default function IntegrationsPage() {
             <Badge variant="outline">checked: {snapshot?.generatedAt ? new Date(snapshot.generatedAt).toLocaleString('ms-MY') : '-'}</Badge>
           </div>
           <p className="font-mono text-xs break-all">{snapshot?.controlUrl || 'https://operator.gangniaga.my'}</p>
-          {snapshot?.gateway.error ? <p className="text-xs text-rose-600 dark:text-rose-400">{snapshot.gateway.error}</p> : <p className="text-xs text-muted-foreground">Ini live runtime bridge, bukan hardcoded shell.</p>}
+          {snapshot?.gateway.error ? <p className="text-xs text-rose-600 dark:text-rose-400">{snapshot.gateway.error}</p> : <p className="text-xs text-muted-foreground">Ini runtime live sebenar, bukan shell statik dalam app.</p>}
         </CardContent>
       </Card>
 
@@ -67,7 +67,7 @@ export default function IntegrationsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Channels</CardTitle>
-            <CardDescription>Live account state dari OpenClaw</CardDescription>
+            <CardDescription>Live account state dari gateway operasi</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {(snapshot?.channels.items ?? []).map((channel) => (
