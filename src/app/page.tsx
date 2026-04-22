@@ -38,6 +38,7 @@ import TapSecure from '@/modules/tapsecure/page'
 import SedekahJumaat from '@/modules/sedekah-jumaat/page'
 import Docs from '@/modules/docs/page'
 import AgihanBulan from '@/modules/agihan-bulan/page'
+import OpsConductor from '@/modules/ops-conductor/page'
 
 function PageLoader() {
   return (
@@ -84,6 +85,7 @@ const viewLabels: Record<string, string> = {
   'sedekah-jumaat': 'Sedekah Jumaat',
   docs: 'Panduan',
   'agihan-bulan': 'Agihan Bulanan',
+  'ops-conductor': 'Ops Conductor',
 }
 
 function ViewRenderer({ view }: { view: string }) {
@@ -114,6 +116,7 @@ function ViewRenderer({ view }: { view: string }) {
     case 'sedekah-jumaat': return <SedekahJumaat />
     case 'docs': return <Docs />
     case 'agihan-bulan': return <AgihanBulan />
+    case 'ops-conductor': return <OpsConductor />
     default: return <Dashboard />
   }
 }

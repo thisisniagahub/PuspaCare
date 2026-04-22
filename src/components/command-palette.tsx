@@ -37,6 +37,7 @@ const VIEW_ITEMS: { id: ViewId; label: string; keywords: string[] }[] = [
   { id: 'openclaw-agents', label: 'OpenClaw Ejen', keywords: ['agent', 'ejen', 'ai', 'openclaw'] },
   { id: 'openclaw-models', label: 'OpenClaw Model', keywords: ['model', 'llm', 'openclaw'] },
   { id: 'openclaw-automation', label: 'OpenClaw Automasi', keywords: ['automasi', 'automation', 'openclaw'] },
+  { id: 'ops-conductor', label: 'Ops Conductor', keywords: ['conductor', 'ops', 'operasi', 'chat', 'task', 'work', 'reminder', 'trace'] },
 ]
 
 const SECTIONS = [
@@ -54,7 +55,7 @@ const SECTIONS = [
   },
   {
     heading: 'AI & Automasi',
-    ids: ['ai', 'openclaw-mcp', 'openclaw-plugins', 'openclaw-integrations', 'openclaw-terminal', 'openclaw-agents', 'openclaw-models', 'openclaw-automation'] as ViewId[],
+    ids: ['ops-conductor', 'ai', 'openclaw-mcp', 'openclaw-plugins', 'openclaw-integrations', 'openclaw-terminal', 'openclaw-agents', 'openclaw-models', 'openclaw-automation'] as ViewId[],
   },
 ]
 

@@ -37,6 +37,7 @@ import {
   EyeOff,
   Package,
   UtensilsCrossed,
+  Zap,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -139,6 +140,7 @@ const ALL_GROUPS: NavGroup[] = [
     subGroup: 'OpenClaw',
     roles: ['developer'],
     items: [
+      { id: 'ops-conductor', label: 'Ops Conductor', icon: Zap, roles: ['admin', 'developer'] },
       { id: 'ai', label: 'Alat AI', icon: Sparkles, roles: ['admin', 'developer'] },
       { id: 'openclaw-mcp', label: 'Pelayan MCP', icon: Server, roles: ['developer'] },
       { id: 'openclaw-plugins', label: 'Plugins', icon: Puzzle, roles: ['developer'] },

@@ -713,3 +713,92 @@ model Branch {
 
   @@index([code])
 }
+
+// ============ OPS CONDUCTOR — WORK ITEMS & EXECUTION ============
+
+model WorkItem {
+  id                String   @id @default(cuid())
+  workItemNumber    String   @unique // auto: WI-XXXX
+  title             String
+  project           String   @default("PUSPA")
+  domain            String   // inventory, reports, cases, donors, volunteers, reminders, messaging, dashboard, continuity, approvals, general
+  sourceChannel     String   @default("conductor") // conductor, api, webhook, manual
+  requestText       String
+  intent            String   // inventory_lookup, report_list, case_query, donor_summary, volunteer_list, reminder_create, work_resume, dashboard_generate, message_reply, general
+  status            String   @default("queued") // queued, in_progress, waiting_user, scheduled, blocked, completed, failed, archived
+  priority          String   @default("normal") // urgent, high, normal, low
+  currentStep       String?
+  nextAction        String?
+  blockerReason     String?
+  resolutionSummary String?
+  tags              String?  // JSON array of tag strings
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  startedAt         DateTime?
+  completedAt       DateTime?
+
+  executionEvents ExecutionEvent[]
+  artifacts        Artifact[]
+  automationJobs   AutomationJob[]
+
+  @@index([status])
+  @@index([domain])
+  @@index([intent])
+  @@index([createdAt])
+}
+
+model ExecutionEvent {
+  id          String   @id @default(cuid())
+  workItemId  String
+  workItem    WorkItem @relation(fields: [workItemId], references: [id], onDelete: Cascade)
+  type        String   // intent_routed, tool_called, tool_completed, subagent_spawned, subagent_completed, cron_created, message_prepared, approval_requested, fallback_used, blocked, completed, failed, user_message, ai_response
+  summary     String
+  detail      String?  // JSON or extended text
+  toolName    String?
+  status      String   @default("success") // success, failed, pending, skipped
+  latencyMs   Int?
+  errorCode   String?
+  createdAt   DateTime @default(now())
+
+  @@index([workItemId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+model Artifact {
+  id          String   @id @default(cuid())
+  workItemId  String?
+  workItem    WorkItem? @relation(fields: [workItemId], references: [id], onDelete: SetNull)
+  type        String   // report, dashboard, summary, export, draft_reply, reminder, snapshot
+  title       String
+  summary     String?
+  pathOrRef   String?
+  metadata    String?  // JSON
+  createdAt   DateTime @default(now())
+
+  @@index([workItemId])
+  @@index([type])
+}
+
+model AutomationJob {
+  id              String   @id @default(cuid())
+  title           String
+  description     String?
+  kind            String   @default("one_time") // one_time, fixed_rate, cron
+  expr            String?  // cron expression or epoch millis for one_time
+  tz              String   @default("Asia/Kuala_Lumpur")
+  domain          String   @default("general")
+  relatedProject  String   @default("PUSPA")
+  workItemId      String?
+  workItem        WorkItem? @relation(fields: [workItemId], references: [id], onDelete: SetNull)
+  isEnabled       Boolean  @default(true)
+  lastRunAt       DateTime?
+  nextRunAt       DateTime?
+  lastResult      String?  // JSON or status text
+  failureState    String?  // error message if last run failed
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([isEnabled])
+  @@index([nextRunAt])
+}

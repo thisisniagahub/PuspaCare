@@ -27,6 +27,7 @@ export type ViewId =
   | 'agihan-bulan'
   | 'sedekah-jumaat'
   | 'docs'
+  | 'ops-conductor'
 
 export interface NavItem {
   id: ViewId
