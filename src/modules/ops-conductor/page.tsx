@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { api, apiFetch } from '@/lib/api'
+import type { OpenClawSnapshot, OpenClawStatus } from '@/lib/openclaw'
 import { useOpsStore, type ConductorTab, type OpsWorkItem } from '@/stores/ops-store'
 import { cn } from '@/lib/utils'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,7 +23,7 @@ import {
   Package, FileText, Gavel, Heart, Users, Bell, ArrowRight, Sparkles, Bot,
   User, RotateCcw, Trash2, Calendar, Play, Pause, Shield, FolderKanban,
   Activity, CheckSquare, Square, AlertOctagon, TrendingUp, Timer, Target,
-  Workflow, ClipboardList, UsersRound, Eye, MoreHorizontal, X, Ban, Redo
+  Workflow, ClipboardList, UsersRound, Eye, MoreHorizontal, X, Ban, Redo, ExternalLink, MonitorSmartphone
 } from 'lucide-react'
 
 /* ─── Constants ──────────────────────────────────────────────────────────────── */
@@ -196,6 +197,9 @@ export default function OpsConductor() {
   const [approvalAction, setApprovalAction] = useState('')
   const [approvalRisk, setApprovalRisk] = useState<'low' | 'medium' | 'high'>('low')
   const [approvalReason, setApprovalReason] = useState('')
+  const [liveStatus, setLiveStatus] = useState<OpenClawStatus | null>(null)
+  const [liveSnapshot, setLiveSnapshot] = useState<OpenClawSnapshot | null>(null)
+  const [liveLoading, setLiveLoading] = useState(false)
 
   const chatEndRef = useRef<HTMLDivElement>(null)
   const traceEndRef = useRef<HTMLDivElement>(null)
@@ -247,6 +251,27 @@ export default function OpsConductor() {
     } catch { /* silent */ }
     setDashLoading(false)
   }, [store])
+
+  const loadLiveBridge = useCallback(async () => {
+    setLiveLoading(true)
+    try {
+      const [status, snapshot] = await Promise.all([
+        api.get<OpenClawStatus>('/openclaw/status'),
+        api.get<OpenClawSnapshot>('/openclaw/snapshot'),
+      ])
+      setLiveStatus(status)
+      setLiveSnapshot(snapshot)
+    } catch {
+      // Keep existing values if bridge polling fails
+    } finally {
+      setLiveLoading(false)
+    }
+  }, [])
+
+  const openExternalLink = useCallback((url?: string) => {
+    if (!url || typeof window === 'undefined') return
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }, [])
 
   const loadTasks = useCallback(async () => {
     setTasksLoading(true)
@@ -306,14 +331,24 @@ export default function OpsConductor() {
 
   useEffect(() => {
     let cancelled = false
-    const init = async () => { if (!cancelled) { await loadTasks(); await loadAutomations(); await loadProjects() } }
+    const init = async () => {
+      if (!cancelled) {
+        await loadTasks()
+        await loadAutomations()
+        await loadProjects()
+        await loadLiveBridge()
+      }
+    }
     init()
     return () => { cancelled = true }
-  }, [loadTasks, loadAutomations, loadProjects])
+  }, [loadTasks, loadAutomations, loadProjects, loadLiveBridge])
 
   useEffect(() => {
-    if (store.activeTab === 'dashboard' && !store.dashboardSummary) loadDashboard()
-  }, [store.activeTab, store.dashboardSummary, loadDashboard])
+    if (store.activeTab === 'dashboard') {
+      if (!store.dashboardSummary) loadDashboard()
+      if (!liveStatus || !liveSnapshot) loadLiveBridge()
+    }
+  }, [store.activeTab, store.dashboardSummary, loadDashboard, liveStatus, liveSnapshot, loadLiveBridge])
 
   /* ─── Chat flow with resume & fallback ────────────────────────────────────── */
 
@@ -786,6 +821,8 @@ export default function OpsConductor() {
   const renderDashboardTab = () => {
     const ds = store.dashboardSummary
     const st = store.opsStats
+    const channelConnected = liveSnapshot?.channels.connected ?? 0
+    const channelTotal = liveSnapshot?.channels.total ?? 0
     if (dashLoading) return <div className="p-4 space-y-4">{Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)}</div>
     return (
       <ScrollArea className="h-full">
@@ -811,6 +848,92 @@ export default function OpsConductor() {
               </Card>
             ))}
           </div>
+
+          {/* Live bridge panel */}
+          <Card className="border-primary/20">
+            <CardHeader className="p-3 pb-2">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <CardTitle className="text-sm flex items-center gap-2">
+                    <MonitorSmartphone className="h-4 w-4" /> AI Ops Live Bridge
+                  </CardTitle>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Snapshot runtime terus dari operator bridge</p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-xs"
+                    disabled={liveLoading}
+                    onClick={() => loadLiveBridge()}
+                  >
+                    <RotateCcw className={cn('h-3 w-3 mr-1', liveLoading && 'animate-spin')} /> Refresh
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="h-7 text-xs text-white"
+                    style={{ background: BRAND_GRADIENT }}
+                    onClick={() => openExternalLink(liveStatus?.controlUrl || liveSnapshot?.controlUrl)}
+                    disabled={!liveStatus?.controlUrl && !liveSnapshot?.controlUrl}
+                  >
+                    <ExternalLink className="h-3 w-3 mr-1" /> Console
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-3 pt-0 space-y-3">
+              <div className="flex flex-wrap gap-2">
+                <Badge className={liveStatus?.connected ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-rose-600 hover:bg-rose-700'}>
+                  {liveStatus?.connected ? 'LIVE' : liveLoading ? 'CHECKING' : 'OFFLINE'}
+                </Badge>
+                {liveStatus?.status ? <Badge variant="outline">status: {liveStatus.status}</Badge> : null}
+                <Badge variant="outline">latency: {liveStatus?.latencyMs ?? 0}ms</Badge>
+                <Badge variant="outline">channels: {channelConnected}/{channelTotal}</Badge>
+              </div>
+
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 text-xs">
+                <div className="rounded-lg border p-2">
+                  <p className="text-muted-foreground">Gateway</p>
+                  <p className="font-semibold truncate">{liveStatus?.gatewayUrl || '-'}</p>
+                </div>
+                <div className="rounded-lg border p-2">
+                  <p className="text-muted-foreground">Control</p>
+                  <p className="font-semibold truncate">{liveStatus?.controlUrl || liveSnapshot?.controlUrl || '-'}</p>
+                </div>
+                <div className="rounded-lg border p-2">
+                  <p className="text-muted-foreground">Health</p>
+                  <p className="font-semibold truncate">{liveStatus?.healthUrl || '-'}</p>
+                </div>
+                <div className="rounded-lg border p-2">
+                  <p className="text-muted-foreground">Updated</p>
+                  <p className="font-semibold">{liveStatus?.checkedAt ? formatRelative(liveStatus.checkedAt) : '-'}</p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => openExternalLink(liveStatus?.healthUrl)}
+                  disabled={!liveStatus?.healthUrl}
+                >
+                  <Eye className="h-3 w-3 mr-1" /> Health
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs"
+                  onClick={() => openExternalLink(liveStatus?.gatewayUrl)}
+                  disabled={!liveStatus?.gatewayUrl}
+                >
+                  <ExternalLink className="h-3 w-3 mr-1" /> Gateway
+                </Button>
+              </div>
+
+              {liveStatus?.error ? <p className="text-xs text-rose-600 dark:text-rose-400">{liveStatus.error}</p> : null}
+            </CardContent>
+          </Card>
 
           {/* Domain summary cards */}
           <div>
@@ -858,7 +981,7 @@ export default function OpsConductor() {
             <CardHeader className="p-3 pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Aktiviti Terkini</CardTitle>
-                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { store.setDashboardSummary(null); store.setOpsStats(null); loadDashboard() }}>
+                <Button size="sm" variant="ghost" className="h-7 text-xs" onClick={() => { store.setDashboardSummary(null); store.setOpsStats(null); loadDashboard(); loadLiveBridge() }}>
                   <RotateCcw className="h-3 w-3 mr-1" /> Muat semula
                 </Button>
               </div>

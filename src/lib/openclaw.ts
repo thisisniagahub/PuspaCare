@@ -89,4 +89,15 @@ export interface OpenClawSnapshot {
   }
 }
 
+export interface OpenClawStatus {
+  gatewayUrl: string
+  controlUrl: string
+  healthUrl: string
+  connected: boolean
+  status: string
+  latencyMs: number
+  checkedAt: string
+  error?: string
+}
+
 export const DEFAULT_OPENCLAW_BRIDGE_URL = 'https://operator.gangniaga.my/puspa-bridge'
