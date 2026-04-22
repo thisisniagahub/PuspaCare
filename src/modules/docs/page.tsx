@@ -846,16 +846,16 @@ const DOC_CATEGORIES: DocCategory[] = [
       },
       {
         id: 'openclaw-platform',
-        title: 'OpenClaw Platform',
+        title: 'Platform AI Ops Dalaman',
         badge: 'Lanjutan',
         badgeColor: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-300',
         content: (
           <>
-            <H1>OpenClaw Platform</H1>
+            <H1>Platform AI Ops Dalaman</H1>
             <P>
-              OpenClaw ialah platform lanjutan yang terbina dalam PUSPACare, menyediakan keupayaan MCP (Model Context Protocol), Plugin, Integrasi, Terminal, Ejen AI, Penyedia Model, dan Automasi. Platform ini membolehkan pertubuhan meluaskan keupayaan sistem melalui integrasi pihak ketiga dan automasi aliran kerja.
+              Platform AI Ops dalaman dalam PUSPACare menyediakan keupayaan MCP (Model Context Protocol), plugin, integrasi, terminal, ejen AI, penyedia model, dan automasi. Keupayaan ini membantu pertubuhan meluaskan operasi melalui integrasi pihak ketiga dan automasi aliran kerja.
             </P>
-            <H2>Komponen OpenClaw</H2>
+            <H2>Komponen AI Ops Dalaman</H2>
             <DocTable
               headers={['Komponen', 'Fungsi', 'Kegunaan']}
               rows={[
@@ -873,7 +873,7 @@ const DOC_CATEGORIES: DocCategory[] = [
               Model Context Protocol (MCP) membolehkan AI mengakses konteks dari pelbagai sumber data. Anda boleh mendaftarkan pelayan MCP yang menyediakan data luaran seperti pangkalan data kerajaan, sistem kewangan, atau sumber data komuniti. AI akan menggunakan konteks ini untuk memberikan jawapan yang lebih tepat dan relevan.
             </P>
             <Callout type="warning">
-              Integrasi OpenClaw memerlukan konfigurasi teknikal yang lanjutan. Hanya pentadbir sistem yang boleh menguruskan pelayan MCP, plugin, dan integrasi. Sila rujuk dokumentasi teknikal untuk panduan konfigurasi terperinci.
+              Integrasi AI Ops dalaman memerlukan konfigurasi teknikal yang lanjutan. Hanya pentadbir sistem yang boleh menguruskan pelayan MCP, plugin, dan integrasi. Sila rujuk dokumentasi teknikal untuk panduan konfigurasi terperinci.
             </Callout>
           </>
         ),
@@ -1007,7 +1007,7 @@ const DOC_CATEGORIES: DocCategory[] = [
               Semak data dalam jadual dan carta. Gunakan ciri penapis untuk menumpukan pada data tertentu. Klik butang &quot;Eksport&quot; untuk memuat turun laporan dalam format PDF atau Excel. Laporan PDF sesuai untuk pengedaran rasmi manakala Excel sesuai untuk analisis lanjutan.
             </StepBox>
             <Callout type="tip">
-              Jadualkan penjanaan laporan secara automatik menggunakan modul Automasi OpenClaw. Anda boleh mengkonfigurasi laporan bulanan dihantar secara automatik ke e-mel pengerusi dan bendahari pada tarikh tertentu setiap bulan.
+              Jadualkan penjanaan laporan secara automatik menggunakan modul Automasi AI Ops dalaman. Anda boleh mengkonfigurasi laporan bulanan dihantar secara automatik ke e-mel pengerusi dan bendahari pada tarikh tertentu setiap bulan.
             </Callout>
           </>
         ),
@@ -1373,7 +1373,7 @@ const DOC_CATEGORIES: DocCategory[] = [
           <>
             <H1>Integrasi &amp; Webhook</H1>
             <P>
-              PUSPACare menyokong integrasi dengan perkhidmatan luar melalui modul OpenClaw. Integrasi membolehkan pertubuhan menyambung ke sistem perbankan, gateway pembayaran, platform komunikasi, dan perkhidmatan pihak ketiga lain untuk operasi yang lebih cekap.
+              PUSPACare menyokong integrasi dengan perkhidmatan luar melalui modul AI Ops dalaman. Integrasi membolehkan pertubuhan menyambung ke sistem perbankan, gateway pembayaran, platform komunikasi, dan perkhidmatan pihak ketiga lain untuk operasi yang lebih cekap.
             </P>
             <H2>Jenis Integrasi</H2>
             <DocTable
