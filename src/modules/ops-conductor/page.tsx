@@ -997,7 +997,7 @@ export default function OpsConductor() {
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-muted-foreground">Automation Engine</span>
-                <Badge className={store.automations.filter(a => a.isEnabled).length > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'} className="text-[10px]">
+                <Badge className={`${store.automations.filter(a => a.isEnabled).length > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'} text-[10px]`}>
                   {store.automations.filter(a => a.isEnabled).length > 0 ? 'Aktif' : 'Idle'}
                 </Badge>
               </div>

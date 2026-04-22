@@ -165,8 +165,8 @@ export interface OpsState {
   setTraceEntries: (entries: TraceEntry[]) => void
   addTraceEntry: (entry: Omit<TraceEntry, 'id' | 'createdAt'>) => void
   setAutomations: (items: OpsAutomation[]) => void
-  setDashboardSummary: (summary: OpsDashboardSummary) => void
-  setOpsStats: (stats: OpsStats) => void
+  setDashboardSummary: (summary: OpsDashboardSummary | null) => void
+  setOpsStats: (stats: OpsStats | null) => void
   setArtifacts: (items: OpsArtifact[]) => void
   setProjects: (items: OpsProject[]) => void
   addPendingApproval: (approval: ApprovalRequest) => void
