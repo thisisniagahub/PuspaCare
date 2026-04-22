@@ -180,3 +180,36 @@ Stage Summary:
 - Total API routes: 40+ (from 25)
 - Total Prisma models: 32 (from 22)
 - All 0-error lint passed, pushed to GitHub main
+
+---
+Task ID: 2
+Agent: Main Orchestrator
+Task: Add Product Management (Add/Remove/Edit) and Stock Out to Agihan Bulan Inventori Stok Tab
+
+Work Log:
+- Analyzed existing 2405-line agihan-bulan/page.tsx with 2-tab interface (Agihan Bulanan + Inventori Stok)
+- Added 2 new Zod schemas: `productFormSchema` (name, unit, initialStock, minLevel, unitPrice) and `stockOutFormSchema` (itemId, quantity, date, reference, notes)
+- Added 6 new state variables: productDialogOpen, editingProduct, stockOutDialogOpen, stockOutDefaultItemId, deleteProductDialogOpen, deletingProduct
+- Added 2 new react-hook-form instances: productForm and stockOutForm with zodResolver
+- Added `dynamicStapleItems` useMemo that generates staple food checkboxes from live stockItems
+- Updated `getStapleLabel` with fallback nameMap for robust label resolution
+- Added product CRUD handlers: handleOpenAddProduct, handleOpenEditProduct, onProductSubmit (add/update with movement creation), handleOpenDeleteProduct, onConfirmDeleteProduct
+- Added stock out handler: handleOpenStockOut, onStockOutSubmit (with availability validation)
+- Updated stock table header: replaced single "Stok Masuk" button with "Tambah Produk" + "Stok Masuk" in a flex row
+- Replaced stock table Tindakan column: single "Stok Masuk" button → DropdownMenu with 4 actions (Stok Masuk, Stok Keluar, Edit Produk, Buang Produk)
+- Updated distribution form's makananRuji checkboxes: MAKANAN_RUJI_ITEMS → dynamicStapleItems (dynamic product list)
+- Added 3 new dialogs:
+  1. Product Add/Edit Dialog (name, unit select, initialStock, minLevel, unitPrice)
+  2. Stock Out Dialog (item select with stock display, quantity, date, reference, notes)
+  3. Delete Product Confirmation Dialog (warning message, product summary, confirm/cancel)
+- All new icons used (Package, Plus, Pencil, Trash2, ArrowUpFromLine, AlertTriangle, MoreHorizontal) were already imported
+- File grew from 2405 to 2893 lines (+488 lines)
+- TypeScript errors are pre-existing (react-hook-form zodResolver type mismatch pattern)
+- No errors in dev log related to agihan-bulan module
+
+Stage Summary:
+- Inventori Stok tab now supports full product lifecycle: Add, Edit, Delete products
+- Stock Out feature added with movement ledger tracking and availability validation
+- Distribution form's food item checkboxes are now dynamic (reflects current stock inventory)
+- All existing functionality preserved (distribution CRUD, stock in, stock table, low stock alerts, stock ledger)
+- Brand color (#4B0082) used consistently in all new UI elements

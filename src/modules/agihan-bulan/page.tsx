@@ -604,6 +604,26 @@ const stockInFormSchema = z.object({
 
 type StockInFormValues = z.infer<typeof stockInFormSchema>
 
+const productFormSchema = z.object({
+  name: z.string().min(1, 'Nama produk diperlukan'),
+  unit: z.string().min(1, 'Unit diperlukan'),
+  initialStock: z.coerce.number().min(0, 'Stok tidak boleh negatif'),
+  minLevel: z.coerce.number().min(1, 'Paras minimum mesti sekurang-kurangnya 1'),
+  unitPrice: z.coerce.number().min(0.01, 'Harga mesti melebihi 0'),
+})
+
+type ProductFormValues = z.infer<typeof productFormSchema>
+
+const stockOutFormSchema = z.object({
+  itemId: z.string().min(1, 'Sila pilih item'),
+  quantity: z.coerce.number().min(1, 'Kuantiti mesti sekurang-kurangnya 1'),
+  date: z.string().min(1, 'Tarikh diperlukan'),
+  reference: z.string().min(1, 'No. rujukan diperlukan'),
+  notes: z.string().optional().default(''),
+})
+
+type StockOutFormValues = z.infer<typeof stockOutFormSchema>
+
 // ─── Helper Functions ────────────────────────────────────────────────
 
 function formatCurrency(amount: number): string {
@@ -646,7 +666,19 @@ function getDeliveryIcon(method: DeliveryMethod) {
 
 function getStapleLabel(id: string): string {
   const item = MAKANAN_RUJI_ITEMS.find(i => i.id === id)
-  return item ? item.label : id
+  if (item) return item.label
+  // Fallback: check by name from stockItems pattern
+  const nameMap: Record<string, string> = {
+    beras: 'Beras (Rice)',
+    minyak_masak: 'Minyak Masak (Cooking Oil)',
+    gula: 'Gula (Sugar)',
+    tepung: 'Tepung (Flour)',
+    mie_spaghetti: 'Mie/Spaghetti',
+    kacang_kekacang: 'Kacang/Kekacang (Beans/Legumes)',
+    susu: 'Susu (Milk)',
+    telur: 'Telur (Eggs)',
+  }
+  return nameMap[id] || id
 }
 
 function calculateExpenditure(makananRuji: string[], bilTanggungan: number): number {
@@ -702,6 +734,16 @@ export default function AgihanBulanPage() {
   const [stockCurrentPage, setStockCurrentPage] = React.useState(1)
   const [showMovementLedger, setShowMovementLedger] = React.useState(false)
 
+  // Product management state
+  const [productDialogOpen, setProductDialogOpen] = React.useState(false)
+  const [editingProduct, setEditingProduct] = React.useState<StockItem | null>(null)
+  // Stock out state
+  const [stockOutDialogOpen, setStockOutDialogOpen] = React.useState(false)
+  const [stockOutDefaultItemId, setStockOutDefaultItemId] = React.useState<string>('')
+  // Delete confirmation
+  const [deleteProductDialogOpen, setDeleteProductDialogOpen] = React.useState(false)
+  const [deletingProduct, setDeletingProduct] = React.useState<StockItem | null>(null)
+
   // ─── Distribution Form ─────────────────────────────────────────────
   const form = useForm<DistributionFormValues>({
     resolver: zodResolver(distributionFormSchema),
@@ -728,6 +770,30 @@ export default function AgihanBulanPage() {
       itemId: '',
       quantity: 1,
       source: 'pembelian',
+      date: new Date().toISOString().split('T')[0],
+      reference: '',
+      notes: '',
+    },
+  })
+
+  // Product Form (Add/Edit)
+  const productForm = useForm<ProductFormValues>({
+    resolver: zodResolver(productFormSchema),
+    defaultValues: {
+      name: '',
+      unit: 'kg',
+      initialStock: 0,
+      minLevel: 10,
+      unitPrice: 0,
+    },
+  })
+
+  // Stock Out Form
+  const stockOutForm = useForm<StockOutFormValues>({
+    resolver: zodResolver(stockOutFormSchema),
+    defaultValues: {
+      itemId: '',
+      quantity: 1,
       date: new Date().toISOString().split('T')[0],
       reference: '',
       notes: '',
@@ -826,6 +892,12 @@ export default function AgihanBulanPage() {
   React.useEffect(() => {
     setStockCurrentPage(1)
   }, [stockFilterItem, stockFilterType, stockSearchQuery])
+
+  // ─── Dynamic Staple Items ─────────────────────────────────────────
+  const dynamicStapleItems = React.useMemo(() =>
+    stockItems.map(si => ({ id: si.id, label: `${si.name} (${si.unit})` })),
+    [stockItems]
+  )
 
   // ─── Handlers (Distribution) ───────────────────────────────────────
 
@@ -984,6 +1056,150 @@ export default function AgihanBulanPage() {
       )
     )
     setStockInDialogOpen(false)
+  }
+
+  // ─── Product Management Handlers ───────────────────────────────────
+
+  function handleOpenAddProduct() {
+    setEditingProduct(null)
+    productForm.reset({
+      name: '',
+      unit: 'kg',
+      initialStock: 0,
+      minLevel: 10,
+      unitPrice: 0,
+    })
+    setProductDialogOpen(true)
+  }
+
+  function handleOpenEditProduct(item: StockItem) {
+    setEditingProduct(item)
+    productForm.reset({
+      name: item.name,
+      unit: item.unit,
+      initialStock: item.currentStock,
+      minLevel: item.minLevel,
+      unitPrice: item.unitPrice,
+    })
+    setProductDialogOpen(true)
+  }
+
+  function onProductSubmit(data: ProductFormValues) {
+    if (editingProduct) {
+      // Update existing product
+      setStockItems(prev =>
+        prev.map(item =>
+          item.id === editingProduct.id
+            ? { ...item, name: data.name, unit: data.unit, minLevel: data.minLevel, unitPrice: data.unitPrice, currentStock: data.initialStock }
+            : item
+        )
+      )
+      // Update stock movements references
+      setStockMovements(prev =>
+        prev.map(m =>
+          m.itemId === editingProduct.id
+            ? { ...m, itemName: data.name }
+            : m
+        )
+      )
+    } else {
+      // Add new product
+      const newId = data.name.toLowerCase().replace(/\s+/g, '_') + '_' + Date.now()
+      const newItem: StockItem = {
+        id: newId,
+        name: data.name,
+        unit: data.unit,
+        currentStock: data.initialStock,
+        minLevel: data.minLevel,
+        unitPrice: data.unitPrice,
+      }
+      setStockItems(prev => [...prev, newItem])
+
+      // If initial stock > 0, create stock in movement
+      if (data.initialStock > 0) {
+        const nextNum = stockMovements.length + 1
+        const newMovement: StockMovement = {
+          id: `SM${String(nextNum).padStart(3, '0')}`,
+          refNo: `SM-2025-${String(nextNum).padStart(4, '0')}`,
+          itemId: newId,
+          itemName: data.name,
+          type: 'masuk',
+          quantity: data.initialStock,
+          source: 'pembelian',
+          date: new Date().toISOString().split('T')[0],
+          reference: 'INITIAL',
+          notes: 'Stok awal produk baharu',
+          previousStock: 0,
+          newStock: data.initialStock,
+        }
+        setStockMovements(prev => [newMovement, ...prev])
+      }
+    }
+    setProductDialogOpen(false)
+  }
+
+  function handleOpenDeleteProduct(item: StockItem) {
+    setDeletingProduct(item)
+    setDeleteProductDialogOpen(true)
+  }
+
+  function onConfirmDeleteProduct() {
+    if (!deletingProduct) return
+    setStockItems(prev => prev.filter(item => item.id !== deletingProduct.id))
+    setStockMovements(prev => prev.filter(m => m.itemId !== deletingProduct.id))
+    setDeleteProductDialogOpen(false)
+    setDeletingProduct(null)
+  }
+
+  // ─── Stock Out Handler ─────────────────────────────────────────────
+
+  function handleOpenStockOut(itemId?: string) {
+    setStockOutDefaultItemId(itemId || '')
+    stockOutForm.reset({
+      itemId: itemId || '',
+      quantity: 1,
+      date: new Date().toISOString().split('T')[0],
+      reference: '',
+      notes: '',
+    })
+    setStockOutDialogOpen(true)
+  }
+
+  function onStockOutSubmit(data: StockOutFormValues) {
+    const targetItem = stockItems.find(si => si.id === data.itemId)
+    if (!targetItem) return
+    if (data.quantity > targetItem.currentStock) {
+      return // Cannot deduct more than available
+    }
+
+    const previousStock = targetItem.currentStock
+    const newStock = previousStock - data.quantity
+
+    const nextNum = stockMovements.length + 1
+    const newMovement: StockMovement = {
+      id: `SM${String(nextNum).padStart(3, '0')}`,
+      refNo: `SM-2025-${String(nextNum).padStart(4, '0')}`,
+      itemId: data.itemId,
+      itemName: targetItem.name,
+      type: 'keluar',
+      quantity: data.quantity,
+      source: 'pelarasan',
+      date: data.date,
+      reference: data.reference,
+      notes: data.notes || 'Stok keluar manual',
+      previousStock,
+      newStock,
+    }
+
+    setStockMovements(prev => [newMovement, ...prev])
+    setStockItems(prev =>
+      prev.map(item =>
+        item.id === data.itemId
+          ? { ...item, currentStock: item.currentStock - data.quantity }
+          : item
+      )
+    )
+    setStockOutDialogOpen(false)
   }
 
   // ─── Render ────────────────────────────────────────────────────────
@@ -1450,15 +1666,21 @@ export default function AgihanBulanPage() {
                     <PackageCheck className="h-5 w-5" style={{ color: BRAND_COLOR }} />
                     Stok Semasa
                   </CardTitle>
-                  <Button
-                    onClick={() => handleOpenStockIn()}
-                    size="sm"
-                    className="gap-2"
-                    style={{ backgroundColor: BRAND_COLOR }}
-                  >
-                    <ArrowDownToLine className="h-4 w-4" />
-                    Stok Masuk
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button onClick={handleOpenAddProduct} size="sm" variant="outline" className="gap-2">
+                      <Plus className="h-4 w-4" />
+                      Tambah Produk
+                    </Button>
+                    <Button
+                      onClick={() => handleOpenStockIn()}
+                      size="sm"
+                      className="gap-2"
+                      style={{ backgroundColor: BRAND_COLOR }}
+                    >
+                      <ArrowDownToLine className="h-4 w-4" />
+                      Stok Masuk
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="p-0">
@@ -1497,15 +1719,36 @@ export default function AgihanBulanPage() {
                               <Progress value={progressPercent} className={cn('h-2', status.barColor)} />
                             </TableCell>
                             <TableCell>
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                className="gap-1 h-7 text-xs"
-                                onClick={() => handleOpenStockIn(item.id)}
-                              >
-                                <ArrowDownToLine className="h-3 w-3" />
-                                Stok Masuk
-                              </Button>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="outline" size="sm" className="h-7 gap-1">
+                                    <MoreHorizontal className="h-3 w-3" />
+                                    Tindakan
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleOpenStockIn(item.id)}>
+                                    <ArrowDownToLine className="mr-2 h-4 w-4" />
+                                    Stok Masuk
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem onClick={() => handleOpenStockOut(item.id)}>
+                                    <ArrowUpFromLine className="mr-2 h-4 w-4" />
+                                    Stok Keluar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem onClick={() => handleOpenEditProduct(item)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit Produk
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleOpenDeleteProduct(item)}
+                                    className="text-red-600 focus:text-red-600"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Buang Produk
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
                             </TableCell>
                           </TableRow>
                         )
@@ -1964,7 +2207,7 @@ export default function AgihanBulanPage() {
                     render={() => (
                       <FormItem>
                         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                          {MAKANAN_RUJI_ITEMS.map((item) => (
+                          {dynamicStapleItems.map((item) => (
                             <FormField
                               key={item.id}
                               control={form.control}
@@ -2396,6 +2639,252 @@ export default function AgihanBulanPage() {
                 </div>
               </form>
             </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* ─── Add/Edit Product Dialog ─────────────────────────────── */}
+        <Dialog open={productDialogOpen} onOpenChange={setProductDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" style={{ color: BRAND_COLOR }} />
+                {editingProduct ? 'Edit Produk' : 'Tambah Produk Baharu'}
+              </DialogTitle>
+            </DialogHeader>
+            <Form {...productForm}>
+              <form onSubmit={productForm.handleSubmit(onProductSubmit)} className="space-y-4">
+                <FormField
+                  control={productForm.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nama Produk</FormLabel>
+                      <FormControl>
+                        <Input placeholder="cth: Beras" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={productForm.control}
+                    name="unit"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Unit</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Pilih unit" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="kg">kg</SelectItem>
+                            <SelectItem value="botol">botol</SelectItem>
+                            <SelectItem value="kotak">kotak</SelectItem>
+                            <SelectItem value="tray">tray</SelectItem>
+                            <SelectItem value="beg">beg</SelectItem>
+                            <SelectItem value="tin">tin</SelectItem>
+                            <SelectItem value="bungkus">bungkus</SelectItem>
+                            <SelectItem value="pcs">pcs</SelectItem>
+                            <SelectItem value="liter">liter</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={productForm.control}
+                    name="initialStock"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Stok Semasa</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={productForm.control}
+                    name="minLevel"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Paras Minimum</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={1} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={productForm.control}
+                    name="unitPrice"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Harga Seunit (RM)</FormLabel>
+                        <FormControl>
+                          <Input type="number" min={0.01} step={0.01} {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setProductDialogOpen(false)}>
+                    Batal
+                  </Button>
+                  <Button type="submit" style={{ backgroundColor: BRAND_COLOR }}>
+                    {editingProduct ? 'Simpan Perubahan' : 'Tambah Produk'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* ─── Stock Out Dialog ──────────────────────────────────────── */}
+        <Dialog open={stockOutDialogOpen} onOpenChange={setStockOutDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <ArrowUpFromLine className="h-5 w-5 text-red-600" />
+                Stok Keluar
+              </DialogTitle>
+            </DialogHeader>
+            <Form {...stockOutForm}>
+              <form onSubmit={stockOutForm.handleSubmit(onStockOutSubmit)} className="space-y-4">
+                <FormField
+                  control={stockOutForm.control}
+                  name="itemId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Item Stok</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Pilih item stok" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {stockItems.map(item => (
+                            <SelectItem key={item.id} value={item.id}>
+                              {item.name} ({item.unit}) — Stok: {item.currentStock}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={stockOutForm.control}
+                  name="quantity"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Kuantiti</FormLabel>
+                      <FormControl>
+                        <Input type="number" min={1} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={stockOutForm.control}
+                  name="date"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tarikh</FormLabel>
+                      <FormControl>
+                        <Input type="date" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={stockOutForm.control}
+                  name="reference"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>No. Rujukan</FormLabel>
+                      <FormControl>
+                        <Input placeholder="cth: AGIHAN-2025-0001" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={stockOutForm.control}
+                  name="notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Catatan</FormLabel>
+                      <FormControl>
+                        <Textarea placeholder="Sebab stok keluar..." rows={2} {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex justify-end gap-3 pt-2">
+                  <Button type="button" variant="outline" onClick={() => setStockOutDialogOpen(false)}>
+                    Batal
+                  </Button>
+                  <Button type="submit" className="bg-red-600 hover:bg-red-700">
+                    Simpan Stok Keluar
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
+
+        {/* ─── Delete Product Confirmation Dialog ────────────────────── */}
+        <Dialog open={deleteProductDialogOpen} onOpenChange={setDeleteProductDialogOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-red-600">
+                <AlertTriangle className="h-5 w-5" />
+                Buang Produk
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Adakah anda pasti ingin membuang produk ini? Tindakan ini juga akan memadam semua rekod pergerakan stok berkaitan.
+              </p>
+              {deletingProduct && (
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="font-semibold text-sm">{deletingProduct.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    Stok semasa: {deletingProduct.currentStock} {deletingProduct.unit} | 
+                    Nilai: {formatCurrency(deletingProduct.currentStock * deletingProduct.unitPrice)}
+                  </p>
+                </div>
+              )}
+              <div className="flex justify-end gap-3 pt-2">
+                <Button variant="outline" onClick={() => setDeleteProductDialogOpen(false)}>
+                  Batal
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={onConfirmDeleteProduct}
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Buang Produk
+                </Button>
+              </div>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
