@@ -131,35 +131,35 @@ export default function Home() {
       <AppSidebar />
       <div className="flex-1 flex flex-col min-w-0 lg:ml-[72px] lg:transition-all lg:duration-300 lg:ease-in-out">
         <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-          <div className="flex items-center justify-between h-14 px-4 lg:px-6">
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="lg:hidden" onClick={toggleSidebar} aria-label="Toggle menu">
+          <div className="flex items-center justify-between h-14 px-4 sm:px-6">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <Button variant="ghost" size="icon" className="lg:hidden shrink-0" onClick={toggleSidebar} aria-label="Toggle menu">
                 <Menu className="h-5 w-5" />
               </Button>
-              <div className="flex items-center gap-2 text-sm">
+              <div className="flex items-center gap-2 min-w-0">
                 <Image
                   src="/puspa-logo-official.png"
                   alt="PUSPA"
                   width={28}
                   height={28}
-                  className="hidden sm:block object-contain"
+                  className="hidden sm:block shrink-0 object-contain"
                 />
-                <span className="font-semibold truncate max-w-xs sm:max-w-md" style={{ color: '#4B0082' }}>
+                <span className="font-semibold truncate" style={{ color: '#4B0082' }}>
                   {viewLabels[currentView] || 'Dashboard'}
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 shrink-0">
               <Button variant="outline" size="sm" className="hidden md:flex gap-2 text-xs text-muted-foreground h-8 px-3" onClick={() => setCommandPaletteOpen(true)}>
                 <Command className="h-3 w-3" />
                 <span>Ctrl+K</span>
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme">
+              <Button variant="ghost" size="icon" className="relative h-8 w-8 shrink-0" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme">
                 <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
                 <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               </Button>
-              <div className="flex items-center gap-2 ml-1">
-                <div className="h-8 w-8 rounded-full bg-purple-600 text-white flex items-center justify-center text-xs font-bold">A</div>
+              <div className="flex items-center gap-2 ml-0.5 pl-2.5 border-l border-border">
+                <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#4B0082' }}>A</div>
                 <div className="hidden sm:block">
                   <p className="text-sm font-medium leading-tight">Admin</p>
                   <p className="text-xs text-muted-foreground leading-tight">Pentadbir</p>

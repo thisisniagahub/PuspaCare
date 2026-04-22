@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
 import { useAppStore } from '@/stores/app-store';
 import type { ViewId } from '@/types';
 import Image from 'next/image';
@@ -408,27 +408,45 @@ export function AppSidebar() {
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
 
+  // Subscribe to desktop media query using useSyncExternalStore (no setState in effect)
+  const desktopMq = typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)') : null;
+  const isDesktop = useSyncExternalStore(
+    useCallback((cb) => {
+      desktopMq?.addEventListener('change', cb);
+      return () => desktopMq?.removeEventListener('change', cb);
+    }, [desktopMq]),
+    () => desktopMq?.matches ?? false,
+    () => false, // SSR fallback
+  );
+
+  // Auto-close mobile Sheet when resizing to desktop
+  useEffect(() => {
+    if (isDesktop) setSidebarOpen(false);
+  }, [isDesktop, setSidebarOpen]);
+
   // Expanded state: if pinned open, OR if hovered while collapsed
   const expanded = !isCollapsed || (isCollapsed && isHovered);
 
   return (
     <>
-      {/* ── Mobile: Sheet overlay (always fully expanded) ── */}
-      <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
-        <SheetContent
-          side="left"
-          className="w-[280px] p-0"
-          aria-describedby={undefined}
-        >
-          <SheetTitle className="sr-only">Menu Navigasi PUSPA</SheetTitle>
-          <SidebarContent
-            onNavigate={(id) => {
-              setView(id);
-            }}
-            onClose={() => setSidebarOpen(false)}
-          />
-        </SheetContent>
-      </Sheet>
+      {/* ── Mobile/Tablet: Sheet overlay (only rendered on non-desktop) ── */}
+      {!isDesktop && (
+        <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+          <SheetContent
+            side="left"
+            className="w-[280px] p-0"
+            aria-describedby={undefined}
+          >
+            <SheetTitle className="sr-only">Menu Navigasi PUSPA</SheetTitle>
+            <SidebarContent
+              onNavigate={(id) => {
+                setView(id);
+              }}
+              onClose={() => setSidebarOpen(false)}
+            />
+          </SheetContent>
+        </Sheet>
+      )}
 
       {/* ── Desktop: Fixed sidebar with hover expand ── */}
       <aside
