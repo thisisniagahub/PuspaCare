@@ -59,6 +59,10 @@ model Member {
   householdMembers HouseholdMember[]
   disbursements    Disbursement[]
   eKYCVerification EKYCVerification?
+
+  @@index([memberNumber])
+  @@index([ic])
+  @@index([status])
 }
 
 model HouseholdMember {
@@ -143,6 +147,10 @@ model Case {
   caseNotes     CaseNote[]
   caseDocuments CaseDocument[]
   disbursements Disbursement[]
+
+  @@index([caseNumber])
+  @@index([status])
+  @@index([memberId])
 }
 
 model CaseNote {
@@ -199,6 +207,9 @@ model Donation {
   donatedAt        DateTime @default(now())
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
+
+  @@index([fundType])
+  @@index([status])
 }
 
 // ============ DISBURSEMENT ============
@@ -226,6 +237,8 @@ model Disbursement {
   member        Member?  @relation(fields: [memberId], references: [id])
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+
+  @@index([status])
 }
 
 // ============ ACTIVITY / KANBAN ============
