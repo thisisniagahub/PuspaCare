@@ -62,24 +62,24 @@ const viewLabels: Record<string, string> = {
   programmes: 'Pengurusan Program',
   donations: 'Pengurusan Donasi',
   disbursements: 'Pengurusan Pembayaran',
-  compliance: 'Dashboard Compliance',
+  compliance: 'Compliance',
   admin: 'Pentadbiran',
-  reports: 'Pusat Laporan & Pematuhan',
-  activities: 'Pengurusan Aktiviti',
+  reports: 'Laporan Kewangan',
+  activities: 'Aktiviti',
   ai: 'Alat AI',
-  volunteers: 'Pengurusan Sukarelawan',
-  donors: 'CRM Penderma',
-  documents: 'Gudang Dokumen',
+  volunteers: 'Sukarelawan',
+  donors: 'Penderma',
+  documents: 'Dokumen',
   'openclaw-mcp': 'OpenClaw — Pelayan MCP',
   'openclaw-plugins': 'OpenClaw — Plugin',
   'openclaw-integrations': 'OpenClaw — Integrasi',
   'openclaw-terminal': 'OpenClaw — Terminal',
   'openclaw-agents': 'OpenClaw — Ejen AI',
-  'openclaw-models': 'OpenClaw — Penyedia Model',
+  'openclaw-models': 'OpenClaw — Models',
   'openclaw-automation': 'OpenClaw — Automasi',
-  'ekyc': 'eKYC Verification',
+  'ekyc': 'eKYC',
   'tapsecure': 'TapSecure',
-  docs: 'Panduan PUSPA',
+  docs: 'Panduan',
 }
 
 function ViewRenderer({ view }: { view: string }) {
@@ -113,7 +113,7 @@ function ViewRenderer({ view }: { view: string }) {
 }
 
 export default function Home() {
-  const { currentView, toggleSidebar, setCommandPaletteOpen } = useAppStore()
+  const { currentView, toggleSidebar, setCommandPaletteOpen, userRole } = useAppStore()
   const { theme, setTheme } = useTheme()
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -150,9 +150,10 @@ export default function Home() {
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
-              <Button variant="outline" size="sm" className="hidden md:flex gap-2 text-xs text-muted-foreground h-8 px-3" onClick={() => setCommandPaletteOpen(true)}>
+              <Button variant="outline" size="sm" className="hidden sm:flex gap-2 text-xs text-muted-foreground h-8 px-3" onClick={() => setCommandPaletteOpen(true)}>
                 <Command className="h-3 w-3" />
-                <span>Ctrl+K</span>
+                <span className="hidden md:inline">Cari modul…</span>
+                <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded border bg-muted px-1 py-0.5 font-mono text-[10px] font-normal text-muted-foreground">⌘K</kbd>
               </Button>
               <Button variant="ghost" size="icon" className="relative h-8 w-8 shrink-0" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label="Toggle theme">
                 <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
@@ -160,9 +161,11 @@ export default function Home() {
               </Button>
               <div className="flex items-center gap-2 ml-0.5 pl-2.5 border-l border-border">
                 <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#4B0082' }}>A</div>
-                <div className="hidden sm:block">
+                <div className="hidden sm:flex sm:flex-col">
                   <p className="text-sm font-medium leading-tight">Admin</p>
-                  <p className="text-xs text-muted-foreground leading-tight">Pentadbir</p>
+                  <p className="text-[10px] leading-tight font-medium px-1.5 py-0 w-fit rounded" style={{ color: '#4B0082', backgroundColor: '#4B008214' }}>
+                    {userRole === 'developer' ? 'Developer' : userRole === 'admin' ? 'Pentadbir' : 'Staf'}
+                  </p>
                 </div>
               </div>
             </div>

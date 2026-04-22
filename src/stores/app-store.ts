@@ -1,22 +1,47 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { ViewId } from '@/types'
 
-interface AppState {
+// ---------------------------------------------------------------------------
+// Role types — determines which nav sections are visible
+// ---------------------------------------------------------------------------
+export type UserRole = 'staff' | 'admin' | 'developer'
+
+export interface AppState {
   currentView: ViewId
   sidebarOpen: boolean
   commandPaletteOpen: boolean
+  userRole: UserRole
+  onboardingDone: boolean
   setView: (view: ViewId) => void
   toggleSidebar: () => void
   setSidebarOpen: (open: boolean) => void
   setCommandPaletteOpen: (open: boolean) => void
+  setUserRole: (role: UserRole) => void
+  setOnboardingDone: (done: boolean) => void
 }
 
-export const useAppStore = create<AppState>((set) => ({
-  currentView: 'dashboard',
-  sidebarOpen: false,
-  commandPaletteOpen: false,
-  setView: (view) => set({ currentView: view, sidebarOpen: false }),
-  toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
-  setSidebarOpen: (open) => set({ sidebarOpen: open }),
-  setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
-}))
+export const useAppStore = create<AppState>()(
+  persist(
+    (set) => ({
+      currentView: 'dashboard',
+      sidebarOpen: false,
+      commandPaletteOpen: false,
+      userRole: 'admin',      // default role
+      onboardingDone: false,
+      setView: (view) => set({ currentView: view, sidebarOpen: false }),
+      toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
+      setSidebarOpen: (open) => set({ sidebarOpen: open }),
+      setCommandPaletteOpen: (open) => set({ commandPaletteOpen: open }),
+      setUserRole: (role) => set({ userRole: role }),
+      setOnboardingDone: (done) => set({ onboardingDone: done }),
+    }),
+    {
+      name: 'puspa-app-state',
+      partialize: (state) => ({
+        userRole: state.userRole,
+        onboardingDone: state.onboardingDone,
+      }),
+    },
+  ),
+)

@@ -31,8 +31,10 @@ import {
   AlertCircle,
   Clock,
   CheckCircle2,
+  ClipboardList,
   Package,
 } from 'lucide-react'
+import { useAppStore } from '@/stores/app-store'
 import {
   BarChart,
   Bar,
@@ -741,6 +743,124 @@ export default function DashboardPage() {
             }
             trend={stats.trendCompliance}
           />
+        </div>
+
+        {/* ----------------------------------------------------------------- */}
+        {/* Tindakan Seterusnya (Next Actions)                                */}
+        {/* ----------------------------------------------------------------- */}
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <ClipboardList className="h-4 w-4" style={{ color: '#4B0082' }} />
+            <h2 className="text-sm font-semibold" style={{ color: '#4B0082' }}>Tindakan Seterusnya</h2>
+            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
+              Perlu perhatian anda
+            </span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <button
+              type="button"
+              onClick={() => useAppStore.getState().setView('cases')}
+              className="group flex items-start gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/40">
+                <Clock className="h-4 w-4 text-amber-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground group-hover:text-purple-700 transition-colors">3 Kes Menunggu</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Permohonan bantuan perlu disemak</p>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => useAppStore.getState().setView('donations')}
+              className="group flex items-start gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40">
+                <DollarSign className="h-4 w-4 text-emerald-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground group-hover:text-purple-700 transition-colors">5 Donasi Baharu</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Sumbangan belum direkodkan</p>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => useAppStore.getState().setView('ekyc')}
+              className="group flex items-start gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40">
+                <ShieldCheck className="h-4 w-4 text-blue-600" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground group-hover:text-purple-700 transition-colors">2 eKYC Pending</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Pengesahan identiti menunggu</p>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => useAppStore.getState().setView('programmes')}
+              className="group flex items-start gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800"
+            >
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-950/40">
+                <Calendar className="h-4 w-4" style={{ color: '#4B0082' }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground group-hover:text-purple-700 transition-colors">1 Program Minggu Ini</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Program bantuan perlu dijalankan</p>
+              </div>
+              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
+            </button>
+          </div>
+        </div>
+
+        {/* ----------------------------------------------------------------- */}
+        {/* Workflow Pipeline — End-to-end flow visibility                     */}
+        {/* ----------------------------------------------------------------- */}
+        <div className="mt-6">
+          <div className="flex items-center gap-2 mb-3">
+            <Activity className="h-4 w-4" style={{ color: '#4B0082' }} />
+            <h2 className="text-sm font-semibold" style={{ color: '#4B0082' }}>Pipeline Workflow</h2>
+          </div>
+          <div className="rounded-xl border bg-card p-4 overflow-x-auto">
+            <div className="flex items-center gap-1 min-w-[600px]">
+              {[
+                { label: 'Daftar Ahli', count: '1,247', icon: UserPlus, done: true },
+                { label: 'Kes Bantuan', count: '12', icon: FileText, done: false, pending: 3 },
+                { label: 'Program', count: '8', icon: Heart, done: false },
+                { label: 'Pembayaran', count: 'RM 45K', icon: HandCoins, done: false, pending: 5 },
+                { label: 'Laporan', count: '3', icon: ClipboardList, done: false },
+              ].map((step, idx) => (
+                <div key={step.label} className="flex items-center gap-1 flex-1">
+                  <div className={cn(
+                    'flex items-center gap-2 rounded-lg border px-3 py-2 flex-1 transition-all',
+                    step.pending ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20' :
+                    step.done ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20' :
+                    'border-border bg-muted/30',
+                  )}>
+                    <step.icon className={cn('h-4 w-4 shrink-0',
+                      step.pending ? 'text-amber-600' : step.done ? 'text-emerald-600' : 'text-muted-foreground'
+                    )} />
+                    <div className="min-w-0">
+                      <p className="text-xs font-medium truncate">{step.label}</p>
+                      <p className={cn('text-[10px]',
+                        step.pending ? 'text-amber-600' : 'text-muted-foreground'
+                      )}>
+                        {step.pending ? `${step.pending} pending` : step.count}
+                      </p>
+                    </div>
+                    {step.done && <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />}
+                  </div>
+                  {idx < 4 && <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />}
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
 
         {/* ----------------------------------------------------------------- */}
