@@ -461,42 +461,8 @@ const initialMembers: Member[] = [
   },
 ];
 
-const mockHouseholdMembers: Record<string, HouseholdMember[]> = {
-  '1': [
-    { id: 'h1', name: 'Aminah binti Omar', relationship: 'Isteri', icNumber: '870915-14-5234', age: 37, occupation: 'Surirumah', income: 0 },
-    { id: 'h2', name: 'Muhammad Haziq', relationship: 'Anak', icNumber: '100315-01-5789', age: 14, occupation: 'Pelajar', income: 0 },
-    { id: 'h3', name: 'Nurul Izzah', relationship: 'Anak', icNumber: '120822-02-5345', age: 12, occupation: 'Pelajar', income: 0 },
-    { id: 'h4', name: 'Ahmad Faris', relationship: 'Anak', icNumber: '150101-01-5678', age: 9, occupation: 'Pelajar', income: 0 },
-  ],
-  '2': [
-    { id: 'h5', name: 'Alya Sofea', relationship: 'Anak', icNumber: '080912-02-5890', age: 16, occupation: 'Pelajar', income: 0 },
-    { id: 'h6', name: 'Muhammad Danish', relationship: 'Anak', icNumber: '110325-01-5234', age: 13, occupation: 'Pelajar', income: 0 },
-    { id: 'h7', name: 'Nur Aina', relationship: 'Anak', icNumber: '130718-02-5456', age: 11, occupation: 'Pelajar', income: 0 },
-  ],
-  '3': [
-    { id: 'h8', name: 'Salmah binti Yusof', relationship: 'Isteri', icNumber: '810618-14-5678', age: 43, occupation: 'Surirumah', income: 0 },
-    { id: 'h9', name: 'Ahmad Syafiq', relationship: 'Anak', icNumber: '050410-01-5123', age: 19, occupation: 'Pelajar', income: 0 },
-    { id: 'h10', name: 'Siti Afiqah', relationship: 'Anak', icNumber: '070822-02-5345', age: 17, occupation: 'Pelajar', income: 0 },
-    { id: 'h11', name: 'Muhammad Aqil', relationship: 'Anak', icNumber: '091215-01-5678', age: 15, occupation: 'Pelajar', income: 0 },
-    { id: 'h12', name: 'Nur Aisyah', relationship: 'Anak', icNumber: '110318-02-5890', age: 13, occupation: 'Pelajar', income: 0 },
-    { id: 'h13', name: 'Ahmad Harith', relationship: 'Anak', icNumber: '130710-01-5234', age: 11, occupation: 'Pelajar', income: 0 },
-  ],
-};
-
-const mockRelatedCases: Record<string, RelatedCase[]> = {
-  '1': [
-    { id: 'c1', caseNo: 'KES-2024-015', type: 'Bantuan Pendidikan', status: 'Lengkap', date: '2024-01-20', amount: 500 },
-    { id: 'c2', caseNo: 'KES-2024-032', type: 'Bantuan Sara Hidup', status: 'Aktif', date: '2024-03-10', amount: 300 },
-  ],
-  '2': [
-    { id: 'c3', caseNo: 'KES-2024-008', type: 'Bantuan Sara Hidup', status: 'Aktif', date: '2024-02-15', amount: 400 },
-    { id: 'c4', caseNo: 'KES-2024-041', type: 'Bantuan Perubatan', status: 'Dalam Proses', date: '2024-04-05', amount: 800 },
-    { id: 'c5', caseNo: 'KES-2024-055', type: 'Bantuan Sekolah', status: 'Aktif', date: '2024-05-12', amount: 250 },
-  ],
-  '3': [
-    { id: 'c6', caseNo: 'KES-2024-022', type: 'Bantuan Kebersihan Rumah', status: 'Lengkap', date: '2024-03-01', amount: 350 },
-  ],
-};
+// NOTE: Household members and related cases are now fetched from the API.
+// The view sheet will show empty states when no data is available.
 
 // ===================== Helpers =====================
 
@@ -557,7 +523,7 @@ export default function MembersPage() {
 
   // Form
   const form = useForm<MemberFormValues>({
-    resolver: zodResolver(memberSchema),
+    resolver: zodResolver(memberSchema) as any,
     defaultValues: {
       name: '',
       icNumber: '',
@@ -735,7 +701,7 @@ export default function MembersPage() {
         memberNo: generateMemberNo(members),
         ...data,
         joinDate: new Date().toISOString().split('T')[0],
-      };
+      } as Member;
       setMembers((prev) => [newMember, ...prev]);
     }
     setDialogOpen(false);
@@ -1568,63 +1534,25 @@ export default function MembersPage() {
                       </section>
                     )}
 
-                    {/* Related Cases */}
-                    {mockRelatedCases[viewingMember.id] && (
-                      <section>
-                        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                          <CalendarDays className="h-4 w-4" /> Kes Berkaitan
-                        </h4>
-                        <div className="overflow-hidden rounded-lg border border-slate-100 dark:border-slate-700">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="bg-slate-50/80 dark:bg-slate-900/50 hover:bg-slate-50/80">
-                                <TableHead className="text-xs">No. Kes</TableHead>
-                                <TableHead className="text-xs">Jenis</TableHead>
-                                <TableHead className="text-xs text-right">Jumlah</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {mockRelatedCases[viewingMember.id].map((c) => (
-                                <TableRow key={c.id} className="border-slate-100 dark:border-slate-700/50">
-                                  <TableCell className="font-mono text-xs">{c.caseNo}</TableCell>
-                                  <TableCell className="text-xs">{c.type}</TableCell>
-                                  <TableCell className="text-right text-xs font-medium">{formatCurrency(c.amount)}</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </section>
-                    )}
+                    {/* Related Cases — empty state when no data */}
+                    <section>
+                      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        <CalendarDays className="h-4 w-4" /> Kes Berkaitan
+                      </h4>
+                      <div className="rounded-lg border border-dashed border-slate-200 p-4 text-center dark:border-slate-700">
+                        <p className="text-xs text-muted-foreground">Tiada kes berkaitan direkodkan.</p>
+                      </div>
+                    </section>
 
-                    {/* Household Members */}
-                    {mockHouseholdMembers[viewingMember.id] && (
-                      <section>
-                        <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                          <Home className="h-4 w-4" /> Ahli Isi Rumah
-                        </h4>
-                        <div className="overflow-hidden rounded-lg border border-slate-100 dark:border-slate-700">
-                          <Table>
-                            <TableHeader>
-                              <TableRow className="bg-slate-50/80 dark:bg-slate-900/50 hover:bg-slate-50/80">
-                                <TableHead className="text-xs">Nama</TableHead>
-                                <TableHead className="text-xs">Hubungan</TableHead>
-                                <TableHead className="text-xs text-right">Umur</TableHead>
-                              </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                              {mockHouseholdMembers[viewingMember.id].map((h) => (
-                                <TableRow key={h.id} className="border-slate-100 dark:border-slate-700/50">
-                                  <TableCell className="text-xs font-medium">{h.name}</TableCell>
-                                  <TableCell className="text-xs text-slate-500">{h.relationship}</TableCell>
-                                  <TableCell className="text-right text-xs">{h.age} tahun</TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </div>
-                      </section>
-                    )}
+                    {/* Household Members — empty state when no data */}
+                    <section>
+                      <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                        <Home className="h-4 w-4" /> Ahli Isi Rumah
+                      </h4>
+                      <div className="rounded-lg border border-dashed border-slate-200 p-4 text-center dark:border-slate-700">
+                        <p className="text-xs text-muted-foreground">Tiada maklumat ahli isi rumah direkodkan.</p>
+                      </div>
+                    </section>
 
                     {/* Action Buttons */}
                     <Separator />

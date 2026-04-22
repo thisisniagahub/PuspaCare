@@ -56,7 +56,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Pengesahan gagal', details: error.errors },
+        { success: false, error: 'Pengesahan gagal', details: error.issues },
         { status: 400 }
       );
     }

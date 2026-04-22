@@ -18,7 +18,7 @@ const VALID_STATUSES = ['active', 'archived', 'deleted'] as const;
 const documentCreateSchema = z.object({
   title: z.string().min(1, 'Tajuk dokumen diperlukan'),
   description: z.string().optional(),
-  category: z.enum(VALID_CATEGORIES, { required_error: 'Kategori diperlukan' }),
+  category: z.enum(VALID_CATEGORIES, { message: 'Kategori diperlukan' }),
   subcategory: z.string().optional(),
   fileName: z.string().min(1, 'Nama fail diperlukan'),
   fileSize: z.number().int().nonnegative().default(0),
@@ -137,7 +137,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Pengesahan gagal', details: error.errors },
+        { success: false, error: 'Pengesahan gagal', details: error.issues },
         { status: 400 }
       );
     }
@@ -194,7 +194,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Pengesahan gagal', details: error.errors },
+        { success: false, error: 'Pengesahan gagal', details: error.issues },
         { status: 400 }
       );
     }

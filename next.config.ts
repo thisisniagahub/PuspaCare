@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  typescript: {
-    ignoreBuildErrors: true, // TODO: Fix all TS errors and remove this
-  },
   reactStrictMode: true,
   output: "standalone",
   allowedDevOrigins: [

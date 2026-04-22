@@ -70,9 +70,10 @@ export async function POST(request: NextRequest) {
     const programme = await db.programme.create({
       data: {
         ...validated,
+        category: validated.category || 'OTHER',
         startDate: validated.startDate ? new Date(validated.startDate) : null,
         endDate: validated.endDate ? new Date(validated.endDate) : null,
-      },
+      } as any,
       include: {
         _count: {
           select: { cases: true, activities: true, impactMetrics: true },
@@ -84,7 +85,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Validation failed', details: error.errors },
+        { success: false, error: 'Validation failed', details: error.issues },
         { status: 400 }
       );
     }
@@ -137,7 +138,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Validation failed', details: error.errors },
+        { success: false, error: 'Validation failed', details: error.issues },
         { status: 400 }
       );
     }

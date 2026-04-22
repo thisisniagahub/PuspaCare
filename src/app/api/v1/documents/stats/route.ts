@@ -11,6 +11,7 @@ export async function GET() {
     const categoryCount = await db.document.groupBy({
       by: ['category'],
       where: { status: { not: 'deleted' } },
+      _count: { _all: true },
     });
 
     // Total active documents
@@ -48,7 +49,7 @@ export async function GET() {
     // Per-category counts
     const categoryStats = categoryCount.map((c) => ({
       category: c.category,
-      count: c._count.category,
+      count: (c as any)._count._all,
     }));
 
     return NextResponse.json({

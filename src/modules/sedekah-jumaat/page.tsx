@@ -197,112 +197,9 @@ const DELIVERY_TIME_OPTIONS: { value: DeliveryTime; label: string; desc: string 
 const ITEMS_PER_PAGE = 8
 const BRAND_COLOR = '#4B0082'
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// Mock Data
-// ═══════════════════════════════════════════════════════════════════════════════
+// ─── Initial Data (empty — populated from API) ──────────────────────────
 
-const MOCK_DISTRIBUTIONS: Distribution[] = [
-  {
-    id: 'SJ-001', refNo: 'SJ-2025-0001', institutionId: 'INS-01',
-    institutionName: 'Rumah Kebajikan Al-Mukhlisin', institutionType: 'rumah_kebajikan',
-    address: 'No. 12, Jalan Mawar 3, Taman Permata, 43200 Cheras, Selangor',
-    numberOfPeople: 45, menu: 'Nasi Ayam Masak Merah, Acar, Tauhu Sumbat, Buah Epal',
-    foodType: 'nasi_ayam', foodBoxes: 48, expenditure: 720,
-    deliveryMethod: 'hantar_sendiri', driverName: 'Encik Azmi bin Selamat', driverPhone: '012-345 6789',
-    deliveryTime: 'tengah_hari', status: 'dihantar', date: '2025-06-06',
-    notes: 'Makanan sampai tepat waktu. Penghuni gembira dengan menu hari ini.',
-  },
-  {
-    id: 'SJ-002', refNo: 'SJ-2025-0002', institutionId: 'INS-02',
-    institutionName: 'Rumah Kebajikan An-Nur', institutionType: 'rumah_kebajikan',
-    address: 'No. 45, Jalan Ampang Hilir, 68000 Ampang, Selangor',
-    numberOfPeople: 32, menu: 'Nasi Berlauk Rendang Daging, Sayur Campur, Keropok',
-    foodType: 'nasi_berlauk', foodBoxes: 35, expenditure: 595,
-    deliveryMethod: 'hantar_sendiri', driverName: 'Encik Faizal bin Rahman', driverPhone: '013-567 8901',
-    deliveryTime: 'pagi', status: 'dihantar', date: '2025-06-06',
-    notes: 'Perlu tambah 3 kotak untuk staf.',
-  },
-  {
-    id: 'SJ-003', refNo: 'SJ-2025-0003', institutionId: 'INS-09',
-    institutionName: 'Mahad Tahfiz Al-Quran PUSPA', institutionType: 'mahad_tahfiz',
-    address: 'No. 1, Jalan Persiaran Ilmu, 43000 Bangi, Selangor',
-    numberOfPeople: 120, menu: 'Nasi Minyak dengan Ayam Bakar, Dalca, Puding Mangga',
-    foodType: 'nasi_minyak', foodBoxes: 125, expenditure: 1875,
-    deliveryMethod: 'urus_kurier', driverName: 'Kurier Lory Express', driverPhone: '03-8888 5678',
-    deliveryTime: 'tengah_hari', status: 'dihantar', date: '2025-06-06',
-    notes: 'Program khatam Quran mingguan. Perlu katering tambahan.',
-  },
-  {
-    id: 'SJ-004', refNo: 'SJ-2025-0004', institutionId: 'INS-04',
-    institutionName: 'Rumah Kebajikan Al-Ihsan', institutionType: 'rumah_kebajikan',
-    address: 'No. 23, Jalan SS 2/75, 47300 Petaling Jaya, Selangor',
-    numberOfPeople: 28, menu: 'Nasi Campur: Ikan Pari Asam Pedas, Kangkung Belacan, Telur Dadar',
-    foodType: 'nasi_campur', foodBoxes: 30, expenditure: 450,
-    deliveryMethod: 'wakil_ambil', driverName: 'Puan Mariam binti Hassan', driverPhone: '016-234 5678',
-    deliveryTime: 'pagi', status: 'dihantar', date: '2025-06-13',
-    notes: 'Wakil ambil di pejabat PUSPA jam 10 pagi.',
-  },
-  {
-    id: 'SJ-005', refNo: 'SJ-2025-0005', institutionId: 'INS-05',
-    institutionName: 'Rumah Kebajikan Nur Hikmah', institutionType: 'rumah_kebajikan',
-    address: 'No. 17, Jalan Seksyen 7/1, 40000 Shah Alam, Selangor',
-    numberOfPeople: 55, menu: 'Mi Goreng Mamak, Ayam Madu, Taufu Goreng, Jus Oren',
-    foodType: 'mi_pasta', foodBoxes: 58, expenditure: 580,
-    deliveryMethod: 'hantar_sendiri', driverName: 'Encik Razak bin Omar', driverPhone: '019-876 5432',
-    deliveryTime: 'tengah_hari', status: 'dalam_proses', date: '2025-06-13',
-    notes: 'Penghantaran sedang dalam perjalanan.',
-  },
-  {
-    id: 'SJ-006', refNo: 'SJ-2025-0006', institutionId: 'INS-07',
-    institutionName: 'Rumah Kebajikan Baitul Makmur', institutionType: 'rumah_kebajikan',
-    address: 'No. 5, Jalan Sepang Utama, 43900 Sepang, Selangor',
-    numberOfPeople: 22, menu: 'Packed Lunch: Nasi Putih, Ayam Kung Po, Sayur Tumis, Air Sirap',
-    foodType: 'packed_lunch', foodBoxes: 24, expenditure: 336,
-    deliveryMethod: 'urus_kurier', driverName: 'Kurier POS Laju', driverPhone: '03-7722 3344',
-    deliveryTime: 'petang', status: 'menunggu', date: '2025-06-20',
-    notes: 'Menunggu pengesahan bilangan penghuni terkini.',
-  },
-  {
-    id: 'SJ-007', refNo: 'SJ-2025-0007', institutionId: 'INS-06',
-    institutionName: 'Rumah Kebajikan Rahmah', institutionType: 'rumah_kebajikan',
-    address: 'No. 31, Jalan Pasar, 41000 Klang, Selangor',
-    numberOfPeople: 38, menu: 'Roti Jala dengan Kari Ayam, Popiah Basah, Teh Tarik',
-    foodType: 'roti_lauk', foodBoxes: 40, expenditure: 480,
-    deliveryMethod: 'hantar_sendiri', driverName: 'Encik Shukri bin Ismail', driverPhone: '014-567 8901',
-    deliveryTime: 'pagi', status: 'dihantar', date: '2025-06-13',
-    notes: 'Menu istimewa atas permintaan penghuni.',
-  },
-  {
-    id: 'SJ-008', refNo: 'SJ-2025-0008', institutionId: 'INS-03',
-    institutionName: 'Rumah Kebajikan At-Taqwa', institutionType: 'rumah_kebajikan',
-    address: 'No. 8, Jalan Gombak Utama, 53100 Gombak, Selangor',
-    numberOfPeople: 35, menu: 'Nasi Ayam Berempah, Sup Sayur, Buah Naga',
-    foodType: 'nasi_ayam', foodBoxes: 37, expenditure: 555,
-    deliveryMethod: 'hantar_sendiri', driverName: 'Encik Azmi bin Selamat', driverPhone: '012-345 6789',
-    deliveryTime: 'tengah_hari', status: 'dibatalkan', date: '2025-06-20',
-    notes: 'Dibatalkan kerana institusi dalam program luar. Dijadualkan semula minggu hadapan.',
-  },
-  {
-    id: 'SJ-009', refNo: 'SJ-2025-0009', institutionId: 'INS-08',
-    institutionName: 'Rumah Kebajikan Al-Falah', institutionType: 'rumah_kebajikan',
-    address: 'No. 19, Jalan Hulu Langat, 43100 Hulu Langat, Selangor',
-    numberOfPeople: 42, menu: 'Nasi Berlauk Kari Ikan Tenggiri, Pucuk Paku, Omelet, Air Asam Boi',
-    foodType: 'nasi_berlauk', foodBoxes: 45, expenditure: 675,
-    deliveryMethod: 'wakil_ambil', driverName: 'Ustazah Salwani binti Osman', driverPhone: '011-2345 6789',
-    deliveryTime: 'pagi', status: 'menunggu', date: '2025-06-20',
-    notes: 'Wakil akan datang ambil jam 9:30 pagi.',
-  },
-  {
-    id: 'SJ-010', refNo: 'SJ-2025-0010', institutionId: 'INS-09',
-    institutionName: 'Mahad Tahfiz Al-Quran PUSPA', institutionType: 'mahad_tahfiz',
-    address: 'No. 1, Jalan Persiaran Ilmu, 43000 Bangi, Selangor',
-    numberOfPeople: 120, menu: 'Nasi Ayam Golek, Acar Buah, Dalca Sayur, Ais Kacang',
-    foodType: 'nasi_ayam', foodBoxes: 125, expenditure: 2000,
-    deliveryMethod: 'urus_kurier', driverName: 'Kurier Lory Express', driverPhone: '03-8888 5678',
-    deliveryTime: 'tengah_hari', status: 'menunggu', date: '2025-06-20',
-    notes: 'Sedekah Jumaat mingguan untuk 120 pelajar tahfiz.',
-  },
-]
+const INITIAL_DISTRIBUTIONS: Distribution[] = []
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Zod Schema
@@ -394,7 +291,7 @@ function getInstitutionById(id: string): Institution | undefined {
 
 export default function SedekahJumaatPage() {
   // ─── State ──────────────────────────────────────────────────────────
-  const [distributions, setDistributions] = React.useState<Distribution[]>(MOCK_DISTRIBUTIONS)
+  const [distributions, setDistributions] = React.useState<Distribution[]>(INITIAL_DISTRIBUTIONS)
   const [searchQuery, setSearchQuery] = React.useState('')
   const [filterType, setFilterType] = React.useState<string>('semua')
   const [filterStatus, setFilterStatus] = React.useState<string>('semua')
@@ -409,7 +306,7 @@ export default function SedekahJumaatPage() {
 
   // ─── Form ───────────────────────────────────────────────────────────
   const form = useForm<DistributionFormValues>({
-    resolver: zodResolver(distributionFormSchema),
+    resolver: zodResolver(distributionFormSchema) as any,
     defaultValues: {
       institutionId: '',
       numberOfPeople: 0,

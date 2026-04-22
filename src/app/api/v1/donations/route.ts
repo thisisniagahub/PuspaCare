@@ -11,8 +11,8 @@ const donationCreateSchema = z.object({
   status: z.enum(['PENDING', 'VERIFIED', 'RECEIVED', 'REJECTED', 'REFUNDED']).optional().default('PENDING'),
   method: z.enum(['CASH', 'CHEQUE', 'BANK_TRANSFER', 'ONLINE', 'CREDIT_CARD', 'DEBIT_CARD', 'E_WALLET', 'DIRECT_DEBIT', 'OTHER']).optional(),
   channel: z.enum(['WEBSITE', 'WALK_IN', 'EVENT', 'CORPORATE', 'RECURRING', 'ONLINE_FUNDRAISING', 'OTHER']).optional(),
-  fundType: z.enum(['ZAKAT', 'SADAQAH', 'WAKAF', 'INFRASTRUCTURE', 'OPERATIONAL', 'PROGRAMME', 'EMERGENCY', 'GENERAL']).optional(),
-  zakatCategory: z.enum(['FITRAH', 'MAL', 'PENGHASILAN', 'EMAS', 'PERAK', 'SAHAM', 'PERTANIAN', 'TERNAAKAN', 'PERDAGANGAN', 'RIKAZ', 'OTHER']).optional(),
+  fundType: z.enum(['zakat', 'sadaqah', 'waqf', 'infrastructure', 'operational', 'programme', 'emergency', 'general']).optional(),
+  zakatCategory: z.enum(['fitrah', 'mal', 'penghasilan', 'emas', 'perak', 'saham', 'pertanian', 'ternakkan', 'perdagangan', 'rikaz', 'other']).optional(),
   zakatAuthority: z.string().optional(),
   shariahCompliant: z.boolean().optional(),
   isAnonymous: z.boolean().optional().default(false),
@@ -150,7 +150,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Validation failed', details: error.errors },
+        { success: false, error: 'Validation failed', details: error.issues },
         { status: 400 }
       );
     }
@@ -201,7 +201,7 @@ export async function PUT(request: NextRequest) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { success: false, error: 'Validation failed', details: error.errors },
+        { success: false, error: 'Validation failed', details: error.issues },
         { status: 400 }
       );
     }

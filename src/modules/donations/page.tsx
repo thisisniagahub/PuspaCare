@@ -199,136 +199,9 @@ const PROGRAMME_OPTIONS = [
 
 const ITEMS_PER_PAGE = 8
 
-// ─── Mock Data ───────────────────────────────────────────────────────
+// ─── Initial Data (empty — populated from API) ──────────────────────────
 
-const MOCK_DONATIONS: Donation[] = [
-  {
-    id: 'D001', donationNo: 'PUSPA-2025-0001', donorName: 'Ahmad bin Abdullah',
-    donorIC: '850101-01-5123', donorEmail: 'ahmad@email.com', donorPhone: '012-3456789',
-    amount: 5000, fundType: 'zakat', status: 'diterima', method: 'transfer_bank',
-    date: '2025-01-15', programme: 'pendidikan-anak-yatim', receiptNo: 'RCP-001',
-    anonymous: false, taxDeductible: true, shariahCompliant: true,
-    zakatCategory: 'harta', zakatAuthority: 'lznk', notes: 'Zakat tahunan'
-  },
-  {
-    id: 'D002', donationNo: 'PUSPA-2025-0002', donorName: 'Siti binti Hassan',
-    donorIC: '900215-14-5522', donorEmail: 'siti@email.com', donorPhone: '013-9876543',
-    amount: 2000, fundType: 'sadaqah', status: 'diterima', method: 'dalam_talian',
-    date: '2025-02-03', programme: 'bantuan-makanan', receiptNo: 'RCP-002',
-    anonymous: false, taxDeductible: false, shariahCompliant: true, notes: 'Sedekah bulanan'
-  },
-  {
-    id: 'D003', donationNo: 'PUSPA-2025-0003', donorName: 'Tanaka Holdings Sdn Bhd',
-    donorEmail: 'csr@tanaka.com', donorPhone: '03-88881234',
-    amount: 10000, fundType: 'waqf', status: 'diterima', method: 'transfer_bank',
-    date: '2025-01-20', programme: 'pembangunan-masjid', receiptNo: 'RCP-003',
-    anonymous: false, taxDeductible: true, shariahCompliant: true, notes: 'Wakaf korporat untuk pembinaan masjid baharu'
-  },
-  {
-    id: 'D004', donationNo: 'PUSPA-2025-0004', donorName: 'Penderma Tanpa Nama',
-    amount: 150, fundType: 'am', status: 'diterima', method: 'tunai',
-    date: '2025-03-10', anonymous: true, taxDeductible: false, shariahCompliant: true
-  },
-  {
-    id: 'D005', donationNo: 'PUSPA-2025-0005', donorName: 'Mohd Razif bin Ismail',
-    donorIC: '880506-01-5333', donorEmail: 'razif@email.com', donorPhone: '016-2233445',
-    amount: 750, fundType: 'zakat', status: 'menunggu', method: 'e_wallet',
-    date: '2025-04-01', programme: 'bantuan-perubatan', receiptNo: '',
-    anonymous: false, taxDeductible: true, shariahCompliant: true,
-    zakatCategory: 'pendapatan', zakatAuthority: 'maips'
-  },
-  {
-    id: 'D006', donationNo: 'PUSPA-2025-0006', donorName: 'Nurul Aini binti Mokhtar',
-    donorIC: '950812-06-5444', donorEmail: 'nurulaini@email.com',
-    amount: 300, fundType: 'infaq', status: 'diterima', method: 'dalam_talian',
-    date: '2025-03-22', programme: 'pendidikan-anak-yatim', receiptNo: 'RCP-006',
-    anonymous: false, taxDeductible: false, shariahCompliant: true
-  },
-  {
-    id: 'D007', donationNo: 'PUSPA-2025-0007', donorName: 'Faridah binti Omar',
-    donorIC: '720310-03-5555', donorEmail: 'faridah@email.com', donorPhone: '019-3344556',
-    amount: 3500, fundType: 'zakat', status: 'diterima', method: 'cek',
-    date: '2025-02-14', programme: 'rumah-kebajikan', receiptNo: 'RCP-007',
-    anonymous: false, taxDeductible: true, shariahCompliant: true,
-    zakatCategory: 'perniagaan', zakatAuthority: 'lznk', notes: 'Zakat perniagaan kedai runcit'
-  },
-  {
-    id: 'D008', donationNo: 'PUSPA-2025-0008', donorName: 'Kamal bin Zulkifli',
-    donorIC: '900101-10-5666', donorEmail: 'kamal.z@email.com',
-    amount: 100, fundType: 'sadaqah', status: 'gagal', method: 'dalam_talian',
-    date: '2025-03-05', anonymous: false, taxDeductible: false, shariahCompliant: true,
-    notes: 'Pembayaran gagal - kad tamat tempoh'
-  },
-  {
-    id: 'D009', donationNo: 'PUSPA-2025-0009', donorName: 'Syarikat Maju Jaya',
-    donorEmail: 'donasi@majujaya.my', donorPhone: '03-77665544',
-    amount: 8000, fundType: 'waqf', status: 'menunggu', method: 'transfer_bank',
-    date: '2025-04-05', programme: 'pembangunan-komuniti', anonymous: false,
-    taxDeductible: true, shariahCompliant: true, notes: 'Wakaf tanah untuk projek perumahan masyarakat'
-  },
-  {
-    id: 'D010', donationNo: 'PUSPA-2025-0010', donorName: 'Zulkifli bin Hamzah',
-    donorIC: '830418-07-5777', donorEmail: 'zulham@email.com', donorPhone: '017-8899001',
-    amount: 250, fundType: 'infaq', status: 'diterima', method: 'tunai',
-    date: '2025-01-28', programme: 'bantuan-makanan', receiptNo: 'RCP-010',
-    anonymous: false, taxDeductible: false, shariahCompliant: true
-  },
-  {
-    id: 'D011', donationNo: 'PUSPA-2025-0011', donorName: 'Penderma Bersemangat',
-    amount: 500, fundType: 'am', status: 'dikembalikan', method: 'tunai',
-    date: '2025-02-20', anonymous: true, taxDeductible: false, shariahCompliant: true,
-    notes: 'Dikembalikan atas permintaan penderma'
-  },
-  {
-    id: 'D012', donationNo: 'PUSPA-2025-0012', donorName: 'Aishah binti Ahmad',
-    donorIC: '970623-10-5888', donorEmail: 'aishah.a@email.com', donorPhone: '014-5566778',
-    amount: 1200, fundType: 'zakat', status: 'diterima', method: 'transfer_bank',
-    date: '2025-03-15', programme: 'pendidikan-anak-yatim', receiptNo: 'RCP-012',
-    anonymous: false, taxDeductible: true, shariahCompliant: true,
-    zakatCategory: 'fitrah', zakatAuthority: 'maik'
-  },
-  {
-    id: 'D013', donationNo: 'PUSPA-2025-0013', donorName: 'Encik Lee Wei Chong',
-    donorIC: '860505-14-5999', donorEmail: 'leewc@email.com', donorPhone: '012-6677889',
-    amount: 2000, fundType: 'sadaqah', status: 'diterima', method: 'dalam_talian',
-    date: '2025-04-10', programme: 'bantuan-perubatan', receiptNo: 'RCP-013',
-    anonymous: false, taxDeductible: true, shariahCompliant: true
-  },
-  {
-    id: 'D014', donationNo: 'PUSPA-2025-0014', donorName: 'Hajjah Kalsom binti Pilus',
-    donorIC: '550321-02-6000', donorEmail: 'hkalsom@email.com',
-    amount: 5000, fundType: 'waqf', status: 'diterima', method: 'transfer_bank',
-    date: '2025-01-05', programme: 'pembangunan-masjid', receiptNo: 'RCP-014',
-    anonymous: false, taxDeductible: true, shariahCompliant: true, notes: 'Wakaf qardh hasan'
-  },
-  {
-    id: 'D015', donationNo: 'PUSPA-2025-0015', donorName: 'Penderma Murah Hati',
-    amount: 50, fundType: 'am', status: 'diterima', method: 'tunai',
-    date: '2025-04-12', anonymous: true, taxDeductible: false, shariahCompliant: true
-  },
-  {
-    id: 'D016', donationNo: 'PUSPA-2025-0016', donorName: 'Dr. Muhammad Amin',
-    donorIC: '880912-01-6111', donorEmail: 'dr.amin@hospital.my', donorPhone: '013-4455667',
-    amount: 1500, fundType: 'infaq', status: 'menunggu', method: 'transfer_bank',
-    date: '2025-04-08', programme: 'bantuan-perubatan', anonymous: false,
-    taxDeductible: true, shariahCompliant: true
-  },
-  {
-    id: 'D017', donationNo: 'PUSPA-2025-0017', donorName: 'Rohana binti Selamat',
-    donorIC: '790830-04-6222', donorEmail: 'rohana@email.com', donorPhone: '016-7788990',
-    amount: 800, fundType: 'zakat', status: 'gagal', method: 'cek',
-    date: '2025-03-28', programme: '', anonymous: false, taxDeductible: true,
-    shariahCompliant: true, zakatCategory: 'harta', zakatAuthority: 'maips',
-    notes: 'Cek dikembalikan - akaun ditutup'
-  },
-  {
-    id: 'D018', donationNo: 'PUSPA-2025-0018', donorName: 'Pertubuhan Kebajikan Al-Ikhlas',
-    donorEmail: 'admin@alikhlas.org', donorPhone: '03-55667788',
-    amount: 6000, fundType: 'sadaqah', status: 'diterima', method: 'transfer_bank',
-    date: '2025-02-25', programme: 'rumah-kebajikan', receiptNo: 'RCP-018',
-    anonymous: false, taxDeductible: true, shariahCompliant: true
-  },
-]
+const INITIAL_DONATIONS: Donation[] = []
 
 // ─── Zod Schema ──────────────────────────────────────────────────────
 
@@ -428,7 +301,7 @@ function DonutCenterLabel({ total }: CenterLabelProps) {
 
 export default function DonationsPage() {
   // State
-  const [donations, setDonations] = React.useState<Donation[]>(MOCK_DONATIONS)
+  const [donations, setDonations] = React.useState<Donation[]>(INITIAL_DONATIONS)
   const [searchQuery, setSearchQuery] = React.useState('')
   const [filterStatus, setFilterStatus] = React.useState<string>('semua')
   const [filterFundType, setFilterFundType] = React.useState<string>('semua')
@@ -443,7 +316,7 @@ export default function DonationsPage() {
 
   // Form
   const form = useForm<DonationFormValues>({
-    resolver: zodResolver(donationFormSchema),
+    resolver: zodResolver(donationFormSchema) as any,
     defaultValues: {
       donorName: '',
       donorIC: '',

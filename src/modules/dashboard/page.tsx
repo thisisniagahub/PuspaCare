@@ -123,92 +123,21 @@ const MONTH_SHORT = [
 ]
 
 // ---------------------------------------------------------------------------
-// Mock data
+// Default empty stats (used when API returns no data)
 // ---------------------------------------------------------------------------
 
-const MOCK_STATS: DashboardStats = {
-  jumlahAhliAsnaf: 127,
-  programAktif: 8,
-  jumlahDonasi: 152780,
-  sukarelawanAktif: 34,
-  skorCompliance: 73,
-  trendAhli: 12.4,
+const EMPTY_STATS: DashboardStats = {
+  jumlahAhliAsnaf: 0,
+  programAktif: 0,
+  jumlahDonasi: 0,
+  sukarelawanAktif: 0,
+  skorCompliance: 0,
+  trendAhli: 0,
   trendProgram: 0,
-  trendDonasi: 8.7,
-  trendSukarelawan: 6.2,
-  trendCompliance: -2.1,
+  trendDonasi: 0,
+  trendSukarelawan: 0,
+  trendCompliance: 0,
 }
-
-const MOCK_MONTHLY_DONATIONS: MonthlyDonation[] = [
-  { bulan: 'Jan', zakat: 5200, sadaqah: 3100, waqf: 1800, infaq: 1200, general: 900 },
-  { bulan: 'Feb', zakat: 6100, sadaqah: 2800, waqf: 1500, infaq: 1100, general: 850 },
-  { bulan: 'Mac', zakat: 12500, sadaqah: 4200, waqf: 3100, infaq: 2800, general: 1500 },
-  { bulan: 'Apr', zakat: 7800, sadaqah: 3500, waqf: 2200, infaq: 1900, general: 1100 },
-  { bulan: 'Mei', zakat: 8200, sadaqah: 3800, waqf: 2600, infaq: 2100, general: 1200 },
-  { bulan: 'Jun', zakat: 15000, sadaqah: 5600, waqf: 4200, infaq: 3400, general: 2200 },
-  { bulan: 'Jul', zakat: 9100, sadaqah: 4000, waqf: 2800, infaq: 2300, general: 1300 },
-  { bulan: 'Ogo', zakat: 7400, sadaqah: 3200, waqf: 2000, infaq: 1700, general: 1000 },
-  { bulan: 'Sep', zakat: 6800, sadaqah: 3000, waqf: 1900, infaq: 1500, general: 950 },
-  { bulan: 'Okt', zakat: 11200, sadaqah: 4800, waqf: 3500, infaq: 2900, general: 1800 },
-  { bulan: 'Nov', zakat: 9800, sadaqah: 4100, waqf: 3000, infaq: 2500, general: 1600 },
-  { bulan: 'Dis', zakat: 8500, sadaqah: 3600, waqf: 2400, infaq: 2000, general: 1200 },
-]
-
-const MOCK_MEMBER_DISTRIBUTION: MemberCategory[] = [
-  { name: 'Asnaf', value: 68, color: '#7c3aed' },
-  { name: 'Sukarelawan', value: 34, color: '#059669' },
-  { name: 'Penderma', value: 18, color: '#d97706' },
-  { name: 'Staf', value: 7, color: '#0ea5e9' },
-]
-
-const MOCK_ACTIVITIES: RecentActivity[] = [
-  {
-    id: '1',
-    type: 'case',
-    title: 'Kes baru didaftarkan',
-    description: 'Penerima zakat baharu dari Kampung Melayu Majidee, Johor Bahru',
-    timestamp: '15 minit lalu',
-  },
-  {
-    id: '2',
-    type: 'donation',
-    title: 'Donasi diterima',
-    description: 'Sumbangan RM 5,000 daripada Syarikat Teknologi Maju Sdn Bhd',
-    timestamp: '1 jam lalu',
-  },
-  {
-    id: '3',
-    type: 'programme',
-    title: 'Program bantuan makanan dilancarkan',
-    description: 'Tabung Makanan Rahmah bulan Disember untuk 120 keluarga asnaf',
-    timestamp: '3 jam lalu',
-  },
-  {
-    id: '4',
-    type: 'member',
-    title: 'Sukarelawan baru berdaftar',
-    description: '12 sukarelawan baharu menyertai program Khidmat Komuniti',
-    timestamp: '5 jam lalu',
-  },
-  {
-    id: '5',
-    type: 'donation',
-    title: 'Waqf tanah diterima',
-    description: 'Hibah tanah seluas 0.5 ekar untuk pembinaan pusat aktiviti',
-    timestamp: 'Semalam',
-  },
-]
-
-const MOCK_COMPLIANCE_ITEMS: ComplianceItem[] = [
-  { label: 'Laporan audit tahunan 2024', completed: true, category: 'Kewangan' },
-  { label: 'Pendaftaran ROB/BROB', completed: true, category: 'Perundangan' },
-  { label: 'Pematuhan PDPA (Data Protection)', completed: false, category: 'Teknologi' },
-  { label: 'Penyata kewangan suku tahunan', completed: true, category: 'Kewangan' },
-  { label: 'Latihan keselamatan staf', completed: false, category: 'Operasi' },
-  { label: 'Kemaskini polisi anti-rasuah', completed: true, category: 'Tadbir Urus' },
-  { label: 'Penilaian risiko operasi', completed: false, category: 'Operasi' },
-  { label: 'Laporan NGO kepada JKM', completed: true, category: 'Perundangan' },
-]
 
 // ---------------------------------------------------------------------------
 // Helper functions
@@ -514,7 +443,7 @@ function DashboardSkeleton() {
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [stats, setStats] = useState<DashboardStats>(EMPTY_STATS)
   const [monthlyData, setMonthlyData] = useState<MonthlyDonation[]>([])
   const [memberData, setMemberData] = useState<MemberCategory[]>([])
   const [activities, setActivities] = useState<RecentActivity[]>([])
@@ -533,39 +462,39 @@ export default function DashboardPage() {
 
         if (statsRes.status === 'fulfilled') {
           // Map API field names to dashboard field names
-          const raw = statsRes.value as Record<string, unknown>
+          const raw = statsRes.value as unknown as Record<string, unknown>
           setStats({
-            jumlahAhliAsnaf: (raw.totalMembers as number) ?? MOCK_STATS.jumlahAhliAsnaf,
-            programAktif: (raw.activeProgrammes as number) ?? MOCK_STATS.programAktif,
-            jumlahDonasi: (raw.totalDonations as number) ?? MOCK_STATS.jumlahDonasi,
-            sukarelawanAktif: (raw.activeVolunteers as number) ?? MOCK_STATS.sukarelawanAktif,
-            skorCompliance: (raw.complianceScore as number) ?? MOCK_STATS.skorCompliance,
-            trendAhli: MOCK_STATS.trendAhli,
-            trendProgram: MOCK_STATS.trendProgram,
-            trendDonasi: MOCK_STATS.trendDonasi,
-            trendSukarelawan: MOCK_STATS.trendSukarelawan,
-            trendCompliance: MOCK_STATS.trendCompliance,
+            jumlahAhliAsnaf: (raw.totalMembers as number) ?? 0,
+            programAktif: (raw.activeProgrammes as number) ?? 0,
+            jumlahDonasi: (raw.totalDonations as number) ?? 0,
+            sukarelawanAktif: (raw.activeVolunteers as number) ?? 0,
+            skorCompliance: (raw.complianceScore as number) ?? 0,
+            trendAhli: (raw.trendMembers as number) ?? 0,
+            trendProgram: (raw.trendProgrammes as number) ?? 0,
+            trendDonasi: (raw.trendDonations as number) ?? 0,
+            trendSukarelawan: (raw.trendVolunteers as number) ?? 0,
+            trendCompliance: (raw.trendCompliance as number) ?? 0,
           })
         }
-        else setStats(MOCK_STATS)
+        else setStats(EMPTY_STATS)
 
         if (monthlyRes.status === 'fulfilled') setMonthlyData(monthlyRes.value)
-        else setMonthlyData(MOCK_MONTHLY_DONATIONS)
+        else setMonthlyData([])
 
         if (memberRes.status === 'fulfilled') setMemberData(memberRes.value)
-        else setMemberData(MOCK_MEMBER_DISTRIBUTION)
+        else setMemberData([])
 
         if (activityRes.status === 'fulfilled') setActivities(activityRes.value)
-        else setActivities(MOCK_ACTIVITIES)
+        else setActivities([])
 
-        setComplianceItems(MOCK_COMPLIANCE_ITEMS)
+        setComplianceItems([])
       } catch {
-        // Fallback entirely to mock data
-        setStats(MOCK_STATS)
-        setMonthlyData(MOCK_MONTHLY_DONATIONS)
-        setMemberData(MOCK_MEMBER_DISTRIBUTION)
-        setActivities(MOCK_ACTIVITIES)
-        setComplianceItems(MOCK_COMPLIANCE_ITEMS)
+        // On error, show zero/empty states
+        setStats(EMPTY_STATS)
+        setMonthlyData([])
+        setMemberData([])
+        setActivities([])
+        setComplianceItems([])
       } finally {
         setLoading(false)
       }
@@ -602,7 +531,7 @@ export default function DashboardPage() {
     )
   }
 
-  if (!stats) return null
+
 
   return (
     <div className="min-h-screen bg-background">
@@ -885,6 +814,15 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
+              {monthlyData.length === 0 ? (
+                <div className="flex h-[260px] w-full items-center justify-center sm:h-[340px]">
+                  <div className="flex flex-col items-center text-muted-foreground">
+                    <HandCoins className="h-10 w-10 mb-2 opacity-40" />
+                    <p className="text-sm font-medium">Tiada data sumbangan</p>
+                    <p className="text-xs">Data sumbangan bulanan akan dipaparkan di sini.</p>
+                  </div>
+                </div>
+              ) : (
               <div className="h-[260px] w-full sm:h-[340px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
@@ -922,6 +860,7 @@ export default function DashboardPage() {
                   </BarChart>
                 </ResponsiveContainer>
               </div>
+              )}
             </CardContent>
           </Card>
 
@@ -936,6 +875,16 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
+              {memberData.length === 0 ? (
+                <div className="flex h-[200px] w-full items-center justify-center sm:h-[240px]">
+                  <div className="flex flex-col items-center text-muted-foreground">
+                    <Users className="h-10 w-10 mb-2 opacity-40" />
+                    <p className="text-sm font-medium">Tiada data ahli</p>
+                    <p className="text-xs">Taburan keahlian akan dipaparkan di sini.</p>
+                  </div>
+                </div>
+              ) : (
+              <>
               <div className="h-[200px] w-full sm:h-[240px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -985,6 +934,8 @@ export default function DashboardPage() {
                   </div>
                 ))}
               </div>
+              </>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -1011,53 +962,61 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {activities.map((activity) => (
-                  <div
-                    key={activity.id}
-                    className="group flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-muted/50"
-                  >
-                    {/* Icon */}
-                    <div
-                      className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                        activity.type === 'case'
-                          ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
-                          : activity.type === 'donation'
-                            ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                            : activity.type === 'member'
-                              ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
-                              : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                      }`}
-                    >
-                      {getActivityIcon(activity.type)}
-                    </div>
-
-                    {/* Content */}
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-medium leading-tight">{activity.title}</p>
-                        <Badge
-                          variant="outline"
-                          className={getActivityBadgeColor(activity.type)}
-                        >
-                          {activity.type === 'case'
-                            ? 'Kes'
-                            : activity.type === 'donation'
-                              ? 'Donasi'
-                              : activity.type === 'member'
-                                ? 'Ahli'
-                                : 'Program'}
-                        </Badge>
-                      </div>
-                      <p className="mt-0.5 text-sm text-muted-foreground line-clamp-1">
-                        {activity.description}
-                      </p>
-                      <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {activity.timestamp}
-                      </div>
-                    </div>
+                {activities.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                    <Activity className="h-10 w-10 mb-2 opacity-40" />
+                    <p className="text-sm font-medium">Tiada aktiviti terkini</p>
+                    <p className="text-xs">Aktiviti akan dipaparkan di sini apabila ada kemas kini.</p>
                   </div>
-                ))}
+                ) : (
+                  activities.map((activity) => (
+                    <div
+                      key={activity.id}
+                      className="group flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-muted/50"
+                    >
+                      {/* Icon */}
+                      <div
+                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
+                          activity.type === 'case'
+                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
+                            : activity.type === 'donation'
+                              ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
+                              : activity.type === 'member'
+                                ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
+                                : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
+                        }`}
+                      >
+                        {getActivityIcon(activity.type)}
+                      </div>
+
+                      {/* Content */}
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-medium leading-tight">{activity.title}</p>
+                          <Badge
+                            variant="outline"
+                            className={getActivityBadgeColor(activity.type)}
+                          >
+                            {activity.type === 'case'
+                              ? 'Kes'
+                              : activity.type === 'donation'
+                                ? 'Donasi'
+                                : activity.type === 'member'
+                                  ? 'Ahli'
+                                  : 'Program'}
+                          </Badge>
+                        </div>
+                        <p className="mt-0.5 text-sm text-muted-foreground line-clamp-1">
+                          {activity.description}
+                        </p>
+                        <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" />
+                          {activity.timestamp}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1121,7 +1080,12 @@ export default function DashboardPage() {
               <div className="mt-6 space-y-1">
                 <h4 className="text-sm font-medium">Senarai Semak</h4>
                 <div className="mt-2 space-y-2.5">
-                  {complianceItems.map((item, index) => (
+                  {complianceItems.length === 0 ? (
+                    <div className="py-4 text-center text-sm text-muted-foreground">
+                      Tiada item pematuhan dikonfigurasikan.
+                    </div>
+                  ) : (
+                    complianceItems.map((item, index) => (
                     <div
                       key={index}
                       className="flex items-start gap-2.5"
@@ -1144,7 +1108,7 @@ export default function DashboardPage() {
                         <p className="text-xs text-muted-foreground">{item.category}</p>
                       </div>
                     </div>
-                  ))}
+                  )))}
                 </div>
               </div>
 

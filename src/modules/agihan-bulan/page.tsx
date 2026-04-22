@@ -251,324 +251,10 @@ const STOCK_SOURCE_CONFIG: Record<StockSource, { label: string; bgClass: string 
   pelarasan: { label: 'Pelarasan', bgClass: 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300' },
 }
 
-// ─── Mock Data ───────────────────────────────────────────────────────
+// ─── Initial Data (empty — populated from API) ──────────────────────────
 
-const MOCK_DISTRIBUTIONS: Distribution[] = [
-  {
-    id: 'A001',
-    refNo: 'AGIHAN-2025-0001',
-    namaAsnaf: 'Fatimah binti Osman',
-    noKP: '600101-14-5032',
-    noTelefon: '012-345 6789',
-    alamat: 'No. 23, Jalan Mawar 1, Taman Mawar, 43200 Cheras, Selangor',
-    kawasan: 'cheras',
-    kategori: 'fakir',
-    bilTanggungan: 5,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'tepung', 'susu'],
-    catatan: 'Janda tua, tiada sumber pendapatan tetap',
-    kaedahPenghantaran: 'hantar_sendiri',
-    status: 'dibahagi',
-    date: '2025-01-10',
-    expenditure: 150.00,
-  },
-  {
-    id: 'A002',
-    refNo: 'AGIHAN-2025-0002',
-    namaAsnaf: 'Ahmad bin Yusof',
-    noKP: '750505-01-5111',
-    noTelefon: '013-987 6543',
-    alamat: 'No. 5, Jalan Kenanga 3, Ampang Point, 68000 Ampang, Selangor',
-    kawasan: 'ampang',
-    kategori: 'miskin',
-    bilTanggungan: 7,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'tepung', 'mie_spaghetti', 'telur'],
-    catatan: 'Pekerja bawaan, isteri sakit kronik',
-    kaedahPenghantaran: 'urus_kurier',
-    status: 'dibahagi',
-    date: '2025-01-12',
-    expenditure: 210.00,
-  },
-  {
-    id: 'A003',
-    refNo: 'AGIHAN-2025-0003',
-    namaAsnaf: 'Siti Aminah binti Abdullah',
-    noKP: '800812-06-5222',
-    noTelefon: '016-223 3445',
-    alamat: 'Blok C, Lot 12, Kg. Melayu Gombak, 53100 Gombak, Selangor',
-    kawasan: 'gombak',
-    kategori: 'muallaf',
-    bilTanggungan: 4,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'susu', 'kacang_kekacang'],
-    catatan: 'Pemeluk Islam baru, suami tiada kerja',
-    kaedahPenghantaran: 'hantar_sendiri',
-    status: 'dibahagi',
-    date: '2025-01-15',
-    expenditure: 120.00,
-  },
-  {
-    id: 'A004',
-    refNo: 'AGIHAN-2025-0004',
-    namaAsnaf: 'Mohd Rashid bin Hamid',
-    noKP: '680310-07-5333',
-    noTelefon: '017-334 4556',
-    alamat: 'No. 88, Jalan Hulu Langat, Batu 14, 43100 Hulu Langat, Selangor',
-    kawasan: 'hulu_langat',
-    kategori: 'gharim',
-    bilTanggungan: 6,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'tepung', 'mie_spaghetti', 'susu', 'telur'],
-    catatan: 'Terbeban hutang perubatan isteri',
-    kaedahPenghantaran: 'hantar_sendiri',
-    status: 'dalam_proses',
-    date: '2025-02-05',
-    expenditure: 0,
-  },
-  {
-    id: 'A005',
-    refNo: 'AGIHAN-2025-0005',
-    namaAsnaf: 'Nur Hafizah binti Md Noor',
-    noKP: '900623-10-5444',
-    noTelefon: '014-556 6778',
-    alamat: 'No. 15-3, Jalan Kuchai, 58200 Kuala Lumpur',
-    kawasan: 'petaling',
-    kategori: 'fisabillillah',
-    bilTanggungan: 3,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'susu', 'telur'],
-    catatan: 'Penggiat komuniti, membantu program PUSPA',
-    kaedahPenghantaran: 'ambil_sendiri',
-    status: 'menunggu_kelulusan',
-    date: '2025-02-10',
-    expenditure: 0,
-  },
-  {
-    id: 'A006',
-    refNo: 'AGIHAN-2025-0006',
-    namaAsnaf: 'Ismail bin Sulaiman',
-    noKP: '550321-01-5555',
-    noTelefon: '011-667 7889',
-    alamat: 'No. 44, Jalan Tengku Kelana, 41000 Klang, Selangor',
-    kawasan: 'klang',
-    kategori: 'fakir',
-    bilTanggungan: 4,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'tepung', 'kacang_kekacang', 'telur'],
-    catatan: 'Warga emas, tinggal bersendirian',
-    kaedahPenghantaran: 'hantar_sendiri',
-    status: 'dibahagi',
-    date: '2025-02-15',
-    expenditure: 130.00,
-  },
-  {
-    id: 'A007',
-    refNo: 'AGIHAN-2025-0007',
-    namaAsnaf: 'Aminah binti Hassan',
-    noKP: '700415-03-5666',
-    noTelefon: '012-778 8901',
-    alamat: 'Kg. Baru Sepang, Jalan Sepang, 43900 Sepang, Selangor',
-    kawasan: 'sepang',
-    kategori: 'miskin',
-    bilTanggungan: 8,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'tepung', 'mie_spaghetti', 'kacang_kekacang', 'susu', 'telur'],
-    catatan: 'Keluarga besar, suami pesakit kronik',
-    kaedahPenghantaran: 'urus_kurier',
-    status: 'dibahagi',
-    date: '2025-02-20',
-    expenditure: 240.00,
-  },
-  {
-    id: 'A008',
-    refNo: 'AGIHAN-2025-0008',
-    namaAsnaf: 'Rahim bin Osman',
-    noKP: '820918-01-5777',
-    noTelefon: '019-889 9002',
-    alamat: 'No. 7, Lorong Masjid, 45000 Kuala Selangor, Selangor',
-    kawasan: 'kuala_selangor',
-    kategori: 'amil',
-    bilTanggungan: 3,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'susu'],
-    catatan: 'Pengurus pusat agihan tempatan',
-    kaedahPenghantaran: 'ambil_sendiri',
-    status: 'dibahagi',
-    date: '2025-03-01',
-    expenditure: 80.00,
-  },
-  {
-    id: 'A009',
-    refNo: 'AGIHAN-2025-0009',
-    namaAsnaf: 'Zalimah binti Md Daud',
-    noKP: '640208-14-5888',
-    noTelefon: '013-223 4456',
-    alamat: 'No. 12, Jalan Mutiara, Taman Seri Indah, 43200 Cheras, Selangor',
-    kawasan: 'cheras',
-    kategori: 'ibnus_sabil',
-    bilTanggungan: 2,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'tepung', 'telur'],
-    catatan: 'Musafir terkandas di KL',
-    kaedahPenghantaran: 'ambil_sendiri',
-    status: 'gagal',
-    date: '2025-03-05',
-    expenditure: 0,
-  },
-  {
-    id: 'A010',
-    refNo: 'AGIHAN-2025-0010',
-    namaAsnaf: 'Kamariah binti Yacob',
-    noKP: '710730-06-5999',
-    noTelefon: '016-334 5567',
-    alamat: 'No. 56, Jalan Wawasan 2, Ampang Hilir, 55000 Ampang, Selangor',
-    kawasan: 'ampang',
-    kategori: 'riqab',
-    bilTanggungan: 5,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'tepung', 'mie_spaghetti', 'susu'],
-    catatan: 'Bekas pekerja kontrak, dalam proses mencari kerja',
-    kaedahPenghantaran: 'hantar_sendiri',
-    status: 'dalam_proses',
-    date: '2025-03-10',
-    expenditure: 0,
-  },
-  {
-    id: 'A011',
-    refNo: 'AGIHAN-2025-0011',
-    namaAsnaf: 'Abdul Rahman bin Ismail',
-    noKP: '590510-01-6000',
-    noTelefon: '012-445 5566',
-    alamat: 'No. 34, Jalan Saujana, Kg. Sg. Tua, 68100 Batu Caves, Selangor',
-    kawasan: 'gombak',
-    kategori: 'fakir',
-    bilTanggungan: 6,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'tepung', 'kacang_kekacang', 'susu', 'telur'],
-    catatan: 'Orang kurang upaya, isteri penjaga',
-    kaedahPenghantaran: 'hantar_sendiri',
-    status: 'dibahagi',
-    date: '2025-03-15',
-    expenditure: 200.00,
-  },
-  {
-    id: 'A012',
-    refNo: 'AGIHAN-2025-0012',
-    namaAsnaf: 'Halimaton binti Saad',
-    noKP: '880315-10-6111',
-    noTelefon: '017-556 6677',
-    alamat: 'No. 21, Jalan Merdeka, 42700 Banting, Selangor',
-    kawasan: 'kuala_selangor',
-    kategori: 'miskin',
-    bilTanggungan: 4,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'mie_spaghetti', 'telur'],
-    catatan: 'Ibu tunggal, 4 orang anak',
-    kaedahPenghantaran: 'urus_kurier',
-    status: 'menunggu_kelulusan',
-    date: '2025-03-20',
-    expenditure: 0,
-  },
-  {
-    id: 'A013',
-    refNo: 'AGIHAN-2025-0013',
-    namaAsnaf: 'Muhammad Farhan bin Ali',
-    noKP: '950822-01-6222',
-    noTelefon: '014-667 7788',
-    alamat: 'No. 8, Jalan Permata, Taman Permata, 43200 Cheras, Selangor',
-    kawasan: 'cheras',
-    kategori: 'fisabillillah',
-    bilTanggungan: 2,
-    makananRuji: ['beras', 'minyak_masak', 'gula', 'susu'],
-    catatan: 'Pelajar universiti dari keluarga miskin',
-    kaedahPenghantaran: 'ambil_sendiri',
-    status: 'dibahagi',
-    date: '2025-04-02',
-    expenditure: 60.00,
-  },
-]
-
-const MOCK_STOCK_MOVEMENTS: StockMovement[] = [
-  {
-    id: 'SM001', refNo: 'SM-2025-0001', itemId: 'beras', itemName: 'Beras',
-    type: 'masuk', quantity: 200, source: 'derma', date: '2025-01-02',
-    reference: 'DRM-2025-001', notes: 'Derma dari syarikat ABC Sdn Bhd',
-    previousStock: 150, newStock: 350,
-  },
-  {
-    id: 'SM002', refNo: 'SM-2025-0002', itemId: 'minyak_masak', itemName: 'Minyak Masak',
-    type: 'masuk', quantity: 50, source: 'pembelian', date: '2025-01-03',
-    reference: 'INV-2025-001', notes: 'Pembelian dari pembekal utama',
-    previousStock: 35, newStock: 85,
-  },
-  {
-    id: 'SM003', refNo: 'SM-2025-0003', itemId: 'beras', itemName: 'Beras',
-    type: 'keluar', quantity: 30, source: 'pelarasan', date: '2025-01-10',
-    reference: 'AGIHAN-2025-0001', notes: 'Agihan kepada Fatimah binti Osman',
-    previousStock: 350, newStock: 320,
-  },
-  {
-    id: 'SM004', refNo: 'SM-2025-0004', itemId: 'minyak_masak', itemName: 'Minyak Masak',
-    type: 'keluar', quantity: 15, source: 'pelarasan', date: '2025-01-10',
-    reference: 'AGIHAN-2025-0001', notes: 'Agihan kepada Fatimah binti Osman',
-    previousStock: 85, newStock: 70,
-  },
-  {
-    id: 'SM005', refNo: 'SM-2025-0005', itemId: 'gula', itemName: 'Gula',
-    type: 'masuk', quantity: 80, source: 'derma', date: '2025-01-08',
-    reference: 'DRM-2025-002', notes: 'Derma dari masjid tempatan',
-    previousStock: 40, newStock: 120,
-  },
-  {
-    id: 'SM006', refNo: 'SM-2025-0006', itemId: 'susu', itemName: 'Susu',
-    type: 'masuk', quantity: 40, source: 'pembelian', date: '2025-01-14',
-    reference: 'INV-2025-002', notes: 'Pembelian susu kotak',
-    previousStock: 30, newStock: 70,
-  },
-  {
-    id: 'SM007', refNo: 'SM-2025-0007', itemId: 'telur', itemName: 'Telur',
-    type: 'masuk', quantity: 30, source: 'pindahan', date: '2025-02-01',
-    reference: 'PND-2025-001', notes: 'Pindahan dari cawang Selangor',
-    previousStock: 15, newStock: 45,
-  },
-  {
-    id: 'SM008', refNo: 'SM-2025-0008', itemId: 'tepung', itemName: 'Tepung',
-    type: 'keluar', quantity: 25, source: 'pelarasan', date: '2025-02-15',
-    reference: 'AGIHAN-2025-0006', notes: 'Agihan kepada Ismail bin Sulaiman',
-    previousStock: 120, newStock: 95,
-  },
-  {
-    id: 'SM009', refNo: 'SM-2025-0009', itemId: 'mie_spaghetti', itemName: 'Mie/Spaghetti',
-    type: 'masuk', quantity: 35, source: 'pembelian', date: '2025-02-18',
-    reference: 'INV-2025-003', notes: 'Pembelian mie bulan Februari',
-    previousStock: 25, newStock: 60,
-  },
-  {
-    id: 'SM010', refNo: 'SM-2025-0010', itemId: 'kacang_kekacang', itemName: 'Kacang/Kekacang',
-    type: 'masuk', quantity: 20, source: 'derma', date: '2025-02-20',
-    reference: 'DRM-2025-003', notes: 'Derma dari NGO tempatan',
-    previousStock: 20, newStock: 40,
-  },
-  {
-    id: 'SM011', refNo: 'SM-2025-0011', itemId: 'beras', itemName: 'Beras',
-    type: 'keluar', quantity: 50, source: 'pelarasan', date: '2025-03-01',
-    reference: 'AGIHAN-2025-0008', notes: 'Agihan kepada Rahim bin Osman',
-    previousStock: 320, newStock: 270,
-  },
-  {
-    id: 'SM012', refNo: 'SM-2025-0012', itemId: 'gula', itemName: 'Gula',
-    type: 'keluar', quantity: 20, source: 'pelarasan', date: '2025-03-15',
-    reference: 'AGIHAN-2025-0011', notes: 'Agihan kepada Abdul Rahman bin Ismail',
-    previousStock: 120, newStock: 100,
-  },
-  {
-    id: 'SM013', refNo: 'SM-2025-0013', itemId: 'susu', itemName: 'Susu',
-    type: 'keluar', quantity: 15, source: 'pelarasan', date: '2025-03-15',
-    reference: 'AGIHAN-2025-0011', notes: 'Agihan kepada Abdul Rahman bin Ismail',
-    previousStock: 70, newStock: 55,
-  },
-  {
-    id: 'SM014', refNo: 'SM-2025-0014', itemId: 'beras', itemName: 'Beras',
-    type: 'masuk', quantity: 80, source: 'pembelian', date: '2025-03-18',
-    reference: 'INV-2025-004', notes: 'Pembelian stok tambahan',
-    previousStock: 270, newStock: 350,
-  },
-  {
-    id: 'SM015', refNo: 'SM-2025-0015', itemId: 'telur', itemName: 'Telur',
-    type: 'keluar', quantity: 10, source: 'pelarasan', date: '2025-03-20',
-    reference: 'AGIHAN-2025-0012', notes: 'Agihan kepada Halimaton binti Saad',
-    previousStock: 45, newStock: 35,
-  },
-]
+const INITIAL_DISTRIBUTIONS: Distribution[] = []
+const INITIAL_STOCK_MOVEMENTS: StockMovement[] = []
 
 // ─── Zod Schema ──────────────────────────────────────────────────────
 
@@ -711,7 +397,7 @@ function getStockStatus(currentStock: number, minLevel: number): { label: string
 
 export default function AgihanBulanPage() {
   // ─── Distribution State ─────────────────────────────────────────────
-  const [distributions, setDistributions] = React.useState<Distribution[]>(MOCK_DISTRIBUTIONS)
+  const [distributions, setDistributions] = React.useState<Distribution[]>(INITIAL_DISTRIBUTIONS)
   const [searchQuery, setSearchQuery] = React.useState('')
   const [filterKawasan, setFilterKawasan] = React.useState<string>('semua')
   const [filterStatus, setFilterStatus] = React.useState<string>('semua')
@@ -725,7 +411,7 @@ export default function AgihanBulanPage() {
 
   // ─── Stock Inventory State ─────────────────────────────────────────
   const [stockItems, setStockItems] = React.useState<StockItem[]>(STOCK_ITEMS)
-  const [stockMovements, setStockMovements] = React.useState<StockMovement[]>(MOCK_STOCK_MOVEMENTS)
+  const [stockMovements, setStockMovements] = React.useState<StockMovement[]>(INITIAL_STOCK_MOVEMENTS)
   const [stockInDialogOpen, setStockInDialogOpen] = React.useState(false)
   const [stockInDefaultItemId, setStockInDefaultItemId] = React.useState<string>('')
   const [stockFilterItem, setStockFilterItem] = React.useState<string>('semua')
@@ -746,7 +432,7 @@ export default function AgihanBulanPage() {
 
   // ─── Distribution Form ─────────────────────────────────────────────
   const form = useForm<DistributionFormValues>({
-    resolver: zodResolver(distributionFormSchema),
+    resolver: zodResolver(distributionFormSchema) as any,
     defaultValues: {
       namaAsnaf: '',
       noKP: '',
@@ -765,7 +451,7 @@ export default function AgihanBulanPage() {
 
   // ─── Stock In Form ─────────────────────────────────────────────────
   const stockInForm = useForm<StockInFormValues>({
-    resolver: zodResolver(stockInFormSchema),
+    resolver: zodResolver(stockInFormSchema) as any,
     defaultValues: {
       itemId: '',
       quantity: 1,
@@ -778,7 +464,7 @@ export default function AgihanBulanPage() {
 
   // Product Form (Add/Edit)
   const productForm = useForm<ProductFormValues>({
-    resolver: zodResolver(productFormSchema),
+    resolver: zodResolver(productFormSchema) as any,
     defaultValues: {
       name: '',
       unit: 'kg',
@@ -790,7 +476,7 @@ export default function AgihanBulanPage() {
 
   // Stock Out Form
   const stockOutForm = useForm<StockOutFormValues>({
-    resolver: zodResolver(stockOutFormSchema),
+    resolver: zodResolver(stockOutFormSchema) as any,
     defaultValues: {
       itemId: '',
       quantity: 1,

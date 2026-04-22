@@ -394,16 +394,16 @@ export default function DonorsPage() {
     if (!deleteTarget) return
     try {
       if (deleteTarget.type === 'donor') {
-        await api.delete('/donors', { params: { id: deleteTarget.id } })
+        await api.delete('/donors', { id: deleteTarget.id })
         toast.success('Penderma berjaya dipadam')
         fetchDonors()
         fetchStats()
       } else if (deleteTarget.type === 'receipt') {
-        await api.delete('/donors/receipts', { params: { id: deleteTarget.id } })
+        await api.delete('/donors/receipts', { id: deleteTarget.id })
         toast.success('Resit cukai berjaya dipadam')
         fetchReceipts()
       } else if (deleteTarget.type === 'communication') {
-        await api.delete('/donors/communications', { params: { id: deleteTarget.id } })
+        await api.delete('/donors/communications', { id: deleteTarget.id })
         toast.success('Komunikasi berjaya dipadam')
         fetchCommunications()
       }

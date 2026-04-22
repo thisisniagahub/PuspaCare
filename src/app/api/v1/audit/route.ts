@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
 
     if (!parsed.success) {
       return NextResponse.json(
-        { success: false, error: 'Validation failed', details: parsed.error.errors },
+        { success: false, error: 'Validation failed', details: parsed.error.issues },
         { status: 400 }
       );
     }
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
           },
         } : {}),
         ...(userId ? { userId } : {}),
-        ...(entity ? { entity: { contains: entity, mode: 'insensitive' } } : {}),
+        ...(entity ? { entity: { contains: entity } } : {}),
       },
       orderBy: { _count: { id: 'desc' } },
       take: 10,

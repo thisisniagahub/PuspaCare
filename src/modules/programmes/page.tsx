@@ -369,10 +369,10 @@ const programmeSchema = z.object({
   endDate: z.string().min(1, 'Tarikh tamat diperlukan'),
   location: z.string().optional().default(''),
   targetBeneficiaries: z
-    .number({ invalid_type_error: 'Sila masukkan nombor' })
+    .number({ message: 'Sila masukkan nombor' })
     .min(0, 'Sasaran peserta tidak boleh negatif'),
   budget: z
-    .number({ invalid_type_error: 'Sila masukkan nombor' })
+    .number({ message: 'Sila masukkan nombor' })
     .min(0, 'Bajet tidak boleh negatif'),
   partners: z.string().optional().default(''),
   notes: z.string().optional().default(''),
@@ -430,7 +430,7 @@ export default function ProgrammesPage() {
   // ─── Form ─────────────────────────────────────────────────────────────────
 
   const form = useForm<ProgrammeFormData>({
-    resolver: zodResolver(programmeSchema),
+    resolver: zodResolver(programmeSchema) as any,
     defaultValues: {
       name: '',
       description: '',

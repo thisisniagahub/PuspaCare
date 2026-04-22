@@ -503,7 +503,7 @@ export default function DisbursementsPage() {
 
   // ── Form ─────────────────────────────────────────────────────────────────
   const form = useForm<DisbursementFormData>({
-    resolver: zodResolver(disbursementSchema),
+    resolver: zodResolver(disbursementSchema) as any,
     defaultValues: {
       recipientName: '',
       recipientIC: '',
@@ -945,16 +945,17 @@ export default function DisbursementsPage() {
 
   function ViewSheetContent() {
     if (!viewingItem) return null;
+    const item = viewingItem;
 
-    const cfg = STATUS_CONFIG[viewingItem.status];
+    const cfg = STATUS_CONFIG[item.status];
 
     function getAvailableActions() {
       const actions: { label: string; action: () => void; variant: 'default' | 'destructive' | 'outline'; icon: React.ElementType }[] = [];
 
-      if (viewingItem.status === 'pending') {
+      if (item.status === 'pending') {
         actions.push({
           label: 'Luluskan',
-          action: () => advanceStatus(viewingItem.id),
+          action: () => advanceStatus(item.id),
           variant: 'default',
           icon: Check,
         });
@@ -964,10 +965,10 @@ export default function DisbursementsPage() {
           variant: 'destructive',
           icon: Ban,
         });
-      } else if (viewingItem.status === 'approved') {
+      } else if (item.status === 'approved') {
         actions.push({
           label: 'Proses',
-          action: () => advanceStatus(viewingItem.id),
+          action: () => advanceStatus(item.id),
           variant: 'default',
           icon: Play,
         });
@@ -977,10 +978,10 @@ export default function DisbursementsPage() {
           variant: 'destructive',
           icon: Ban,
         });
-      } else if (viewingItem.status === 'processing') {
+      } else if (item.status === 'processing') {
         actions.push({
           label: 'Selesai',
-          action: () => advanceStatus(viewingItem.id),
+          action: () => advanceStatus(item.id),
           variant: 'default',
           icon: Check,
         });

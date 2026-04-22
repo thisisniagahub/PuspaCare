@@ -165,8 +165,10 @@ export default function EKYCPage() {
         if (p.ch + 1 >= CHALLENGES.length) {
           setTimeout(() => {
             const sc = rndScore(85, 99);
-            setLiveState(prev => ({ ...prev, score: sc, running: false }));
-            if (prev.img) { setSelfie(prev.img); setLiveScore(sc); }
+            setLiveState(p => {
+              if (p.img) { setSelfie(p.img); setLiveScore(sc); }
+              return { ...p, score: sc, running: false };
+            });
           }, 300);
           return { ...p, done: nd, ch: p.ch + 1 };
         }
@@ -429,8 +431,8 @@ export default function EKYCPage() {
               </div>
               <Separator />
               <Card className="border-gray-200 dark:border-gray-700"><CardContent className="p-4 space-y-2.5"><div className="flex items-center gap-2"><Wallet className="w-4 h-4 text-purple-600" /><span className="text-sm font-semibold">Maklumat Wallet</span></div>
-                {[['Status Wallet', detail.bank ? <Badge className="bg-emerald-600 hover:bg-emerald-700 text-[10px]">Dibenarkan</Badge> : <Badge variant="outline" className="text-[10px]">Tidak Dibenarkan</Badge>], ['Had Semasa', fmt(detail.wallet)], ['Had Sebelum', fmt(detail.prev)], ['Pindahan Bank', detail.bank ? 'Ya' : 'Tidak']].map(([l, v]) => (
-                  <div key={l} className="flex justify-between items-center"><span className="text-xs text-muted-foreground">{l}</span><span className="text-sm font-medium">{v}</span></div>
+                {([['Status Wallet', detail.bank ? <Badge className="bg-emerald-600 hover:bg-emerald-700 text-[10px]">Dibenarkan</Badge> : <Badge variant="outline" className="text-[10px]">Tidak Dibenarkan</Badge>], ['Had Semasa', fmt(detail.wallet)], ['Had Sebelum', fmt(detail.prev)], ['Pindahan Bank', detail.bank ? 'Ya' : 'Tidak']] as [string, React.ReactNode][]).map(([l, v], idx) => (
+                  <div key={idx} className="flex justify-between items-center"><span className="text-xs text-muted-foreground">{l}</span><span className="text-sm font-medium">{v}</span></div>
                 ))}
               </CardContent></Card>
               {detail.bnm && <div className="flex items-center gap-2 p-3 rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20"><ShieldCheck className="w-5 h-5 text-emerald-600" /><span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Selaras BNM AMLA</span></div>}

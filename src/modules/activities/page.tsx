@@ -566,7 +566,7 @@ function ActivityFormDialog({
   const isEditing = !!activity;
 
   const form = useForm<ActivityFormData>({
-    resolver: zodResolver(activitySchema),
+    resolver: zodResolver(activitySchema) as any,
     defaultValues: {
       title: activity?.title || "",
       description: activity?.description || "",
