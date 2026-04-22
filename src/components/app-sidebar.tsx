@@ -135,11 +135,11 @@ function SidebarBrand({ collapsed }: { collapsed: boolean }) {
     )}>
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-emerald-600 shadow-lg shadow-purple-600/20 ring-1 ring-purple-100 dark:ring-purple-800/40 transition-all duration-300">
         <Image
-          src="/puspa-logo-transparent.png"
+          src="/puspa-icon-white.png"
           alt="PUSPA Logo"
           width={30}
           height={30}
-          className="object-contain brightness-0 invert"
+          className="object-contain"
           priority
         />
       </div>
@@ -153,7 +153,7 @@ function SidebarBrand({ collapsed }: { collapsed: boolean }) {
           PUSPA
         </span>
         <span className="text-[11px] leading-tight text-muted-foreground whitespace-nowrap">
-          Pertubuhan Urus Peduli Asnaf
+          Pertubuhan Urus Peduli Penasaf
         </span>
       </div>
     </div>
