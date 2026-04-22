@@ -1049,7 +1049,7 @@ function FilterBar({
             <div className="flex items-center gap-2">
               <Filter className="h-4 w-4 text-muted-foreground" />
               <Select value={statusFilter} onValueChange={onStatusChange}>
-                <SelectTrigger className="w-[170px]">
+                <SelectTrigger className="w-full sm:w-[170px]">
                   <SelectValue placeholder="Semua Status" />
                 </SelectTrigger>
                 <SelectContent>
@@ -1063,7 +1063,7 @@ function FilterBar({
               </Select>
             </div>
             <Select value={priorityFilter} onValueChange={onPriorityChange}>
-              <SelectTrigger className="w-[150px]">
+              <SelectTrigger className="w-full sm:w-[150px]">
                 <SelectValue placeholder="Semua Prioriti" />
               </SelectTrigger>
               <SelectContent>
@@ -1075,7 +1075,7 @@ function FilterBar({
               </SelectContent>
             </Select>
             <Select value={categoryFilter} onValueChange={onCategoryChange}>
-              <SelectTrigger className="w-[180px]">
+              <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Semua Kategori" />
               </SelectTrigger>
               <SelectContent>

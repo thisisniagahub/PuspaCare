@@ -783,7 +783,7 @@ export default function DonationsPage() {
             <CardTitle className="text-lg">Pecahan Dana ISF</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center gap-4 sm:flex-row">
-            <div className="relative h-[240px] w-[240px] shrink-0">
+            <div className="relative h-[200px] w-[200px] shrink-0 sm:h-[240px] sm:w-[240px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie

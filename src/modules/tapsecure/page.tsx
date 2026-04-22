@@ -367,10 +367,10 @@ export default function TapSecurePage() {
                       <Input placeholder="Cari IP, peranti, atau butiran..." value={logSearch} onChange={e => setLogSearch(e.target.value)} className="pl-8 h-9 text-sm" />
                     </div>
                     <div className="flex gap-2 flex-wrap">
-                      <Select value={logAction} onValueChange={setLogAction}><SelectTrigger size="sm" className="w-[140px] text-xs"><Filter className="w-3 h-3 mr-1" /><SelectValue placeholder="Tindakan" /></SelectTrigger>
+                      <Select value={logAction} onValueChange={setLogAction}><SelectTrigger size="sm" className="w-full sm:w-[140px] text-xs"><Filter className="w-3 h-3 mr-1" /><SelectValue placeholder="Tindakan" /></SelectTrigger>
                         <SelectContent><SelectItem value="all">Semua Tindakan</SelectItem>{Object.entries(AL).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}</SelectContent>
                       </Select>
-                      <Select value={logStatus} onValueChange={setLogStatus}><SelectTrigger size="sm" className="w-[110px] text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
+                      <Select value={logStatus} onValueChange={setLogStatus}><SelectTrigger size="sm" className="w-full sm:w-[110px] text-xs"><SelectValue placeholder="Status" /></SelectTrigger>
                         <SelectContent><SelectItem value="all">Semua</SelectItem><SelectItem value="success">Berjaya</SelectItem><SelectItem value="failed">Gagal</SelectItem><SelectItem value="blocked">Disekat</SelectItem></SelectContent>
                       </Select>
                     </div>

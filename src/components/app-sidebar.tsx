@@ -433,8 +433,8 @@ export function AppSidebar() {
       {/* ── Desktop: Fixed sidebar with hover expand ── */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-30 hidden border-r border-border bg-card md:flex md:flex-col md:transition-all md:duration-300 md:ease-in-out',
-          expanded ? 'md:w-[260px]' : 'md:w-[72px]',
+          'fixed inset-y-0 left-0 z-30 hidden border-r border-border bg-card lg:flex lg:flex-col lg:transition-all lg:duration-300 lg:ease-in-out',
+          expanded ? 'lg:w-[260px]' : 'lg:w-[72px]',
         )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -450,7 +450,7 @@ export function AppSidebar() {
         {/* Collapse/Pin toggle button */}
         <div
           className={cn(
-            'absolute -right-3 top-7 z-50 hidden md:flex',
+            'absolute -right-3 top-7 z-50 hidden lg:flex',
           )}
         >
           <Button
@@ -469,7 +469,7 @@ export function AppSidebar() {
 
         {/* Close button when expanded via hover */}
         {expanded && isCollapsed && (
-          <div className="absolute right-2 top-4 hidden md:flex">
+          <div className="absolute right-2 top-4 hidden lg:flex">
             <Button
               variant="ghost"
               size="icon"

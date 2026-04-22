@@ -129,7 +129,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-background flex">
       <AppSidebar />
-      <div className="flex-1 flex flex-col min-w-0 md:ml-[72px] md:transition-all md:duration-300 md:ease-in-out">
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-[72px] lg:transition-all lg:duration-300 lg:ease-in-out">
         <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
           <div className="flex items-center justify-between h-14 px-4 lg:px-6">
             <div className="flex items-center gap-3">

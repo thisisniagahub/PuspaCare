@@ -654,7 +654,7 @@ export default function VolunteersPage() {
                     </div>
                     <div className="flex gap-2">
                       <Select value={volStatusFilter || 'all'} onValueChange={handleVolStatusFilter}>
-                        <SelectTrigger className="w-[150px] border-gray-200 bg-gray-50 dark:border-slate-600 dark:bg-slate-900/50">
+                        <SelectTrigger className="w-full sm:w-[150px] border-gray-200 bg-gray-50 dark:border-slate-600 dark:bg-slate-900/50">
                           <Filter className="mr-2 h-3.5 w-3.5 text-gray-400" />
                           <SelectValue placeholder="Status" />
                         </SelectTrigger>

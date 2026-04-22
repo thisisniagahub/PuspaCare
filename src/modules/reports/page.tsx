@@ -484,8 +484,8 @@ function FinancialImpakTab() {
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="border-0 shadow-sm"><CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Pendapatan Mengikut Jenis Dana</CardTitle><CardDescription>Agihan pendapatan berdasarkan sumber dana ISF</CardDescription></CardHeader><CardContent className="pt-2"><div className="h-[320px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={incomeByFundData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" /><XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} /><Tooltip content={<RinggitTooltip />} /><Bar dataKey="amount" name="Jumlah (RM)" radius={[6, 6, 0, 0]} maxBarSize={52}>{incomeByFundData.map((entry, index) => <Cell key={index} fill={entry.color} />)}</Bar></BarChart></ResponsiveContainer></div><div className="mt-3 flex flex-wrap gap-3">{incomeByFundData.map((entry) => <div key={entry.name} className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: entry.color }} /><span className="text-xs text-gray-600">{entry.name}</span></div>)}</div></CardContent></Card>
-        <Card className="border-0 shadow-sm"><CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Trend Pendapatan vs Perbelanjaan</CardTitle><CardDescription>Perbandingan bulanan 12 bulan terkini</CardDescription></CardHeader><CardContent className="pt-2"><div className="h-[320px]"><ResponsiveContainer width="100%" height="100%"><AreaChart data={incomeVsExpenditureData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}><defs><linearGradient id="pendapatanGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} /><stop offset="95%" stopColor="#16a34a" stopOpacity={0.01} /></linearGradient><linearGradient id="perbelanjaanGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#dc2626" stopOpacity={0.12} /><stop offset="95%" stopColor="#dc2626" stopOpacity={0.01} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" /><XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} /><Tooltip content={<RinggitTooltip />} /><Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px' }} /><Area type="monotone" dataKey="pendapatan" name="Pendapatan" stroke="#16a34a" strokeWidth={2.5} fill="url(#pendapatanGradient)" dot={{ r: 3, fill: '#16a34a' }} activeDot={{ r: 5 }} /><Area type="monotone" dataKey="perbelanjaan" name="Perbelanjaan" stroke="#dc2626" strokeWidth={2.5} fill="url(#perbelanjaanGradient)" dot={{ r: 3, fill: '#dc2626' }} activeDot={{ r: 5 }} /></AreaChart></ResponsiveContainer></div></CardContent></Card>
+        <Card className="border-0 shadow-sm"><CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Pendapatan Mengikut Jenis Dana</CardTitle><CardDescription>Agihan pendapatan berdasarkan sumber dana ISF</CardDescription></CardHeader><CardContent className="pt-2"><div className="h-[240px] sm:h-[320px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={incomeByFundData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" /><XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} /><Tooltip content={<RinggitTooltip />} /><Bar dataKey="amount" name="Jumlah (RM)" radius={[6, 6, 0, 0]} maxBarSize={52}>{incomeByFundData.map((entry, index) => <Cell key={index} fill={entry.color} />)}</Bar></BarChart></ResponsiveContainer></div><div className="mt-3 flex flex-wrap gap-3">{incomeByFundData.map((entry) => <div key={entry.name} className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: entry.color }} /><span className="text-xs text-gray-600">{entry.name}</span></div>)}</div></CardContent></Card>
+        <Card className="border-0 shadow-sm"><CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Trend Pendapatan vs Perbelanjaan</CardTitle><CardDescription>Perbandingan bulanan 12 bulan terkini</CardDescription></CardHeader><CardContent className="pt-2"><div className="h-[240px] sm:h-[320px]"><ResponsiveContainer width="100%" height="100%"><AreaChart data={incomeVsExpenditureData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}><defs><linearGradient id="pendapatanGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} /><stop offset="95%" stopColor="#16a34a" stopOpacity={0.01} /></linearGradient><linearGradient id="perbelanjaanGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#dc2626" stopOpacity={0.12} /><stop offset="95%" stopColor="#dc2626" stopOpacity={0.01} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" /><XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} /><Tooltip content={<RinggitTooltip />} /><Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px' }} /><Area type="monotone" dataKey="pendapatan" name="Pendapatan" stroke="#16a34a" strokeWidth={2.5} fill="url(#pendapatanGradient)" dot={{ r: 3, fill: '#16a34a' }} activeDot={{ r: 5 }} /><Area type="monotone" dataKey="perbelanjaan" name="Perbelanjaan" stroke="#dc2626" strokeWidth={2.5} fill="url(#perbelanjaanGradient)" dot={{ r: 3, fill: '#dc2626' }} activeDot={{ r: 5 }} /></AreaChart></ResponsiveContainer></div></CardContent></Card>
       </div>
 
       {/* Expenditure by Programme */}
@@ -555,7 +555,7 @@ function FinancialSummaryTab() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex gap-2">
               <Select value={period} onValueChange={setPeriod}>
-                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[160px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="monthly">Bulanan</SelectItem>
                   <SelectItem value="quarterly">Suku Tahunan</SelectItem>
@@ -563,7 +563,7 @@ function FinancialSummaryTab() {
                 </SelectContent>
               </Select>
               <Select value={String(year)} onValueChange={(v) => setYear(Number(v))}>
-                <SelectTrigger className="w-[120px]"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="w-full sm:w-[120px]"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {[2024, 2025, 2026, 2027].map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}
                 </SelectContent>
@@ -593,7 +593,7 @@ function FinancialSummaryTab() {
             <CardDescription>Agihan derma mengikut jenis dana (Zakat, Sadaqah, Waqf, Infaq, Am)</CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
-            <div className="h-[300px]">
+            <div className="h-[220px] sm:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={isfChartData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" />
@@ -616,7 +616,7 @@ function FinancialSummaryTab() {
             <CardDescription>Perbandingan mengikut {period === 'monthly' ? 'bulan' : period === 'quarterly' ? 'suku tahun' : 'tahun'} {year}</CardDescription>
           </CardHeader>
           <CardContent className="pt-2">
-            <div className="h-[300px]">
+            <div className="h-[220px] sm:h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
                 {data.periodBreakdown.length > 2 ? (
                   <LineChart data={data.periodBreakdown} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>

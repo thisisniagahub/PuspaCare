@@ -639,42 +639,42 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Stats pills - always visible */}
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-2.5 rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
-                  <Users className="h-4 w-4 text-white" />
+            {/* Stats pills - responsive grid */}
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
+              <div className="flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
+                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-white/20">
+                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-lg font-bold leading-tight">{formatNumber(stats.jumlahAhliAsnaf)}</span>
-                  <span className="text-[11px] leading-tight text-purple-200">Ahli Asnaf</span>
+                  <span className="text-base font-bold leading-tight sm:text-lg">{formatNumber(stats.jumlahAhliAsnaf)}</span>
+                  <span className="text-[10px] leading-tight text-purple-200 sm:text-[11px]">Ahli Asnaf</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
-                  <HandCoins className="h-4 w-4 text-white" />
+              <div className="flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
+                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-white/20">
+                  <HandCoins className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-lg font-bold leading-tight">{formatCurrency(stats.jumlahDonasi)}</span>
-                  <span className="text-[11px] leading-tight text-purple-200">Jumlah Donasi</span>
+                  <span className="text-base font-bold leading-tight sm:text-lg">{formatCurrency(stats.jumlahDonasi)}</span>
+                  <span className="text-[10px] leading-tight text-purple-200 sm:text-[11px]">Jumlah Donasi</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
-                  <Heart className="h-4 w-4 text-white" />
+              <div className="flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
+                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-white/20">
+                  <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-lg font-bold leading-tight">{stats.programAktif}</span>
-                  <span className="text-[11px] leading-tight text-purple-200">Program Aktif</span>
+                  <span className="text-base font-bold leading-tight sm:text-lg">{stats.programAktif}</span>
+                  <span className="text-[10px] leading-tight text-purple-200 sm:text-[11px]">Program Aktif</span>
                 </div>
               </div>
-              <div className="flex items-center gap-2.5 rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
-                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
-                  <UserCheck className="h-4 w-4 text-white" />
+              <div className="flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
+                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-white/20">
+                  <UserCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-lg font-bold leading-tight">{stats.sukarelawanAktif}</span>
-                  <span className="text-[11px] leading-tight text-purple-200">Sukarelawan</span>
+                  <span className="text-base font-bold leading-tight sm:text-lg">{stats.sukarelawanAktif}</span>
+                  <span className="text-[10px] leading-tight text-purple-200 sm:text-[11px]">Sukarelawan</span>
                 </div>
               </div>
             </div>
@@ -764,7 +764,7 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-[340px] w-full">
+              <div className="h-[260px] w-full sm:h-[340px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart
                     data={monthlyData}
@@ -815,7 +815,7 @@ export default function DashboardPage() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="h-[240px] w-full">
+              <div className="h-[200px] w-full sm:h-[240px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
