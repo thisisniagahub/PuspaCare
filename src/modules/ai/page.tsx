@@ -1120,11 +1120,11 @@ export default function AIToolsPage() {
       <div className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center gap-3 mb-1">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-200">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#4B0082] to-[#6B21A8] flex items-center justify-center shadow-lg shadow-purple-200">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-slate-900">
+              <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: '#4B0082' }}>
                 AI Tools PUSPA
               </h1>
               <p className="text-sm text-slate-500">
@@ -1477,7 +1477,7 @@ export default function AIToolsPage() {
             {!selectedAnalytics ? (
               <>
                 <div className="text-center mb-6">
-                  <h2 className="text-xl font-bold text-slate-900">Analitik AI PUSPA</h2>
+                  <h2 className="text-xl font-bold" style={{ color: '#4B0082' }}>Analitik AI PUSPA</h2>
                   <p className="text-sm text-slate-500 mt-1">
                     Dikuasakan oleh kecerdasan buatan untuk wawasan yang lebih mendalam
                   </p>

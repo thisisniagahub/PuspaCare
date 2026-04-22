@@ -1718,8 +1718,8 @@ function DocSidebarContent({
       {/* Header */}
       <div className="px-4 pt-4 pb-2">
         <div className="flex items-center gap-2 mb-3">
-          <BookOpen className="h-5 w-5 text-purple-600" />
-          <h2 className="text-sm font-bold text-foreground">📘 Panduan PUSPA</h2>
+          <BookOpen className="h-5 w-5" style={{ color: '#4B0082' }} />
+          <h2 className="text-sm font-bold" style={{ color: '#4B0082' }}>📘 Panduan PUSPA</h2>
         </div>
         <div className="relative">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />

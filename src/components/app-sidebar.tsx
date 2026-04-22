@@ -133,12 +133,12 @@ function SidebarBrand({ collapsed }: { collapsed: boolean }) {
       'flex items-center px-4 py-4 transition-all duration-300 ease-in-out',
       collapsed ? 'justify-center' : 'gap-3',
     )}>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-purple-600 to-emerald-600 shadow-lg shadow-purple-600/20 ring-1 ring-purple-100 dark:ring-purple-800/40 transition-all duration-300">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/40 shadow-lg shadow-purple-600/10 ring-1 ring-purple-200/60 dark:ring-purple-800/40 transition-all duration-300">
         <Image
-          src="/puspa-icon-white.png"
+          src="/puspa-logo-official.png"
           alt="PUSPA Logo"
-          width={30}
-          height={30}
+          width={40}
+          height={40}
           className="object-contain"
           priority
         />
@@ -149,11 +149,11 @@ function SidebarBrand({ collapsed }: { collapsed: boolean }) {
           collapsed ? 'max-h-0 max-w-0 opacity-0' : 'max-h-20 max-w-[200px] opacity-100',
         )}
       >
-        <span className="text-lg font-bold tracking-tight text-foreground whitespace-nowrap">
+        <span className="text-lg font-bold tracking-tight whitespace-nowrap" style={{ color: '#4B0082' }}>
           PUSPA
         </span>
         <span className="text-[11px] leading-tight text-muted-foreground whitespace-nowrap">
-          Pertubuhan Urus Peduli Penasaf
+          Pertubuhan Urus Peduli Asnaf
         </span>
       </div>
     </div>
@@ -288,12 +288,12 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
           collapsed ? 'justify-center' : '',
         )}
       >
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/30">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-950/40">
           <Image
-            src="/puspa-logo-transparent.png"
+            src="/puspa-logo-official.png"
             alt="PUSPA"
-            width={18}
-            height={18}
+            width={20}
+            height={20}
             className="object-contain"
           />
         </div>
@@ -303,7 +303,7 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
             collapsed ? 'max-h-0 max-w-0 opacity-0' : 'max-h-10 max-w-[180px] opacity-100',
           )}
         >
-          <span className="text-xs font-medium text-foreground whitespace-nowrap">
+          <span className="text-xs font-medium whitespace-nowrap" style={{ color: '#4B0082' }}>
             PUSPA KL & Selangor
           </span>
           <span className="text-[10px] text-muted-foreground whitespace-nowrap">

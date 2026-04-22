@@ -92,13 +92,13 @@ export function CommandPalette() {
     <CommandDialog open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen}>
       <div className="flex items-center gap-2 px-4 pt-2 pb-1">
         <Image
-          src="/puspa-logo-transparent.png"
+          src="/puspa-logo-official.png"
           alt="PUSPA"
-          width={20}
-          height={20}
-          className="object-contain opacity-70"
+          width={22}
+          height={22}
+          className="object-contain"
         />
-        <span className="text-xs font-medium text-muted-foreground">PUSPA Command</span>
+        <span className="text-xs font-semibold" style={{ color: '#4B0082' }}>PUSPA Command</span>
       </div>
       <CommandInput
         placeholder="Cari modul, ciri, atau tetapan..."

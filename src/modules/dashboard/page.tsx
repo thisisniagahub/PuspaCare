@@ -605,15 +605,15 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Hero Welcome Banner */}
-        <div className="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-700 to-emerald-600 p-6 text-white shadow-xl shadow-purple-600/25 sm:p-8">
+        <div className="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#4B0082] via-[#6B21A8] to-[#7C3AED] p-6 text-white shadow-xl shadow-purple-900/30 sm:p-8">
           {/* Decorative background shapes */}
           <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-12 -left-12 h-48 w-48 rounded-full bg-emerald-400/10 blur-2xl" />
-          <div className="pointer-events-none absolute right-20 bottom-4 h-32 w-32 rounded-full bg-purple-400/10 blur-xl" />
+          <div className="pointer-events-none absolute -bottom-12 -left-12 h-48 w-48 rounded-full bg-purple-400/10 blur-2xl" />
+          <div className="pointer-events-none absolute right-20 bottom-4 h-32 w-32 rounded-full bg-purple-300/10 blur-xl" />
 
           <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-5">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm ring-1 ring-white/30 shadow-lg">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/95 shadow-lg ring-1 ring-white/50">
                 <Image
                   src="/puspa-logo-official.png"
                   alt="PUSPA Logo"

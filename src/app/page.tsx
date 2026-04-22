@@ -138,13 +138,13 @@ export default function Home() {
               </Button>
               <div className="flex items-center gap-2 text-sm">
                 <Image
-                  src="/puspa-logo-transparent.png"
+                  src="/puspa-logo-official.png"
                   alt="PUSPA"
-                  width={24}
-                  height={24}
+                  width={28}
+                  height={28}
                   className="hidden sm:block object-contain"
                 />
-                <span className="font-medium truncate max-w-xs sm:max-w-md">
+                <span className="font-semibold truncate max-w-xs sm:max-w-md" style={{ color: '#4B0082' }}>
                   {viewLabels[currentView] || 'Dashboard'}
                 </span>
               </div>
@@ -177,13 +177,14 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <Image
-                src="/puspa-logo-transparent.png"
+                src="/puspa-logo-official.png"
                 alt="PUSPA"
-                width={18}
-                height={18}
-                className="object-contain opacity-70"
+                width={20}
+                height={20}
+                className="object-contain opacity-80"
               />
-              <span>© 2026 PUSPA — Pertubuhan Urus Peduli Asnaf KL & Selangor</span>
+              <span className="font-medium" style={{ color: '#4B0082' }}>© 2026 PUSPA</span>
+              <span className="text-muted-foreground">— Pertubuhan Urus Peduli Asnaf KL & Selangor</span>
             </div>
             <div className="flex items-center gap-3">
               <span>v2.1.0</span>
