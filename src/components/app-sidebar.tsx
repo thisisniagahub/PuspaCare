@@ -31,6 +31,7 @@ import {
   BookOpen,
   PanelLeftClose,
   PanelLeftOpen,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -48,92 +49,96 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 
-// ---------------------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════════════════
 // Types
-// ---------------------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════════════════
+
+type LucideIcon = React.ComponentType<React.SVGProps<SVGSVGElement> & { size?: number | string }>;
 
 type NavItem = {
   id: ViewId;
   label: string;
-  icon: React.ComponentType<React.SVGProps<SVGSVGElement> & { size?: number | string }>;
+  icon: LucideIcon;
 };
 
-type NavSection = {
+type NavGroup = {
   title: string;
   items: NavItem[];
+  /** If true, items are visually grouped under a sub-label (e.g. OpenClaw) */
+  subGroup?: string;
 };
 
-// ---------------------------------------------------------------------------
-// Navigation data
-// ---------------------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════════════════
+// Navigation configuration — organized by business function
+// ═══════════════════════════════════════════════════════════════════════════════
 
-const NAV_SECTIONS: NavSection[] = [
+const NAV_GROUPS: NavGroup[] = [
   {
-    title: 'Utama',
+    title: 'Menu Utama',
     items: [
       { id: 'dashboard' as ViewId, label: 'Dashboard', icon: LayoutDashboard },
       { id: 'members' as ViewId, label: 'Ahli Asnaf', icon: Users },
-      { id: 'cases' as ViewId, label: 'Kes', icon: FileText },
+      { id: 'cases' as ViewId, label: 'Kes Bantuan', icon: FileText },
       { id: 'programmes' as ViewId, label: 'Program', icon: Heart },
       { id: 'donations' as ViewId, label: 'Donasi', icon: HandCoins },
       { id: 'disbursements' as ViewId, label: 'Pembayaran', icon: Banknote },
     ],
   },
   {
-    title: 'Compliance',
+    title: 'Keselamatan & Compliance',
     items: [
       { id: 'compliance' as ViewId, label: 'Dashboard Compliance', icon: ShieldCheck },
       { id: 'reports' as ViewId, label: 'Laporan Kewangan', icon: BarChart3 },
-    ],
-  },
-  {
-    title: 'eKYC & Sekuriti',
-    items: [
       { id: 'ekyc' as ViewId, label: 'eKYC Verification', icon: ScanFace },
       { id: 'tapsecure' as ViewId, label: 'TapSecure', icon: Fingerprint },
     ],
   },
   {
-    title: 'Pengurusan',
+    title: 'Operasi',
     items: [
       { id: 'activities' as ViewId, label: 'Aktiviti', icon: Kanban },
       { id: 'volunteers' as ViewId, label: 'Sukarelawan', icon: UserCheck },
       { id: 'donors' as ViewId, label: 'Penderma', icon: Gift },
       { id: 'documents' as ViewId, label: 'Dokumen', icon: FolderOpen },
-    ],
-  },
-  {
-    title: 'Sokongan',
-    items: [
       { id: 'docs' as ViewId, label: 'Panduan', icon: BookOpen },
     ],
   },
   {
     title: 'AI & Automasi',
+    subGroup: 'OpenClaw',
     items: [
       { id: 'ai' as ViewId, label: 'Alat AI', icon: Sparkles },
-      { id: 'openclaw-mcp' as ViewId, label: 'OpenClaw', icon: Server },
+      { id: 'openclaw-mcp' as ViewId, label: 'Pelayan MCP', icon: Server },
       { id: 'openclaw-plugins' as ViewId, label: 'Plugins', icon: Puzzle },
       { id: 'openclaw-integrations' as ViewId, label: 'Integrations', icon: LinkIcon },
       { id: 'openclaw-terminal' as ViewId, label: 'Terminal', icon: Terminal },
-      { id: 'openclaw-agents' as ViewId, label: 'Agents', icon: Bot },
+      { id: 'openclaw-agents' as ViewId, label: 'Ejen AI', icon: Bot },
       { id: 'openclaw-models' as ViewId, label: 'Models', icon: Cpu },
-      { id: 'openclaw-automation' as ViewId, label: 'Automation', icon: Clock },
+      { id: 'openclaw-automation' as ViewId, label: 'Automasi', icon: Clock },
     ],
   },
 ];
 
-// ---------------------------------------------------------------------------
-// Sidebar brand header
-// ---------------------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════════════════
+// Constants
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const BRAND_COLOR = '#4B0082';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SidebarBrand — Logo + organization name
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function SidebarBrand({ collapsed }: { collapsed: boolean }) {
   return (
     <div className={cn(
-      'flex items-center px-4 py-4 transition-all duration-300 ease-in-out',
+      'flex items-center px-4 py-5 transition-all duration-300 ease-in-out',
       collapsed ? 'justify-center' : 'gap-3',
     )}>
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/40 shadow-lg shadow-purple-600/10 ring-1 ring-purple-200/60 dark:ring-purple-800/40 transition-all duration-300">
+      <div className={cn(
+        'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all duration-300',
+        'bg-white ring-1 ring-purple-100 dark:bg-purple-950/50 dark:ring-purple-800/50',
+      )}>
         <Image
           src="/puspa-logo-official.png"
           alt="PUSPA Logo"
@@ -149,7 +154,10 @@ function SidebarBrand({ collapsed }: { collapsed: boolean }) {
           collapsed ? 'max-h-0 max-w-0 opacity-0' : 'max-h-20 max-w-[200px] opacity-100',
         )}
       >
-        <span className="text-lg font-bold tracking-tight whitespace-nowrap" style={{ color: '#4B0082' }}>
+        <span
+          className="text-lg font-bold tracking-tight whitespace-nowrap"
+          style={{ color: BRAND_COLOR }}
+        >
           PUSPA
         </span>
         <span className="text-[11px] leading-tight text-muted-foreground whitespace-nowrap">
@@ -160,9 +168,9 @@ function SidebarBrand({ collapsed }: { collapsed: boolean }) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Single nav item
-// ---------------------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════════════════
+// NavItemButton — Single navigation link with active indicator
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function NavItemButton({
   item,
@@ -183,13 +191,22 @@ function NavItemButton({
       onClick={onClick}
       className={cn(
         'group relative flex w-full items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200',
-        collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2',
+        collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2 pl-3.5',
         'outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2',
         isActive
-          ? 'bg-purple-600 text-white shadow-sm shadow-purple-600/25 dark:bg-purple-700 dark:shadow-purple-700/25'
+          ? 'text-white shadow-sm'
           : 'text-muted-foreground hover:bg-muted hover:text-foreground',
       )}
+      style={
+        isActive
+          ? { background: `linear-gradient(135deg, ${BRAND_COLOR}, #6B21A8)`, boxShadow: `0 2px 8px ${BRAND_COLOR}30` }
+          : undefined
+      }
     >
+      {/* Active left bar indicator */}
+      {isActive && (
+        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-white/80" />
+      )}
       <Icon
         className={cn(
           'h-[18px] w-[18px] shrink-0 transition-all duration-200',
@@ -209,20 +226,12 @@ function NavItemButton({
     </button>
   );
 
-  // Show tooltip when collapsed
   if (collapsed) {
     return (
       <Tooltip delayDuration={0}>
         <TooltipTrigger asChild>{button}</TooltipTrigger>
-        <TooltipContent
-          side="right"
-          sideOffset={8}
-          className="font-medium"
-        >
+        <TooltipContent side="right" sideOffset={8} className="font-medium">
           {item.label}
-          {isActive && (
-            <span className="ml-1.5 inline-block h-1.5 w-1.5 rounded-full bg-purple-500" />
-          )}
         </TooltipContent>
       </Tooltip>
     );
@@ -231,69 +240,141 @@ function NavItemButton({
   return button;
 }
 
-// ---------------------------------------------------------------------------
-// Navigation section
-// ---------------------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════════════════
+// NavSectionLabel — Group title (e.g. "Menu Utama")
+// ═══════════════════════════════════════════════════════════════════════════════
 
-function NavSectionGroup({
-  section,
-  currentView,
-  onNavigate,
-  collapsed,
-}: {
-  section: NavSection;
-  currentView: ViewId;
-  onNavigate: (id: ViewId) => void;
-  collapsed: boolean;
-}) {
+function NavSectionLabel({ title, collapsed }: { title: string; collapsed: boolean }) {
   return (
-    <div className={cn('py-1.5', collapsed ? 'px-2' : 'px-3')}>
-      <h3
-        className={cn(
-          'mb-1 font-semibold uppercase tracking-wider text-muted-foreground/60 transition-all duration-300 ease-in-out',
-          collapsed ? 'max-h-0 overflow-hidden opacity-0 px-0 text-[0px]' : 'px-3 text-[11px]',
-        )}
-      >
-        {section.title}
-      </h3>
-      <div className="flex flex-col gap-0.5">
-        {section.items.map((item) => (
-          <NavItemButton
-            key={item.id}
-            item={item}
-            isActive={currentView === item.id}
-            onClick={() => onNavigate(item.id)}
-            collapsed={collapsed}
-          />
-        ))}
+    <h3
+      className={cn(
+        'mb-1 font-semibold uppercase tracking-wider text-muted-foreground/50 transition-all duration-300 ease-in-out select-none',
+        collapsed
+          ? 'max-h-0 overflow-hidden opacity-0 px-0 text-[0px]'
+          : 'px-3 text-[10px] pt-3 pb-1',
+      )}
+    >
+      {title}
+    </h3>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NavSubGroupLabel — Sub-group label (e.g. "OpenClaw" divider)
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function NavSubGroupLabel({ label, collapsed }: { label: string; collapsed: boolean }) {
+  if (collapsed) {
+    return (
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>
+          <div className="flex items-center justify-center py-1.5">
+            <div className="h-5 w-5 rounded-md bg-muted/60 flex items-center justify-center">
+              <span className="text-[8px] font-bold text-muted-foreground">OC</span>
+            </div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="right" sideOffset={8} className="text-xs font-medium">
+          {label}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-2 px-3 pt-4 pb-1 select-none">
+      <div className="flex items-center gap-1.5 text-muted-foreground/70">
+        <ChevronRight className="h-3 w-3" />
+        <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
+      <div className="flex-1 h-px bg-border/60" />
     </div>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Sidebar footer
-// ---------------------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════════════════
+// NavGroupRenderer — Renders a full navigation group with optional sub-group
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function NavGroupRenderer({
+  group,
+  currentView,
+  onNavigate,
+  collapsed,
+  isLastGroup,
+}: {
+  group: NavGroup;
+  currentView: ViewId;
+  onNavigate: (id: ViewId) => void;
+  collapsed: boolean;
+  isLastGroup: boolean;
+}) {
+  return (
+    <div className={cn(collapsed ? 'px-2' : 'px-2.5')}>
+      {/* Section title */}
+      <NavSectionLabel title={group.title} collapsed={collapsed} />
+
+      {/* Sub-group divider (e.g. OpenClaw) before items */}
+      {group.subGroup && (
+        <NavSubGroupLabel label={group.subGroup} collapsed={collapsed} />
+      )}
+
+      {/* Navigation items */}
+      <div className="flex flex-col gap-0.5">
+        {group.items.map((item, idx) => {
+          const isSubItem = group.subGroup && idx > 0;
+
+          return (
+            <NavItemButton
+              key={item.id}
+              item={item}
+              isActive={currentView === item.id}
+              onClick={() => onNavigate(item.id)}
+              collapsed={collapsed}
+            />
+          );
+        })}
+      </div>
+
+      {/* Bottom spacer for all groups except last */}
+      {!isLastGroup && (
+        <div className={cn(
+          'my-2 transition-all duration-300',
+          collapsed ? 'mx-auto w-6' : 'w-full',
+        )}>
+          <Separator className="bg-border/40" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SidebarFooter — Bottom section with org info
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function SidebarFooter({ collapsed }: { collapsed: boolean }) {
-  const footerContent = (
+  const content = (
     <div className={cn(
-      'mt-auto px-4 py-3 transition-all duration-300',
+      'px-4 py-3 transition-all duration-300',
       collapsed ? 'flex justify-center' : '',
     )}>
-      <Separator className={cn('mb-3 bg-border/50', collapsed ? 'w-8 mx-auto' : 'w-auto')} />
       <div
         className={cn(
           'flex items-center gap-3 transition-all duration-300 ease-in-out overflow-hidden',
           collapsed ? 'justify-center' : '',
         )}
       >
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-950/40">
+        <div className={cn(
+          'flex shrink-0 items-center justify-center rounded-lg',
+          'bg-purple-50 dark:bg-purple-950/40',
+          collapsed ? 'h-8 w-8' : 'h-9 w-9',
+        )}>
           <Image
             src="/puspa-logo-official.png"
             alt="PUSPA"
-            width={20}
-            height={20}
+            width={collapsed ? 18 : 22}
+            height={collapsed ? 18 : 22}
             className="object-contain"
           />
         </div>
@@ -303,7 +384,10 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
             collapsed ? 'max-h-0 max-w-0 opacity-0' : 'max-h-10 max-w-[180px] opacity-100',
           )}
         >
-          <span className="text-xs font-medium whitespace-nowrap" style={{ color: '#4B0082' }}>
+          <span
+            className="text-xs font-semibold whitespace-nowrap"
+            style={{ color: BRAND_COLOR }}
+          >
             PUSPA KL & Selangor
           </span>
           <span className="text-[10px] text-muted-foreground whitespace-nowrap">
@@ -317,21 +401,21 @@ function SidebarFooter({ collapsed }: { collapsed: boolean }) {
   if (collapsed) {
     return (
       <Tooltip delayDuration={0}>
-        <TooltipTrigger asChild>{footerContent}</TooltipTrigger>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
         <TooltipContent side="right" sideOffset={8} className="text-xs">
-          <div className="font-medium">PUSPA KL & Selangor</div>
+          <div className="font-semibold" style={{ color: BRAND_COLOR }}>PUSPA KL & Selangor</div>
           <div className="text-muted-foreground">v2.1.0</div>
         </TooltipContent>
       </Tooltip>
     );
   }
 
-  return footerContent;
+  return content;
 }
 
-// ---------------------------------------------------------------------------
-// Sidebar content (shared between mobile sheet & desktop aside)
-// ---------------------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════════════════
+// SidebarContent — Shared inner layout (mobile Sheet + desktop aside)
+// ═══════════════════════════════════════════════════════════════════════════════
 
 function SidebarContent({
   onNavigate,
@@ -349,15 +433,17 @@ function SidebarContent({
     onClose?.();
   };
 
+  const isCollapsed = !!collapsed;
+
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="flex h-full flex-col bg-card">
-        {/* Brand */}
-        <SidebarBrand collapsed={!!collapsed} />
+      <div className="relative flex h-full flex-col bg-card">
+        {/* Brand header */}
+        <SidebarBrand collapsed={isCollapsed} />
 
-        {/* Close button (mobile only) */}
+        {/* Mobile close button */}
         {onClose && (
-          <div className="absolute right-3 top-4 md:hidden z-10">
+          <div className="absolute right-3 top-5 z-10">
             <Button
               variant="ghost"
               size="icon"
@@ -370,66 +456,78 @@ function SidebarContent({
           </div>
         )}
 
-        <Separator className={cn('mx-3 w-auto', collapsed ? 'mx-3' : 'mx-4')} />
+        <Separator className="mx-4" />
 
         {/* Navigation */}
-        <ScrollArea className="flex-1">
-          <nav
-            className="flex flex-col gap-0.5 py-1"
-            aria-label="Navigasi utama"
-          >
-            {NAV_SECTIONS.map((section) => (
-              <NavSectionGroup
-                key={section.title}
-                section={section}
+        <ScrollArea className="flex-1 py-1">
+          <nav className="flex flex-col gap-0" aria-label="Navigasi utama">
+            {NAV_GROUPS.map((group, idx) => (
+              <NavGroupRenderer
+                key={group.title}
+                group={group}
                 currentView={currentView}
                 onNavigate={handleNavigate}
-                collapsed={!!collapsed}
+                collapsed={isCollapsed}
+                isLastGroup={idx === NAV_GROUPS.length - 1}
               />
             ))}
           </nav>
         </ScrollArea>
 
         {/* Footer */}
-        <SidebarFooter collapsed={!!collapsed} />
+        <Separator className="mx-4" />
+        <SidebarFooter collapsed={isCollapsed} />
       </div>
     </TooltipProvider>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Main sidebar export
-// ---------------------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════════════════════
+// useIsDesktop — Responsive hook via useSyncExternalStore
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function useIsDesktop() {
+  const desktopMq =
+    typeof window !== 'undefined'
+      ? window.matchMedia('(min-width: 1024px)')
+      : null;
+
+  return useSyncExternalStore(
+    useCallback(
+      (cb) => {
+        desktopMq?.addEventListener('change', cb);
+        return () => desktopMq?.removeEventListener('change', cb);
+      },
+      [desktopMq],
+    ),
+    () => desktopMq?.matches ?? false,
+    () => false,
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AppSidebar — Main export (mobile Sheet + desktop hover-to-expand aside)
+// ═══════════════════════════════════════════════════════════════════════════════
 
 export function AppSidebar() {
   const sidebarOpen = useAppStore((s) => s.sidebarOpen);
   const setSidebarOpen = useAppStore((s) => s.setSidebarOpen);
   const setView = useAppStore((s) => s.setView);
+
   const [isCollapsed, setIsCollapsed] = useState(true);
   const [isHovered, setIsHovered] = useState(false);
-
-  // Subscribe to desktop media query using useSyncExternalStore (no setState in effect)
-  const desktopMq = typeof window !== 'undefined' ? window.matchMedia('(min-width: 1024px)') : null;
-  const isDesktop = useSyncExternalStore(
-    useCallback((cb) => {
-      desktopMq?.addEventListener('change', cb);
-      return () => desktopMq?.removeEventListener('change', cb);
-    }, [desktopMq]),
-    () => desktopMq?.matches ?? false,
-    () => false, // SSR fallback
-  );
+  const isDesktop = useIsDesktop();
 
   // Auto-close mobile Sheet when resizing to desktop
   useEffect(() => {
     if (isDesktop) setSidebarOpen(false);
   }, [isDesktop, setSidebarOpen]);
 
-  // Expanded state: if pinned open, OR if hovered while collapsed
   const expanded = !isCollapsed || (isCollapsed && isHovered);
 
   return (
     <>
-      {/* ── Mobile/Tablet: Sheet overlay (only rendered on non-desktop) ── */}
+      {/* ── Mobile/Tablet: Sheet overlay ── */}
       {!isDesktop && (
         <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
           <SheetContent
@@ -439,9 +537,7 @@ export function AppSidebar() {
           >
             <SheetTitle className="sr-only">Menu Navigasi PUSPA</SheetTitle>
             <SidebarContent
-              onNavigate={(id) => {
-                setView(id);
-              }}
+              onNavigate={setView}
               onClose={() => setSidebarOpen(false)}
             />
           </SheetContent>
@@ -451,41 +547,35 @@ export function AppSidebar() {
       {/* ── Desktop: Fixed sidebar with hover expand ── */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-30 hidden border-r border-border bg-card lg:flex lg:flex-col lg:transition-all lg:duration-300 lg:ease-in-out',
+          'fixed inset-y-0 left-0 z-30 hidden border-r border-border bg-card',
+          'lg:flex lg:flex-col lg:transition-all lg:duration-300 lg:ease-in-out',
           expanded ? 'lg:w-[260px]' : 'lg:w-[72px]',
         )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         aria-label="Sidebar navigasi"
       >
-        <SidebarContent
-          onNavigate={(id) => {
-            setView(id);
-          }}
-          collapsed={!expanded}
-        />
+        <SidebarContent onNavigate={setView} collapsed={!expanded} />
 
-        {/* Collapse/Pin toggle button */}
-        <div
-          className={cn(
-            'absolute -right-3 top-7 z-50 hidden lg:flex',
-          )}
-        >
+        {/* Pin/Collapse toggle (visible only when collapsed) */}
+        <div className="absolute -right-3 top-7 z-50 hidden lg:flex">
           <Button
             variant="outline"
             size="icon"
             className={cn(
               'h-6 w-6 rounded-full border bg-background shadow-md transition-all duration-200 hover:bg-muted',
-              expanded ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100 pointer-events-auto',
+              expanded
+                ? 'opacity-0 scale-75 pointer-events-none'
+                : 'opacity-100 scale-100 pointer-events-auto',
             )}
-            onClick={() => setIsCollapsed(!isCollapsed)}
-            aria-label={isCollapsed ? 'Buka sidebar' : 'Tutup sidebar'}
+            onClick={() => setIsCollapsed((prev) => !prev)}
+            aria-label={isCollapsed ? 'Pin buka sidebar' : 'Tutup sidebar'}
           >
             <PanelLeftOpen className="h-3 w-3" />
           </Button>
         </div>
 
-        {/* Close button when expanded via hover */}
+        {/* Close button when expanded via hover (not pinned) */}
         {expanded && isCollapsed && (
           <div className="absolute right-2 top-4 hidden lg:flex">
             <Button
