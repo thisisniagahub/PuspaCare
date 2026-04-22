@@ -35,6 +35,8 @@ import {
   Settings,
   Eye,
   EyeOff,
+  Package,
+  UtensilsCrossed,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -116,6 +118,8 @@ const ALL_GROUPS: NavGroup[] = [
     roles: ['staff', 'admin', 'developer'],
     items: [
       { id: 'activities', label: 'Aktiviti', icon: Kanban, roles: ['staff', 'admin', 'developer'] },
+      { id: 'agihan-bulan', label: 'Agihan Bulan', icon: Package, roles: ['staff', 'admin', 'developer'] },
+      { id: 'sedekah-jumaat', label: 'Sedekah Jumaat', icon: UtensilsCrossed, roles: ['staff', 'admin', 'developer'] },
       { id: 'volunteers', label: 'Sukarelawan', icon: UserCheck, roles: ['staff', 'admin', 'developer'] },
       { id: 'documents', label: 'Dokumen', icon: FolderOpen, roles: ['staff', 'admin', 'developer'] },
     ],

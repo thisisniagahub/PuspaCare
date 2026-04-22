@@ -24,6 +24,8 @@ export type ViewId =
   | 'openclaw-automation'
   | 'ekyc'
   | 'tapsecure'
+  | 'agihan-bulan'
+  | 'sedekah-jumaat'
   | 'docs'
 
 export interface NavItem {

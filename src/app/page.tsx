@@ -35,7 +35,9 @@ import Models from '@/modules/openclaw/models'
 import Automation from '@/modules/openclaw/automation'
 import EKYC from '@/modules/ekyc/page'
 import TapSecure from '@/modules/tapsecure/page'
+import SedekahJumaat from '@/modules/sedekah-jumaat/page'
 import Docs from '@/modules/docs/page'
+import AgihanBulan from '@/modules/agihan-bulan/page'
 
 function PageLoader() {
   return (
@@ -79,7 +81,9 @@ const viewLabels: Record<string, string> = {
   'openclaw-automation': 'OpenClaw — Automasi',
   'ekyc': 'eKYC',
   'tapsecure': 'TapSecure',
+  'sedekah-jumaat': 'Sedekah Jumaat',
   docs: 'Panduan',
+  'agihan-bulan': 'Agihan Bulanan',
 }
 
 function ViewRenderer({ view }: { view: string }) {
@@ -107,7 +111,9 @@ function ViewRenderer({ view }: { view: string }) {
     case 'openclaw-automation': return <Automation />
     case 'ekyc': return <EKYC />
     case 'tapsecure': return <TapSecure />
+    case 'sedekah-jumaat': return <SedekahJumaat />
     case 'docs': return <Docs />
+    case 'agihan-bulan': return <AgihanBulan />
     default: return <Dashboard />
   }
 }

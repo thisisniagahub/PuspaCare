@@ -28,6 +28,8 @@ const VIEW_ITEMS: { id: ViewId; label: string; keywords: string[] }[] = [
   { id: 'volunteers', label: 'Sukarelawan', keywords: ['sukarelawan', 'volunteer'] },
   { id: 'donors', label: 'Penderma', keywords: ['penderma', 'donor', 'crm'] },
   { id: 'documents', label: 'Dokumen', keywords: ['dokumen', 'document', 'fail', 'file'] },
+  { id: 'agihan-bulan', label: 'Agihan Bulan', keywords: ['agihan', 'bulan', 'makan ruji', 'staple food', 'distribusi'] },
+  { id: 'sedekah-jumaat', label: 'Sedekah Jumaat', keywords: ['sedekah', 'jumaat', 'rumah kebajikan', 'mahad tahfiz', 'makanan tengahari'] },
   { id: 'openclaw-mcp', label: 'OpenClaw MCP', keywords: ['mcp', 'server', 'openclaw'] },
   { id: 'openclaw-plugins', label: 'OpenClaw Plugins', keywords: ['plugin', 'openclaw'] },
   { id: 'openclaw-integrations', label: 'OpenClaw Integrasi', keywords: ['integrasi', 'integration', 'openclaw'] },
@@ -48,7 +50,7 @@ const SECTIONS = [
   },
   {
     heading: 'Pengurusan',
-    ids: ['activities', 'volunteers', 'donors', 'documents'] as ViewId[],
+    ids: ['activities', 'volunteers', 'donors', 'documents', 'agihan-bulan', 'sedekah-jumaat'] as ViewId[],
   },
   {
     heading: 'AI & Automasi',
