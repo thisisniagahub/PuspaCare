@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 // Types
-export type ConductorTab = 'chat' | 'tasks' | 'dashboard' | 'automations' | 'trace'
+export type ConductorTab = 'chat' | 'tasks' | 'dashboard' | 'automations' | 'trace' | 'projects' | 'agents'
 
 export interface ChatMessage {
   id: string
@@ -45,6 +45,9 @@ export interface OpsWorkItem {
   updatedAt: string
   startedAt?: string
   completedAt?: string
+  executionEvents?: TraceEntry[]
+  artifacts?: OpsArtifact[]
+  automationJobs?: OpsAutomation[]
 }
 
 export interface OpsAutomation {
@@ -82,6 +85,37 @@ export interface OpsDashboardSummary {
   upcomingAutomations: OpsAutomation[]
 }
 
+export interface OpsProject {
+  name: string
+  workItemCount: number
+  completedCount: number
+  blockedCount: number
+  lastActivity: string
+}
+
+export interface OpsStats {
+  totalWorkItems: number
+  completedToday: number
+  completedThisWeek: number
+  completedThisMonth: number
+  avgResolutionTime: number
+  topDomains: Array<{ domain: string; count: number }>
+  topIntents: Array<{ intent: string; count: number }>
+  failureRate: number
+  activeAutomations: number
+  recentActivity: TraceEntry[]
+}
+
+export interface ApprovalRequest {
+  id: string
+  workItemId: string
+  action: string
+  reason: string
+  riskLevel: 'low' | 'medium' | 'high'
+  status: 'pending' | 'approved' | 'rejected' | 'revised'
+  createdAt: string
+}
+
 export interface OpsState {
   // UI State
   activeTab: ConductorTab
@@ -96,6 +130,10 @@ export interface OpsState {
   workItems: OpsWorkItem[]
   selectedWorkItem: OpsWorkItem | null
   workItemFilter: { status?: string; domain?: string }
+  selectedWorkItemIds: string[]
+  setSelectedWorkItemIds: (ids: string[]) => void
+  toggleWorkItemSelection: (id: string) => void
+  clearSelection: () => void
 
   // Trace
   traceEntries: TraceEntry[]
@@ -105,9 +143,16 @@ export interface OpsState {
 
   // Dashboard
   dashboardSummary: OpsDashboardSummary | null
+  opsStats: OpsStats | null
 
   // Artifacts
   artifacts: OpsArtifact[]
+
+  // Projects
+  projects: OpsProject[]
+
+  // Approvals
+  pendingApprovals: ApprovalRequest[]
 
   // Actions
   addMessage: (msg: Omit<ChatMessage, 'id' | 'timestamp'>) => void
@@ -121,7 +166,11 @@ export interface OpsState {
   addTraceEntry: (entry: Omit<TraceEntry, 'id' | 'createdAt'>) => void
   setAutomations: (items: OpsAutomation[]) => void
   setDashboardSummary: (summary: OpsDashboardSummary) => void
+  setOpsStats: (stats: OpsStats) => void
   setArtifacts: (items: OpsArtifact[]) => void
+  setProjects: (items: OpsProject[]) => void
+  addPendingApproval: (approval: ApprovalRequest) => void
+  removeApproval: (id: string) => void
   clearChat: () => void
 }
 
@@ -138,14 +187,25 @@ export const useOpsStore = create<OpsState>()(
       workItems: [],
       selectedWorkItem: null,
       workItemFilter: {},
+      selectedWorkItemIds: [],
+      setSelectedWorkItemIds: (ids) => set({ selectedWorkItemIds: ids }),
+      toggleWorkItemSelection: (id) => set((s) => ({
+        selectedWorkItemIds: s.selectedWorkItemIds.includes(id)
+          ? s.selectedWorkItemIds.filter((i) => i !== id)
+          : [...s.selectedWorkItemIds, id],
+      })),
+      clearSelection: () => set({ selectedWorkItemIds: [] }),
 
       traceEntries: [],
 
       automations: [],
 
       dashboardSummary: null,
+      opsStats: null,
 
       artifacts: [],
+      projects: [],
+      pendingApprovals: [],
 
       addMessage: (msg) => set((s) => ({
         messages: [...s.messages, {
@@ -178,7 +238,11 @@ export const useOpsStore = create<OpsState>()(
       })),
       setAutomations: (items) => set({ automations: items }),
       setDashboardSummary: (summary) => set({ dashboardSummary: summary }),
+      setOpsStats: (stats) => set({ opsStats: stats }),
       setArtifacts: (items) => set({ artifacts: items }),
+      setProjects: (items) => set({ projects: items }),
+      addPendingApproval: (approval) => set((s) => ({ pendingApprovals: [...s.pendingApprovals, approval] })),
+      removeApproval: (id) => set((s) => ({ pendingApprovals: s.pendingApprovals.filter((a) => a.id !== id) })),
       clearChat: () => set({ messages: [], currentWorkItemId: null }),
     }),
     {
