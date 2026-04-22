@@ -211,7 +211,16 @@ const MOCK_COMPLIANCE_ITEMS: ComplianceItem[] = [
 // Helper functions
 // ---------------------------------------------------------------------------
 
+function getGreeting(): string {
+  const hour = new Date().getHours()
+  if (hour >= 5 && hour < 12) return 'Selamat Pagi'
+  if (hour >= 12 && hour < 17) return 'Selamat Petang'
+  if (hour >= 17 && hour < 20) return 'Selamat Petang'
+  return 'Selamat Malam'
+}
+
 function formatCurrency(amount: number): string {
+  if (amount == null || isNaN(amount)) return 'RM 0'
   return new Intl.NumberFormat('ms-MY', {
     style: 'currency',
     currency: 'MYR',
@@ -221,6 +230,7 @@ function formatCurrency(amount: number): string {
 }
 
 function formatNumber(n: number): string {
+  if (n == null || isNaN(n)) return '0'
   return new Intl.NumberFormat('ms-MY').format(n)
 }
 
@@ -518,7 +528,22 @@ export default function DashboardPage() {
           api.get<RecentActivity[]>('/dashboard/activities'),
         ])
 
-        if (statsRes.status === 'fulfilled') setStats(statsRes.value)
+        if (statsRes.status === 'fulfilled') {
+          // Map API field names to dashboard field names
+          const raw = statsRes.value as Record<string, unknown>
+          setStats({
+            jumlahAhliAsnaf: (raw.totalMembers as number) ?? MOCK_STATS.jumlahAhliAsnaf,
+            programAktif: (raw.activeProgrammes as number) ?? MOCK_STATS.programAktif,
+            jumlahDonasi: (raw.totalDonations as number) ?? MOCK_STATS.jumlahDonasi,
+            sukarelawanAktif: (raw.activeVolunteers as number) ?? MOCK_STATS.sukarelawanAktif,
+            skorCompliance: (raw.complianceScore as number) ?? MOCK_STATS.skorCompliance,
+            trendAhli: MOCK_STATS.trendAhli,
+            trendProgram: MOCK_STATS.trendProgram,
+            trendDonasi: MOCK_STATS.trendDonasi,
+            trendSukarelawan: MOCK_STATS.trendSukarelawan,
+            trendCompliance: MOCK_STATS.trendCompliance,
+          })
+        }
         else setStats(MOCK_STATS)
 
         if (monthlyRes.status === 'fulfilled') setMonthlyData(monthlyRes.value)
@@ -580,10 +605,15 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Hero Welcome Banner */}
-        <div className="mb-8 rounded-2xl bg-gradient-to-r from-purple-600 via-purple-700 to-emerald-600 p-6 text-white shadow-xl shadow-purple-600/20 sm:p-8">
-          <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 via-purple-700 to-emerald-600 p-6 text-white shadow-xl shadow-purple-600/25 sm:p-8">
+          {/* Decorative background shapes */}
+          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-12 -left-12 h-48 w-48 rounded-full bg-emerald-400/10 blur-2xl" />
+          <div className="pointer-events-none absolute right-20 bottom-4 h-32 w-32 rounded-full bg-purple-400/10 blur-xl" />
+
+          <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-5">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm ring-1 ring-white/30">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm ring-1 ring-white/30 shadow-lg">
                 <Image
                   src="/puspa-logo-official.png"
                   alt="PUSPA Logo"
@@ -594,25 +624,58 @@ export default function DashboardPage() {
                 />
               </div>
               <div className="min-w-0">
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                  Papan Pemuka PUSPA
-                </h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                    {getGreeting()}, Admin
+                  </h1>
+                  <span className="hidden sm:inline-block text-lg">👋</span>
+                </div>
                 <p className="mt-1 text-sm text-purple-100 sm:text-base">
                   Ringkasan data dan statistik terkini organisasi anda.
                 </p>
-                <p className="mt-1 text-xs text-purple-200/80">
+                <p className="mt-1 text-xs text-purple-200/70">
                   Pertubuhan Urus Peduli Asnaf KL & Selangor • PPM-006-14-14032020
                 </p>
               </div>
             </div>
-            <div className="hidden lg:flex items-center gap-4 text-sm">
-              <div className="flex flex-col items-center rounded-xl bg-white/15 px-4 py-3 backdrop-blur-sm">
-                <span className="text-2xl font-bold">{formatNumber(stats.jumlahAhliAsnaf)}</span>
-                <span className="text-xs text-purple-200">Ahli Asnaf</span>
+
+            {/* Stats pills - always visible */}
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
+              <div className="flex items-center gap-2.5 rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
+                  <Users className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold leading-tight">{formatNumber(stats.jumlahAhliAsnaf)}</span>
+                  <span className="text-[11px] leading-tight text-purple-200">Ahli Asnaf</span>
+                </div>
               </div>
-              <div className="flex flex-col items-center rounded-xl bg-white/15 px-4 py-3 backdrop-blur-sm">
-                <span className="text-2xl font-bold">{formatCurrency(stats.jumlahDonasi)}</span>
-                <span className="text-xs text-purple-200">Jumlah Donasi</span>
+              <div className="flex items-center gap-2.5 rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
+                  <HandCoins className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold leading-tight">{formatCurrency(stats.jumlahDonasi)}</span>
+                  <span className="text-[11px] leading-tight text-purple-200">Jumlah Donasi</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
+                  <Heart className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold leading-tight">{stats.programAktif}</span>
+                  <span className="text-[11px] leading-tight text-purple-200">Program Aktif</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2.5 rounded-xl bg-white/15 px-4 py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20">
+                  <UserCheck className="h-4 w-4 text-white" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold leading-tight">{stats.sukarelawanAktif}</span>
+                  <span className="text-[11px] leading-tight text-purple-200">Sukarelawan</span>
+                </div>
               </div>
             </div>
           </div>
