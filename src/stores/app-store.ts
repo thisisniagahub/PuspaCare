@@ -27,7 +27,7 @@ export const useAppStore = create<AppState>()(
       currentView: 'dashboard',
       sidebarOpen: false,
       commandPaletteOpen: false,
-      userRole: 'admin',      // default role
+      userRole: 'staff',
       onboardingDone: false,
       setView: (view) => set({ currentView: view, sidebarOpen: false }),
       toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
@@ -39,7 +39,6 @@ export const useAppStore = create<AppState>()(
     {
       name: 'puspa-app-state',
       partialize: (state) => ({
-        userRole: state.userRole,
         onboardingDone: state.onboardingDone,
       }),
     },

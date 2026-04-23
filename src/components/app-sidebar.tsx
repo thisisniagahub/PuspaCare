@@ -32,12 +32,10 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   ChevronRight,
-  Settings,
-  Eye,
-  EyeOff,
   Package,
   UtensilsCrossed,
   Zap,
+  Rocket,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -88,7 +86,6 @@ const ROLE_CONFIG: Record<UserRole, { label: string; description: string }> = {
   developer: { label: 'Developer', description: 'Penuh termasuk AI & Automasi' },
 };
 
-const ROLE_CYCLE: UserRole[] = ['staff', 'admin', 'developer'];
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Navigation configuration — role-based, consistent naming
@@ -103,6 +100,7 @@ const ALL_GROUPS: NavGroup[] = [
       { id: 'members', label: 'Ahli Asnaf', icon: Users, roles: ['staff', 'admin', 'developer'] },
       { id: 'cases', label: 'Kes Bantuan', icon: FileText, roles: ['staff', 'admin', 'developer'] },
       { id: 'programmes', label: 'Program', icon: Heart, roles: ['staff', 'admin', 'developer'] },
+      { id: 'asnafpreneur', label: 'ASNAFPRENEUR AI SaaS', icon: Rocket, roles: ['admin', 'developer'] },
     ],
   },
   {
@@ -319,74 +317,33 @@ function NavSubGroupLabel({ label, collapsed }: { label: string; collapsed: bool
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// RoleSwitcher — Click to cycle role in sidebar footer
-// ═══════════════════════════════════════════════════════════════════════════════
-
-function RoleSwitcher({ collapsed }: { collapsed: boolean }) {
-  const userRole = useAppStore((s) => s.userRole);
-  const setUserRole = useAppStore((s) => s.setUserRole);
-  const config = ROLE_CONFIG[userRole];
-
-  const cycle = () => {
-    const idx = ROLE_CYCLE.indexOf(userRole);
-    const next = ROLE_CYCLE[(idx + 1) % ROLE_CYCLE.length];
-    setUserRole(next);
-  };
-
-  const switcher = (
-    <button
-      type="button"
-      onClick={cycle}
-      className={cn(
-        'flex items-center gap-2 rounded-lg px-2 py-1.5 text-left transition-all duration-200',
-        'hover:bg-muted w-full',
-        collapsed ? 'justify-center' : '',
-      )}
-      title={`Tukar peranan: ${config.label}`}
-    >
-      <div className={cn(
-        'flex h-7 w-7 shrink-0 items-center justify-center rounded-md',
-        'bg-purple-50 dark:bg-purple-950/40',
-      )}>
-        <Settings className="h-3.5 w-3.5" style={{ color: BRAND_COLOR }} />
-      </div>
-      <div className={cn(
-        'flex flex-col overflow-hidden transition-all duration-300',
-        collapsed ? 'max-h-0 max-w-0 opacity-0' : 'max-h-10 max-w-[160px] opacity-100',
-      )}>
-        <span className="text-[10px] font-semibold whitespace-nowrap" style={{ color: BRAND_COLOR }}>
-          Peranan: {config.label}
-        </span>
-        <span className="text-[9px] text-muted-foreground whitespace-nowrap">{config.description}</span>
-      </div>
-    </button>
-  );
-
-  if (collapsed) {
-    return (
-      <Tooltip delayDuration={0}>
-        <TooltipTrigger asChild>{switcher}</TooltipTrigger>
-        <TooltipContent side="right" sideOffset={8} className="text-xs">
-          <div className="font-semibold" style={{ color: BRAND_COLOR }}>Peranan: {config.label}</div>
-          <div className="text-muted-foreground">Klik untuk tukar</div>
-        </TooltipContent>
-      </Tooltip>
-    );
-  }
-  return switcher;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// SidebarFooter — Org info + role switcher
+// SidebarFooter — Org info + live role badge
 // ═══════════════════════════════════════════════════════════════════════════════
 
 function SidebarFooter({ collapsed }: { collapsed: boolean }) {
+  const userRole = useAppStore((s) => s.userRole);
+  const config = ROLE_CONFIG[userRole];
+
   return (
     <div className={cn('px-4 py-3 transition-all duration-300', collapsed ? 'flex flex-col items-center gap-2' : 'space-y-2')}>
-      {/* Role switcher */}
-      <RoleSwitcher collapsed={collapsed} />
+      <div className={cn(
+        'flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all duration-200 bg-muted/50',
+        collapsed ? 'justify-center' : '',
+      )}>
+        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-purple-50 dark:bg-purple-950/40">
+          <span className="text-[10px] font-bold" style={{ color: BRAND_COLOR }}>{config.label[0]}</span>
+        </div>
+        <div className={cn(
+          'flex flex-col overflow-hidden transition-all duration-300',
+          collapsed ? 'max-h-0 max-w-0 opacity-0' : 'max-h-10 max-w-[160px] opacity-100',
+        )}>
+          <span className="text-[10px] font-semibold whitespace-nowrap" style={{ color: BRAND_COLOR }}>
+            Peranan server: {config.label}
+          </span>
+          <span className="text-[9px] text-muted-foreground whitespace-nowrap">{config.description}</span>
+        </div>
+      </div>
       <Separator className="bg-border/40" />
-      {/* Org info */}
       <div className={cn(
         'flex items-center gap-3 transition-all duration-300 ease-in-out overflow-hidden',
         collapsed ? 'justify-center' : '',

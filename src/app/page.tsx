@@ -39,6 +39,9 @@ import SedekahJumaat from '@/modules/sedekah-jumaat/page'
 import Docs from '@/modules/docs/page'
 import AgihanBulan from '@/modules/agihan-bulan/page'
 import OpsConductor from '@/modules/ops-conductor/page'
+import Asnafpreneur from '@/modules/asnafpreneur/page'
+import { AuthSession, api } from '@/lib/api'
+import { canAccessView } from '@/lib/access-control'
 
 function PageLoader() {
   return (
@@ -86,6 +89,7 @@ const viewLabels: Record<string, string> = {
   docs: 'Panduan',
   'agihan-bulan': 'Agihan Bulanan',
   'ops-conductor': 'Ops Conductor',
+  'asnafpreneur': 'ASNAFPRENEUR AI SaaS',
 }
 
 function ViewRenderer({ view }: { view: string }) {
@@ -117,12 +121,13 @@ function ViewRenderer({ view }: { view: string }) {
     case 'docs': return <Docs />
     case 'agihan-bulan': return <AgihanBulan />
     case 'ops-conductor': return <OpsConductor />
+    case 'asnafpreneur': return <Asnafpreneur />
     default: return <Dashboard />
   }
 }
 
 export default function Home() {
-  const { currentView, toggleSidebar, setCommandPaletteOpen, userRole } = useAppStore()
+  const { currentView, toggleSidebar, setCommandPaletteOpen, userRole, setUserRole, setView } = useAppStore()
   const { theme, setTheme } = useTheme()
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -134,6 +139,30 @@ export default function Home() {
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [setCommandPaletteOpen])
+
+  useEffect(() => {
+    let active = true
+
+    api.get<AuthSession>('/auth/me')
+      .then((session) => {
+        if (!active) return
+        setUserRole(session.role)
+      })
+      .catch(() => {
+        if (!active) return
+        window.location.href = '/login'
+      })
+
+    return () => {
+      active = false
+    }
+  }, [setUserRole])
+
+  useEffect(() => {
+    if (!canAccessView(currentView, userRole)) {
+      setView('dashboard')
+    }
+  }, [currentView, setView, userRole])
 
   return (
     <div className="min-h-screen bg-background flex">

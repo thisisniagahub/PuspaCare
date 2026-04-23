@@ -64,3 +64,8 @@ export const api = {
   delete: <T>(endpoint: string, params?: Record<string, string | number | undefined>) =>
     apiFetch<T>(endpoint, { method: 'DELETE', params }),
 }
+
+export type AuthSession = {
+  role: 'staff' | 'admin' | 'developer'
+  expiresAt: number
+}

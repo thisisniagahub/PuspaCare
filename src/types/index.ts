@@ -28,6 +28,7 @@ export type ViewId =
   | 'sedekah-jumaat'
   | 'docs'
   | 'ops-conductor'
+  | 'asnafpreneur'
 
 export interface NavItem {
   id: ViewId

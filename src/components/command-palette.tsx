@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import Image from 'next/image'
 import { useAppStore } from '@/stores/app-store'
+import { canAccessView } from '@/lib/access-control'
 import {
   CommandDialog,
   CommandEmpty,
@@ -18,6 +19,7 @@ const VIEW_ITEMS: { id: ViewId; label: string; keywords: string[] }[] = [
   { id: 'members', label: 'Ahli Asnaf', keywords: ['ahli', 'asnaf', 'member', 'penerima'] },
   { id: 'cases', label: 'Kes', keywords: ['kes', 'case', 'permohonan', 'application'] },
   { id: 'programmes', label: 'Program', keywords: ['program', 'aktiviti', 'projek'] },
+  { id: 'asnafpreneur', label: 'ASNAFPRENEUR AI SaaS', keywords: ['asnafpreneur', 'ai saas', 'enterprise', 'startup', 'program digital', 'keusahawanan ai'] },
   { id: 'donations', label: 'Donasi', keywords: ['donasi', 'sumbangan', 'derma', 'zakat'] },
   { id: 'disbursements', label: 'Pembayaran', keywords: ['pembayaran', 'disbursement', 'bayar'] },
   { id: 'compliance', label: 'Compliance', keywords: ['compliance', 'pematuhan', 'audit'] },
@@ -43,7 +45,7 @@ const VIEW_ITEMS: { id: ViewId; label: string; keywords: string[] }[] = [
 const SECTIONS = [
   {
     heading: 'Utama',
-    ids: ['dashboard', 'members', 'cases', 'programmes', 'donations', 'disbursements'] as ViewId[],
+    ids: ['dashboard', 'members', 'cases', 'programmes', 'asnafpreneur', 'donations', 'disbursements'] as ViewId[],
   },
   {
     heading: 'Compliance & Laporan',
@@ -60,7 +62,7 @@ const SECTIONS = [
 ]
 
 export function CommandPalette() {
-  const { commandPaletteOpen, setCommandPaletteOpen, setView } = useAppStore()
+  const { commandPaletteOpen, setCommandPaletteOpen, setView, userRole } = useAppStore()
   const [query, setQuery] = useState('')
 
   const handleSelect = useCallback(
@@ -73,7 +75,14 @@ export function CommandPalette() {
 
   // Filter items based on search query
   const filteredSections = useMemo(() => {
-    if (!query.trim()) return SECTIONS
+    const visibleSections = SECTIONS
+      .map((section) => ({
+        ...section,
+        ids: section.ids.filter((id) => canAccessView(id, userRole)),
+      }))
+      .filter((section) => section.ids.length > 0)
+
+    if (!query.trim()) return visibleSections
 
     const q = query.toLowerCase().trim()
     const matchingIds = new Set<ViewId>()
@@ -83,13 +92,13 @@ export function CommandPalette() {
       if (haystack.includes(q)) matchingIds.add(item.id)
     })
 
-    return SECTIONS
+    return visibleSections
       .map((section) => ({
         ...section,
         ids: section.ids.filter((id) => matchingIds.has(id)),
       }))
       .filter((section) => section.ids.length > 0)
-  }, [query])
+  }, [query, userRole])
 
   return (
     <CommandDialog open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen}>
