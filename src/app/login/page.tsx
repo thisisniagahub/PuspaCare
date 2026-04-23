@@ -40,27 +40,28 @@ type LoginStatus = 'idle' | 'submitting' | 'success'
 
 const FEATURES = [
   {
-    icon: ShieldCheck,
-    title: 'Sesi selamat',
-    description: 'HTTP-only cookie melindungi akses dashboard dan API dalaman.',
-  },
-  {
-    icon: LockKeyhole,
-    title: 'Kawalan peranan',
-    description:
-      'Setiap modul dikawal ikut peranan — staf, pentadbir, atau developer.',
-  },
-  {
     icon: Users,
-    title: 'Pengurusan asnaf',
+    title: 'Pengurusan Asnaf',
     description:
-      'Dashboard lengkap untuk rekod ahli, kes bantuan, dan program kebajikan.',
+      'Kelola rekod anggota, kes sokongan, dan sesi bimbingan secara terpadu.',
+  },
+  {
+    icon: ShieldCheck,
+    title: 'Keamanan Terjamin',
+    description:
+      'Sistem terenkripsi dengan autentikasi berlapis untuk lindungi data asnaf.',
   },
   {
     icon: Clock,
-    title: 'Sesi 12 jam',
+    title: 'Akses 24/7',
     description:
-      'Kekal log masuk sepanjang sesi kerja tanpa gangguan.',
+      'Sesi staf berlaku 12 jam — cukup untuk satu hari kerja tanpa gangguan.',
+  },
+  {
+    icon: LockKeyhole,
+    title: 'Kawalan Akses',
+    description:
+      'Setiap staf hanya akses modul yang sesuai dengan peranan mereka.',
   },
 ] as const
 
