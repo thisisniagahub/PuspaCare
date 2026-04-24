@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { requireRole, AuthorizationError } from '@/lib/auth';
+import { writeAuditLog, getRequestIp } from '@/lib/audit';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
@@ -21,6 +23,7 @@ const branchUpdateSchema = branchCreateSchema.partial().extend({
 
 export async function GET(request: NextRequest) {
   try {
+    await requireRole(request, ['admin', 'developer']);
     const searchParams = request.nextUrl.searchParams;
     const isActive = searchParams.get('isActive');
     const search = searchParams.get('search') || '';
@@ -70,6 +73,12 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching branches:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch branches' },
@@ -80,6 +89,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireRole(request, ['admin', 'developer']);
     const body = await request.json();
     const validated = branchCreateSchema.parse(body);
 
@@ -101,8 +111,33 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    await writeAuditLog({
+      action: 'create',
+      entity: 'Branch',
+      entityId: branch.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: { code: branch.code, isActive: branch.isActive },
+    });
+
+    await db.notification.create({
+      data: {
+        userId: session.user.id,
+        title: 'Cawangan baharu dicipta',
+        message: `Cawangan "${branch.name}" berjaya ditambah.`,
+        type: 'success',
+        link: '/reports',
+      },
+    });
+
     return NextResponse.json({ success: true, data: branch }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -119,6 +154,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await requireRole(request, ['admin', 'developer']);
     const body = await request.json();
     const { id, ...updateData } = body;
 
@@ -160,8 +196,33 @@ export async function PUT(request: NextRequest) {
       },
     });
 
+    await writeAuditLog({
+      action: 'update',
+      entity: 'Branch',
+      entityId: branch.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: { code: branch.code, isActive: branch.isActive },
+    });
+
+    await db.notification.create({
+      data: {
+        userId: session.user.id,
+        title: 'Maklumat cawangan dikemas kini',
+        message: `Perubahan untuk cawangan "${branch.name}" telah disimpan.`,
+        type: 'info',
+        link: '/reports',
+      },
+    });
+
     return NextResponse.json({ success: true, data: branch });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -178,6 +239,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await requireRole(request, ['admin', 'developer']);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -202,12 +264,37 @@ export async function DELETE(request: NextRequest) {
       data: { isActive: false },
     });
 
+    await writeAuditLog({
+      action: 'update',
+      entity: 'Branch',
+      entityId: branch.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: { code: branch.code, isActive: false },
+    });
+
+    await db.notification.create({
+      data: {
+        userId: session.user.id,
+        title: 'Cawangan dinyahaktifkan',
+        message: `Cawangan "${branch.name}" telah dinyahaktifkan.`,
+        type: 'warning',
+        link: '/reports',
+      },
+    });
+
     return NextResponse.json({
       success: true,
       data: branch,
       message: 'Cawangan telah dinyahaktifkan',
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deactivating branch:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to deactivate branch' },

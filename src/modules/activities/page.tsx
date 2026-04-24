@@ -1,6 +1,8 @@
 "use client";
 
-import React, { useState, useCallback, useMemo } from "react";
+import React, { useState, useCallback, useMemo, useEffect, useRef, useOptimistic, startTransition } from "react";
+import { io, Socket } from "socket.io-client";
+import { updateActivityStatus } from "@/app/actions/activities";
 import {
   DndContext,
   closestCenter,
@@ -21,7 +23,7 @@ import {
   sortableKeyboardCoordinates,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
@@ -632,6 +634,19 @@ function ActivityFormDialog({
     onOpenChange(false);
   };
 
+  const typeValue = useWatch({
+    control: form.control,
+    name: "type",
+  });
+  const statusValue = useWatch({
+    control: form.control,
+    name: "status",
+  });
+  const programmeValue = useWatch({
+    control: form.control,
+    name: "programme",
+  });
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
@@ -680,7 +695,7 @@ function ActivityFormDialog({
             <div className="grid gap-2">
               <Label>Jenis</Label>
               <Select
-                value={form.watch("type")}
+                value={typeValue}
                 onValueChange={(val) =>
                   form.setValue("type", val as ActivityType)
                 }
@@ -700,7 +715,7 @@ function ActivityFormDialog({
             <div className="grid gap-2">
               <Label>Status</Label>
               <Select
-                value={form.watch("status")}
+                value={statusValue}
                 onValueChange={(val) =>
                   form.setValue("status", val as ActivityStatus)
                 }
@@ -753,7 +768,7 @@ function ActivityFormDialog({
           <div className="grid gap-2">
             <Label>Program</Label>
             <Select
-              value={form.watch("programme")}
+              value={programmeValue}
               onValueChange={(val) => form.setValue("programme", val)}
             >
               <SelectTrigger className="w-full">
@@ -859,6 +874,10 @@ function DeleteConfirmDialog({
 
 export default function ActivitiesKanbanPage() {
   const [activities, setActivities] = useState<Activity[]>(INITIAL_ACTIVITIES);
+  const [optimisticActivities, addOptimisticActivity] = useOptimistic<Activity[], { id: string, status: ActivityStatus }>(
+    activities,
+    (state, { id, status }) => state.map(a => a.id === id ? { ...a, status } : a)
+  );
   const [formOpen, setFormOpen] = useState(false);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -869,6 +888,46 @@ export default function ActivitiesKanbanPage() {
   const [mobileActiveTab, setMobileActiveTab] = useState<ActivityStatus>(
     "dirancang"
   );
+
+  const socketRef = useRef<Socket | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+
+  useEffect(() => {
+    const socket = io('/?XTransformPort=3003', {
+      transports: ['websocket', 'polling'],
+      forceNew: true,
+      reconnection: true,
+    });
+    socketRef.current = socket;
+
+    socket.on('connect', () => setIsConnected(true));
+    socket.on('disconnect', () => setIsConnected(false));
+
+    socket.on('activity-action', (data: { action: string; activity?: Activity; id?: string }) => {
+      if (data.action === 'add' && data.activity) {
+        setActivities((prev) => {
+          if (prev.find(a => a.id === data.activity!.id)) return prev;
+          return [...prev, data.activity!];
+        });
+      } else if (data.action === 'update' && data.activity) {
+        setActivities((prev) =>
+          prev.map((a) => (a.id === data.activity!.id ? data.activity! : a))
+        );
+      } else if (data.action === 'delete' && data.id) {
+        setActivities((prev) => prev.filter((a) => a.id !== data.id));
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+
+  const emitAction = useCallback((action: 'add' | 'update' | 'delete', payload: { activity?: Activity, id?: string }) => {
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('activity-action', { action, ...payload });
+    }
+  }, []);
 
   // Sensors for drag and drop
   const sensors = useSensors(
@@ -896,16 +955,16 @@ export default function ActivitiesKanbanPage() {
       selesai: [],
       dibatalkan: [],
     };
-    activities.forEach((activity) => {
+    optimisticActivities.forEach((activity) => {
       grouped[activity.status].push(activity);
     });
     return grouped;
-  }, [activities]);
+  }, [optimisticActivities]);
 
   // Active dragging item
   const activeActivity = useMemo(
-    () => activities.find((a) => a.id === activeId) || null,
-    [activities, activeId]
+    () => optimisticActivities.find((a) => a.id === activeId) || null,
+    [optimisticActivities, activeId]
   );
 
   // Handle drag start
@@ -925,27 +984,47 @@ export default function ActivitiesKanbanPage() {
       const targetColumnId = over.id as ActivityStatus;
       const isColumn = COLUMNS.some((col) => col.id === targetColumnId);
 
-      // If dropped on a column directly
+      let newStatus: ActivityStatus | null = null;
+
       if (isColumn) {
-        setActivities((prev) =>
-          prev.map((a) =>
-            a.id === active.id ? { ...a, status: targetColumnId } : a
-          )
-        );
-        return;
+        newStatus = targetColumnId;
+      } else {
+        // If dropped on another card, find the card's status
+        const targetCard = optimisticActivities.find((a) => a.id === targetColumnId);
+        if (targetCard) {
+          newStatus = targetCard.status;
+        }
       }
 
-      // If dropped on another card, find the card's status
-      const targetCard = activities.find((a) => a.id === targetColumnId);
-      if (targetCard && targetCard.status !== activities.find((a) => a.id === active.id)?.status) {
-        setActivities((prev) =>
-          prev.map((a) =>
-            a.id === active.id ? { ...a, status: targetCard.status } : a
-          )
-        );
+      const activeActivity = optimisticActivities.find((a) => a.id === active.id);
+
+      if (newStatus && activeActivity && activeActivity.status !== newStatus) {
+        const statusToUpdate = newStatus;
+        const activityId = active.id as string;
+
+        startTransition(async () => {
+          // Optimistic update for instant UI feedback
+          addOptimisticActivity({ id: activityId, status: statusToUpdate });
+
+          // Call Server Action
+          const res = await updateActivityStatus(activityId, statusToUpdate);
+
+          if (res.success) {
+            // Update local state if successful
+            setActivities((prev) =>
+              prev.map((a) =>
+                a.id === activityId ? { ...a, status: statusToUpdate } : a
+              )
+            );
+            emitAction('update', { activity: { ...activeActivity, status: statusToUpdate } });
+          } else {
+            console.error("Failed to update activity status");
+            // If failed, state naturally reverts when transition ends because we didn't update activities
+          }
+        });
       }
     },
-    [activities]
+    [optimisticActivities, emitAction, addOptimisticActivity]
   );
 
   // Open add form
@@ -969,13 +1048,15 @@ export default function ActivitiesKanbanPage() {
   // Confirm delete
   const handleDeleteConfirm = useCallback(() => {
     if (deletingActivity) {
+      const idToDelete = deletingActivity.id;
       setActivities((prev) =>
-        prev.filter((a) => a.id !== deletingActivity.id)
+        prev.filter((a) => a.id !== idToDelete)
       );
+      emitAction('delete', { id: idToDelete });
       setDeleteOpen(false);
       setDeletingActivity(null);
     }
-  }, [deletingActivity]);
+  }, [deletingActivity, emitAction]);
 
   // Save (add or edit)
   const handleSave = useCallback(
@@ -989,25 +1070,31 @@ export default function ActivitiesKanbanPage() {
 
       if (existingId) {
         // Update existing
+        let updatedActivity: Activity | null = null;
         setActivities((prev) =>
-          prev.map((a) =>
-            a.id === existingId
-              ? {
-                  ...a,
-                  title: data.title,
-                  description: data.description || "",
-                  type: data.type,
-                  status: data.status,
-                  date: data.date || null,
-                  endDate: data.endDate || null,
-                  location: data.location || null,
-                  programme: data.programme || null,
-                  assignees,
-                  notes: data.notes || "",
-                }
-              : a
-          )
+          prev.map((a) => {
+            if (a.id === existingId) {
+              updatedActivity = {
+                ...a,
+                title: data.title,
+                description: data.description || "",
+                type: data.type,
+                status: data.status,
+                date: data.date || null,
+                endDate: data.endDate || null,
+                location: data.location || null,
+                programme: data.programme || null,
+                assignees,
+                notes: data.notes || "",
+              };
+              return updatedActivity;
+            }
+            return a;
+          })
         );
+        if (updatedActivity) {
+          emitAction('update', { activity: updatedActivity });
+        }
       } else {
         // Add new
         const newActivity: Activity = {
@@ -1024,9 +1111,10 @@ export default function ActivitiesKanbanPage() {
           notes: data.notes || "",
         };
         setActivities((prev) => [...prev, newActivity]);
+        emitAction('add', { activity: newActivity });
       }
     },
-    []
+    [emitAction]
   );
 
   // Refresh
@@ -1035,7 +1123,7 @@ export default function ActivitiesKanbanPage() {
   }, []);
 
   // Total activity count
-  const totalCount = activities.length;
+  const totalCount = optimisticActivities.length;
 
   return (
     <div className="min-h-screen bg-background">
@@ -1044,9 +1132,14 @@ export default function ActivitiesKanbanPage() {
         <div className="mx-auto max-w-[1600px] px-4 py-4 sm:px-6">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
-                Pengurusan Aktiviti
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight">
+                  Pengurusan Aktiviti
+                </h1>
+                <Badge variant={isConnected ? "default" : "destructive"} className={isConnected ? "bg-emerald-500 hover:bg-emerald-600" : ""}>
+                  {isConnected ? "Live" : "Disconnected"}
+                </Badge>
+              </div>
               <p className="text-sm text-muted-foreground mt-0.5">
                 {totalCount} aktiviti keseluruhan &middot; Papan Kanban
               </p>

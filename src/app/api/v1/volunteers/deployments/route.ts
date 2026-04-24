@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
+import { getRequestIp, writeAuditLog } from '@/lib/audit';
 import { z } from 'zod';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────
@@ -20,6 +22,7 @@ const deploymentCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const volunteerId = searchParams.get('volunteerId') || '';
     const status = searchParams.get('status') || '';
@@ -68,6 +71,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
     const body = await request.json();
     const validated = deploymentCreateSchema.parse(body);
 
@@ -113,8 +117,28 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    await writeAuditLog({
+      action: 'create',
+      entity: 'VolunteerDeployment',
+      entityId: deployment.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        volunteerId: deployment.volunteerId,
+        programmeId: deployment.programmeId,
+        role: deployment.role,
+        status: deployment.status,
+      },
+    });
+
     return NextResponse.json({ success: true, data: deployment }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -133,6 +157,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
     const body = await request.json();
     const { id, ...updateData } = body;
 
@@ -169,8 +194,28 @@ export async function PUT(request: NextRequest) {
       },
     });
 
+    await writeAuditLog({
+      action: 'update',
+      entity: 'VolunteerDeployment',
+      entityId: deployment.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        volunteerId: deployment.volunteerId,
+        programmeId: deployment.programmeId,
+        role: deployment.role,
+        status: deployment.status,
+      },
+    });
+
     return NextResponse.json({ success: true, data: deployment });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -189,6 +234,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -209,8 +255,28 @@ export async function DELETE(request: NextRequest) {
 
     await db.volunteerDeployment.delete({ where: { id } });
 
+    await writeAuditLog({
+      action: 'delete',
+      entity: 'VolunteerDeployment',
+      entityId: existing.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        volunteerId: existing.volunteerId,
+        programmeId: existing.programmeId,
+        role: existing.role,
+        status: existing.status,
+      },
+    });
+
     return NextResponse.json({ success: true, message: 'Penempatan berjaya dipadam' });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deleting deployment:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete deployment' },

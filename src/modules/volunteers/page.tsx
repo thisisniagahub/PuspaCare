@@ -6,6 +6,7 @@ import {
   UserCheck,
   Clock,
   Award,
+  Eye,
   Plus,
   Search,
   Pencil,
@@ -142,6 +143,77 @@ interface Stats {
   totalCertificates: number
 }
 
+interface VolunteerOption {
+  id: string
+  name: string
+  volunteerNumber: string
+  status: string
+  totalHours: number
+}
+
+interface VolunteersEnvelope {
+  data?: Volunteer[]
+  total?: number
+  stats?: Stats
+}
+
+interface PaginatedEnvelope<T> {
+  data?: T[]
+  total?: number
+}
+
+interface VolunteerDetailDeployment {
+  id: string
+  role: string
+  status: string
+  startDate: string
+  endDate: string | null
+  location: string | null
+  notes: string | null
+  programme: { id: string; name: string } | null
+}
+
+interface VolunteerDetailHourLog {
+  id: string
+  date: string
+  hours: number
+  activity: string | null
+  status: string
+  approvedBy: string | null
+  approvedAt: string | null
+}
+
+interface VolunteerDetailCertificate {
+  id: string
+  certificateNumber: string
+  title: string
+  description: string | null
+  issuedAt: string
+  totalHours: number
+  issuedBy: string | null
+}
+
+interface VolunteerDetailSummary {
+  counts: {
+    deployments: number
+    activeDeployments: number
+    hourLogs: number
+    approvedHourLogs: number
+    pendingHourLogs: number
+    certificates: number
+  }
+  currentDeployment: VolunteerDetailDeployment | null
+  latestDeployment: VolunteerDetailDeployment | null
+  latestHourLog: VolunteerDetailHourLog | null
+  latestApprovedHourLog: VolunteerDetailHourLog | null
+  latestCertificate: VolunteerDetailCertificate | null
+}
+
+interface VolunteerDetailRecord {
+  volunteer: Volunteer
+  summary: VolunteerDetailSummary
+}
+
 // ─── Helpers ────────────────────────────────────────────────────────────────
 
 function formatDate(dateStr: string): string {
@@ -207,6 +279,15 @@ function roleLabel(role: string): string {
   return map[role] || role
 }
 
+function availabilityLabel(availability: string | null): string {
+  const map: Record<string, string> = {
+    anytime: 'Bila-bila masa',
+    weekday: 'Hari Kerja',
+    weekend: 'Hujung Minggu',
+  }
+  return availability ? (map[availability] || availability) : 'Tidak dinyatakan'
+}
+
 // ─── Main Component ─────────────────────────────────────────────────────────
 
 export default function VolunteersPage() {
@@ -242,10 +323,17 @@ export default function VolunteersPage() {
     totalHours: 0,
     totalCertificates: 0,
   })
+  const [volunteerOptions, setVolunteerOptions] = useState<VolunteerOption[]>([])
+  const [optionsLoading, setOptionsLoading] = useState(false)
 
   // Dialogs
   const [volunteerDialogOpen, setVolunteerDialogOpen] = useState(false)
   const [editingVolunteer, setEditingVolunteer] = useState<Volunteer | null>(null)
+  const [volunteerDetailOpen, setVolunteerDetailOpen] = useState(false)
+  const [viewingVolunteer, setViewingVolunteer] = useState<Volunteer | null>(null)
+  const [volunteerDetail, setVolunteerDetail] = useState<VolunteerDetailRecord | null>(null)
+  const [volunteerDetailLoading, setVolunteerDetailLoading] = useState(false)
+  const [volunteerDetailError, setVolunteerDetailError] = useState<string | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [deletingTarget, setDeletingTarget] = useState<{ type: string; id: string } | null>(null)
 
@@ -275,41 +363,9 @@ export default function VolunteersPage() {
 
   // ─── Data Fetching ──────────────────────────────────────────────────────
 
-  const fetchVolunteers = useCallback(async () => {
-    try {
-      const params: Record<string, string | number | undefined> = {
-        page: volPage,
-        pageSize,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      }
-      if (volSearch) params.search = volSearch
-      if (volStatusFilter) params.status = volStatusFilter
-
-      const res = await api.get<Volunteer[] & { total?: number; stats?: Stats }>('/volunteers', params)
-      const data = Array.isArray(res) ? res : (res as unknown as { data?: Volunteer[]; total?: number; stats?: Stats })
-      // The api helper unwraps, so res is the data array directly
-      // But GET returns { data, total, page, pageSize, stats }
-      // So we need to handle this differently
-    } catch {
-      // Will handle below
-    }
-  }, [volPage, volSearch, volStatusFilter])
-
-  // Use raw fetch to get full response envelope
   const fetchAllData = useCallback(async () => {
     setLoading(true)
     try {
-      const buildUrl = (base: string, params: Record<string, string | number | undefined>) => {
-        const sp = new URLSearchParams()
-        Object.entries(params).forEach(([k, v]) => {
-          if (v !== undefined && v !== '') sp.append(k, String(v))
-        })
-        const qs = sp.toString()
-        return qs ? `${base}?${qs}` : base
-      }
-
-      // Fetch volunteers + stats
       const volParams: Record<string, string | number | undefined> = {
         page: volPage, pageSize, sortBy: 'createdAt', sortOrder: 'desc',
       }
@@ -317,29 +373,21 @@ export default function VolunteersPage() {
       if (volStatusFilter) volParams.status = volStatusFilter
 
       const [volRes, hourRes, depRes, certRes] = await Promise.all([
-        fetch(buildUrl('/api/v1/volunteers', volParams)).then(r => r.json()),
-        fetch(buildUrl('/api/v1/volunteers/hours', { page: hourPage, pageSize })).then(r => r.json()),
-        fetch(buildUrl('/api/v1/volunteers/deployments', { page: depPage, pageSize })).then(r => r.json()),
-        fetch(buildUrl('/api/v1/volunteers/certificates', { page: certPage, pageSize })).then(r => r.json()),
+        api.getEnvelope<Volunteer[]>('/volunteers', volParams) as Promise<VolunteersEnvelope>,
+        api.getEnvelope<HourLog[]>('/volunteers/hours', { page: hourPage, pageSize }) as Promise<PaginatedEnvelope<HourLog>>,
+        api.getEnvelope<Deployment[]>('/volunteers/deployments', { page: depPage, pageSize }) as Promise<PaginatedEnvelope<Deployment>>,
+        api.getEnvelope<Certificate[]>('/volunteers/certificates', { page: certPage, pageSize }) as Promise<PaginatedEnvelope<Certificate>>,
       ])
 
-      if (volRes.success) {
-        setVolunteers(volRes.data || [])
-        setVolunteerTotal(volRes.total || 0)
-        if (volRes.stats) setStats(volRes.stats)
-      }
-      if (hourRes.success) {
-        setHourLogs(hourRes.data || [])
-        setHourTotal(hourRes.total || 0)
-      }
-      if (depRes.success) {
-        setDeployments(depRes.data || [])
-        setDepTotal(depRes.total || 0)
-      }
-      if (certRes.success) {
-        setCertificates(certRes.data || [])
-        setCertTotal(certRes.total || 0)
-      }
+      setVolunteers(volRes.data || [])
+      setVolunteerTotal(volRes.total || 0)
+      if (volRes.stats) setStats(volRes.stats)
+      setHourLogs(hourRes.data || [])
+      setHourTotal(hourRes.total || 0)
+      setDeployments(depRes.data || [])
+      setDepTotal(depRes.total || 0)
+      setCertificates(certRes.data || [])
+      setCertTotal(certRes.total || 0)
     } catch (err) {
       console.error('Error fetching data:', err)
       toast.error('Gagal memuatkan data')
@@ -352,9 +400,55 @@ export default function VolunteersPage() {
     fetchAllData()
   }, [fetchAllData])
 
+  const fetchVolunteerOptions = useCallback(async () => {
+    setOptionsLoading(true)
+    try {
+      const data = await api.get<VolunteerOption[]>('/volunteers/options', { limit: 200 })
+      setVolunteerOptions(data)
+    } catch {
+      toast.error('Gagal memuatkan pilihan sukarelawan')
+    } finally {
+      setOptionsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchVolunteerOptions()
+  }, [fetchVolunteerOptions])
+
   // Reset page on filter change
   const handleVolSearch = (val: string) => { setVolSearch(val); setVolPage(1) }
   const handleVolStatusFilter = (val: string) => { setVolStatusFilter(val === 'all' ? '' : val); setVolPage(1) }
+
+  const handleVolunteerDetailOpenChange = (open: boolean) => {
+    setVolunteerDetailOpen(open)
+    if (!open) {
+      setVolunteerDetailLoading(false)
+      setVolunteerDetailError(null)
+      setVolunteerDetail(null)
+      setViewingVolunteer(null)
+    }
+  }
+
+  const openVolunteerDetail = async (volunteer: Volunteer) => {
+    setViewingVolunteer(volunteer)
+    setVolunteerDetailOpen(true)
+    setVolunteerDetailLoading(true)
+    setVolunteerDetailError(null)
+
+    try {
+      const detail = await api.get<VolunteerDetailRecord>(`/volunteers/${volunteer.id}`)
+      setVolunteerDetail(detail)
+      setViewingVolunteer(detail.volunteer)
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Gagal memuatkan butiran sukarelawan'
+      setVolunteerDetail(null)
+      setVolunteerDetailError(message)
+      toast.error(message)
+    } finally {
+      setVolunteerDetailLoading(false)
+    }
+  }
 
   // ─── Volunteer CRUD ──────────────────────────────────────────────────────
 
@@ -407,6 +501,7 @@ export default function VolunteersPage() {
       }
       setVolunteerDialogOpen(false)
       fetchAllData()
+      fetchVolunteerOptions()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Gagal menyimpan sukarelawan')
     } finally {
@@ -431,9 +526,13 @@ export default function VolunteersPage() {
         await api.delete(`/volunteers/certificates?id=${deletingTarget.id}`)
         toast.success('Sijil berjaya dipadam')
       }
+      if (deletingTarget.type === 'volunteer' && viewingVolunteer?.id === deletingTarget.id) {
+        handleVolunteerDetailOpenChange(false)
+      }
       setDeleteDialogOpen(false)
       setDeletingTarget(null)
       fetchAllData()
+      fetchVolunteerOptions()
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : 'Gagal memadam')
     } finally {
@@ -738,6 +837,15 @@ export default function VolunteersPage() {
                                 <TableCell className="font-medium text-gray-700 dark:text-gray-300">{vol.totalHours.toFixed(1)}</TableCell>
                                 <TableCell>
                                   <div className="flex items-center justify-center gap-1">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8 text-gray-500 hover:text-sky-600 hover:bg-sky-50 dark:hover:text-sky-400 dark:hover:bg-sky-900/30"
+                                      onClick={() => openVolunteerDetail(vol)}
+                                      title="Lihat Butiran"
+                                    >
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -1088,6 +1196,297 @@ export default function VolunteersPage() {
           DIALOGS
           ═══════════════════════════════════════════════════════════════════ */}
 
+      {/* ─── Volunteer Detail Dialog ───────────────────────────────────── */}
+      <Dialog open={volunteerDetailOpen} onOpenChange={handleVolunteerDetailOpenChange}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-lg font-semibold text-gray-900 dark:text-white">
+              {volunteerDetail?.volunteer.name || viewingVolunteer?.name || 'Butiran Sukarelawan'}
+            </DialogTitle>
+            <DialogDescription className="text-sm text-gray-500">
+              {volunteerDetail?.volunteer.volunteerNumber || viewingVolunteer?.volunteerNumber || 'Rekod sukarelawan dan ringkasan hubungan utama.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {volunteerDetailLoading ? (
+            <div className="flex min-h-[280px] items-center justify-center">
+              <div className="flex flex-col items-center gap-3 text-gray-500">
+                <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+                <p className="text-sm">Memuatkan butiran sukarelawan...</p>
+              </div>
+            </div>
+          ) : volunteerDetailError ? (
+            <div className="rounded-2xl border border-red-200 bg-red-50/70 p-4 dark:border-red-900/60 dark:bg-red-950/20">
+              <p className="font-medium text-red-700 dark:text-red-300">Butiran sukarelawan tidak dapat dimuatkan.</p>
+              <p className="mt-1 text-sm text-red-600/80 dark:text-red-300/80">{volunteerDetailError}</p>
+            </div>
+          ) : volunteerDetail ? (
+            <div className="space-y-6 py-4">
+              <div className="rounded-2xl border border-purple-100 bg-gradient-to-br from-purple-50 via-white to-violet-50 p-5 shadow-sm dark:border-slate-700/60 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="font-mono text-xs font-medium text-purple-600 dark:text-purple-400">{volunteerDetail.volunteer.volunteerNumber}</p>
+                      <h3 className="mt-1 text-2xl font-bold text-gray-900 dark:text-white">{volunteerDetail.volunteer.name}</h3>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="outline" className={`text-xs font-medium ${statusColor(volunteerDetail.volunteer.status)}`}>
+                        {statusLabel(volunteerDetail.volunteer.status)}
+                      </Badge>
+                      <Badge variant="outline" className="border-purple-200 bg-white/70 text-purple-600 dark:border-purple-800 dark:bg-slate-900/40 dark:text-purple-300">
+                        {availabilityLabel(volunteerDetail.volunteer.availability)}
+                      </Badge>
+                      <span className="text-sm text-gray-500 dark:text-gray-400">Sertai {formatDate(volunteerDetail.volunteer.joinedAt)}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 sm:min-w-[320px]">
+                    <Card className="border-purple-100 bg-white/80 shadow-none dark:border-slate-700 dark:bg-slate-900/50">
+                      <CardContent className="p-4">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Jumlah Jam</p>
+                        <p className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">{volunteerDetail.volunteer.totalHours.toFixed(1)}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-purple-100 bg-white/80 shadow-none dark:border-slate-700 dark:bg-slate-900/50">
+                      <CardContent className="p-4">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Penempatan Aktif</p>
+                        <p className="mt-1 text-2xl font-bold text-purple-600 dark:text-purple-400">{volunteerDetail.summary.counts.activeDeployments}</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-purple-100 bg-white/80 shadow-none dark:border-slate-700 dark:bg-slate-900/50">
+                      <CardContent className="p-4">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Log Diluluskan</p>
+                        <p className="mt-1 text-2xl font-bold text-emerald-600 dark:text-emerald-400">{volunteerDetail.summary.counts.approvedHourLogs}</p>
+                        <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{volunteerDetail.summary.counts.pendingHourLogs} menunggu semakan</p>
+                      </CardContent>
+                    </Card>
+                    <Card className="border-purple-100 bg-white/80 shadow-none dark:border-slate-700 dark:bg-slate-900/50">
+                      <CardContent className="p-4">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Sijil Dijana</p>
+                        <p className="mt-1 text-2xl font-bold text-sky-600 dark:text-sky-400">{volunteerDetail.summary.counts.certificates}</p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-4 lg:grid-cols-2">
+                <Card className="border-gray-100 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50">
+                  <CardContent className="space-y-4 p-5">
+                    <div className="flex items-center gap-2">
+                      <Users className="h-4 w-4 text-purple-500" />
+                      <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Maklumat Peribadi</h4>
+                    </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="flex items-center justify-between gap-4 border-b border-gray-100 pb-2 dark:border-slate-700/60">
+                        <span className="text-gray-500 dark:text-gray-400">No. Kad Pengenalan</span>
+                        <span className="font-mono font-medium text-gray-900 dark:text-white">{volunteerDetail.volunteer.ic}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 border-b border-gray-100 pb-2 dark:border-slate-700/60">
+                        <span className="text-gray-500 dark:text-gray-400">Telefon</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{volunteerDetail.volunteer.phone}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 border-b border-gray-100 pb-2 dark:border-slate-700/60">
+                        <span className="text-gray-500 dark:text-gray-400">Emel</span>
+                        <span className="max-w-[60%] text-right font-medium text-gray-900 dark:text-white">{volunteerDetail.volunteer.email || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 border-b border-gray-100 pb-2 dark:border-slate-700/60">
+                        <span className="text-gray-500 dark:text-gray-400">Pekerjaan</span>
+                        <span className="max-w-[60%] text-right font-medium text-gray-900 dark:text-white">{volunteerDetail.volunteer.occupation || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-gray-500 dark:text-gray-400">Kemahiran</span>
+                        <div className="flex max-w-[60%] flex-wrap justify-end gap-1">
+                          {parseSkills(volunteerDetail.volunteer.skills).length > 0 ? (
+                            parseSkills(volunteerDetail.volunteer.skills).map((skill, index) => (
+                              <Badge key={`${skill}-${index}`} variant="outline" className="border-purple-200 bg-purple-50/60 text-[10px] font-medium text-purple-600 dark:border-purple-800 dark:bg-purple-900/20 dark:text-purple-300">
+                                {skill}
+                              </Badge>
+                            ))
+                          ) : (
+                            <span className="font-medium text-gray-900 dark:text-white">—</span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="border-gray-100 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50">
+                  <CardContent className="space-y-4 p-5">
+                    <div className="flex items-center gap-2">
+                      <HeartHandshake className="h-4 w-4 text-rose-500" />
+                      <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Alamat & Kecemasan</h4>
+                    </div>
+                    <div className="space-y-3 text-sm">
+                      <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-4 dark:border-slate-700 dark:bg-slate-900/50">
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Alamat</p>
+                        <p className="mt-2 text-sm leading-6 text-gray-700 dark:text-gray-300">
+                          {volunteerDetail.volunteer.address || 'Alamat tidak direkodkan'}
+                          {(volunteerDetail.volunteer.city || volunteerDetail.volunteer.state) && (
+                            <>
+                              <br />
+                              {[volunteerDetail.volunteer.city, volunteerDetail.volunteer.state].filter(Boolean).join(', ')}
+                            </>
+                          )}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 border-b border-gray-100 pb-2 dark:border-slate-700/60">
+                        <span className="text-gray-500 dark:text-gray-400">Hubungan Kecemasan</span>
+                        <span className="max-w-[60%] text-right font-medium text-gray-900 dark:text-white">{volunteerDetail.volunteer.emergencyContact || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4 border-b border-gray-100 pb-2 dark:border-slate-700/60">
+                        <span className="text-gray-500 dark:text-gray-400">Telefon Kecemasan</span>
+                        <span className="font-medium text-gray-900 dark:text-white">{volunteerDetail.volunteer.emergencyPhone || '—'}</span>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <span className="text-gray-500 dark:text-gray-400">Jumlah Rekod Hubungan</span>
+                        <span className="font-medium text-right text-gray-900 dark:text-white">
+                          {volunteerDetail.summary.counts.deployments} penempatan, {volunteerDetail.summary.counts.hourLogs} log jam
+                        </span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              <div className="grid gap-4 xl:grid-cols-3">
+                <Card className="border-gray-100 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50">
+                  <CardContent className="space-y-4 p-5">
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-purple-500" />
+                      <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Penempatan Utama</h4>
+                    </div>
+                    {(() => {
+                      const deployment = volunteerDetail.summary.currentDeployment || volunteerDetail.summary.latestDeployment
+                      if (!deployment) {
+                        return <p className="text-sm text-gray-500 dark:text-gray-400">Belum ada penempatan direkodkan.</p>
+                      }
+
+                      const isCurrent = volunteerDetail.summary.currentDeployment?.id === deployment.id
+                      return (
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <Badge variant="outline" className={`text-xs font-medium ${statusColor(deployment.status)}`}>
+                              {statusLabel(deployment.status)}
+                            </Badge>
+                            <span className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                              {isCurrent ? 'Semasa' : 'Terkini'}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white">{deployment.programme?.name || 'Program tidak ditetapkan'}</p>
+                            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{roleLabel(deployment.role)}</p>
+                          </div>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-gray-500 dark:text-gray-400">Tarikh mula</span>
+                              <span className="font-medium text-gray-900 dark:text-white">{formatDate(deployment.startDate)}</span>
+                            </div>
+                            <div className="flex items-center justify-between gap-3">
+                              <span className="text-gray-500 dark:text-gray-400">Lokasi</span>
+                              <span className="max-w-[60%] text-right font-medium text-gray-900 dark:text-white">{deployment.location || '—'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })()}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-gray-100 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50">
+                  <CardContent className="space-y-4 p-5">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-amber-500" />
+                      <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Log Jam Terkini</h4>
+                    </div>
+                    {volunteerDetail.summary.latestHourLog ? (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <Badge variant="outline" className={`text-xs font-medium ${statusColor(volunteerDetail.summary.latestHourLog.status)}`}>
+                            {statusLabel(volunteerDetail.summary.latestHourLog.status)}
+                          </Badge>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-white">{volunteerDetail.summary.latestHourLog.hours}h</span>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-gray-500 dark:text-gray-400">Tarikh log</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{formatDate(volunteerDetail.summary.latestHourLog.date)}</span>
+                          </div>
+                          <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/50">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Aktiviti</p>
+                            <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">{volunteerDetail.summary.latestHourLog.activity || 'Tiada aktiviti dicatatkan.'}</p>
+                          </div>
+                          {volunteerDetail.summary.latestApprovedHourLog && volunteerDetail.summary.latestApprovedHourLog.id !== volunteerDetail.summary.latestHourLog.id && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              Log diluluskan terkini: {formatDate(volunteerDetail.summary.latestApprovedHourLog.date)} ({volunteerDetail.summary.latestApprovedHourLog.hours}h)
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Belum ada log jam direkodkan.</p>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="border-gray-100 shadow-sm dark:border-slate-700/60 dark:bg-slate-900/50">
+                  <CardContent className="space-y-4 p-5">
+                    <div className="flex items-center gap-2">
+                      <Award className="h-4 w-4 text-sky-500" />
+                      <h4 className="text-sm font-semibold uppercase tracking-wide text-gray-600 dark:text-gray-300">Sijil Terkini</h4>
+                    </div>
+                    {volunteerDetail.summary.latestCertificate ? (
+                      <div className="space-y-3">
+                        <div>
+                          <p className="font-mono text-xs font-medium text-sky-600 dark:text-sky-400">{volunteerDetail.summary.latestCertificate.certificateNumber}</p>
+                          <p className="mt-1 font-medium text-gray-900 dark:text-white">{volunteerDetail.summary.latestCertificate.title}</p>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-gray-500 dark:text-gray-400">Dikeluarkan</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{formatDate(volunteerDetail.summary.latestCertificate.issuedAt)}</span>
+                          </div>
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-gray-500 dark:text-gray-400">Jumlah jam</span>
+                            <span className="font-medium text-gray-900 dark:text-white">{volunteerDetail.summary.latestCertificate.totalHours}h</span>
+                          </div>
+                          <div className="rounded-xl border border-gray-100 bg-gray-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/50">
+                            <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">Penerangan</p>
+                            <p className="mt-2 text-sm text-gray-700 dark:text-gray-300">{volunteerDetail.summary.latestCertificate.description || 'Tiada penerangan tambahan.'}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm text-gray-500 dark:text-gray-400">Belum ada sijil dijana untuk sukarelawan ini.</p>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          ) : null}
+
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => handleVolunteerDetailOpenChange(false)} className="border-gray-200 dark:border-slate-600">
+              Tutup
+            </Button>
+            {(volunteerDetail?.volunteer || viewingVolunteer) && (
+              <Button
+                onClick={() => {
+                  const volunteerToEdit = volunteerDetail?.volunteer || viewingVolunteer
+                  handleVolunteerDetailOpenChange(false)
+                  if (volunteerToEdit) openVolunteerDialog(volunteerToEdit)
+                }}
+                className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
+              >
+                <Pencil className="h-4 w-4" />
+                Sunting
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* ─── Volunteer Dialog ──────────────────────────────────────────── */}
       <Dialog open={volunteerDialogOpen} onOpenChange={setVolunteerDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
@@ -1203,7 +1602,8 @@ export default function VolunteersPage() {
               <Select value={hourForm.volunteerId} onValueChange={v => setHourForm({ ...hourForm, volunteerId: v })}>
                 <SelectTrigger className="border-gray-200 dark:border-slate-600"><SelectValue placeholder="Pilih sukarelawan" /></SelectTrigger>
                 <SelectContent>
-                  {volunteers.filter(v => v.status === 'active').map(v => (
+                  {optionsLoading && <SelectItem value="__loading-hour" disabled>Memuatkan sukarelawan...</SelectItem>}
+                  {volunteerOptions.filter(v => v.status === 'active').map(v => (
                     <SelectItem key={v.id} value={v.id}>{v.name} ({v.volunteerNumber})</SelectItem>
                   ))}
                 </SelectContent>
@@ -1259,7 +1659,8 @@ export default function VolunteersPage() {
               <Select value={depForm.volunteerId} onValueChange={v => setDepForm({ ...depForm, volunteerId: v })}>
                 <SelectTrigger className="border-gray-200 dark:border-slate-600"><SelectValue placeholder="Pilih sukarelawan" /></SelectTrigger>
                 <SelectContent>
-                  {volunteers.filter(v => v.status === 'active').map(v => (
+                  {optionsLoading && <SelectItem value="__loading-deployment" disabled>Memuatkan sukarelawan...</SelectItem>}
+                  {volunteerOptions.filter(v => v.status === 'active').map(v => (
                     <SelectItem key={v.id} value={v.id}>{v.name} ({v.volunteerNumber})</SelectItem>
                   ))}
                 </SelectContent>
@@ -1331,12 +1732,13 @@ export default function VolunteersPage() {
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Sukarelawan <span className="text-red-500">*</span></Label>
               <Select value={certForm.volunteerId} onValueChange={v => {
-                const vol = volunteers.find(x => x.id === v)
+                const vol = volunteerOptions.find(x => x.id === v)
                 setCertForm({ ...certForm, volunteerId: v, totalHours: vol ? String(vol.totalHours) : '0' })
               }}>
                 <SelectTrigger className="border-gray-200 dark:border-slate-600"><SelectValue placeholder="Pilih sukarelawan" /></SelectTrigger>
                 <SelectContent>
-                  {volunteers.map(v => (
+                  {optionsLoading && <SelectItem value="__loading-certificate" disabled>Memuatkan sukarelawan...</SelectItem>}
+                  {volunteerOptions.map(v => (
                     <SelectItem key={v.id} value={v.id}>{v.name} ({v.volunteerNumber})</SelectItem>
                   ))}
                 </SelectContent>
@@ -1352,7 +1754,8 @@ export default function VolunteersPage() {
             </div>
             <div className="space-y-2">
               <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Jumlah Jam Khidmat</Label>
-              <Input type="number" min="0" step="0.5" value={certForm.totalHours} onChange={e => setCertForm({ ...certForm, totalHours: e.target.value })} className="border-gray-200 dark:border-slate-600" />
+              <Input type="number" min="0" step="0.5" value={certForm.totalHours} readOnly className="border-gray-200 bg-gray-50 dark:border-slate-600 dark:bg-slate-900/40" />
+              <p className="text-xs text-gray-500 dark:text-gray-400">Jumlah ini datang terus daripada rekod jam khidmat semasa sukarelawan.</p>
             </div>
           </div>
 

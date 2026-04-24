@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { getScopedDb } from '@/lib/db-rls';
+import { createWithGeneratedUniqueValue } from '@/lib/sequence';
 import { z } from 'zod';
 
 const caseCreateSchema = z.object({
@@ -22,8 +25,8 @@ const caseCreateSchema = z.object({
   notes: z.string().optional(),
 });
 
-async function generateCaseNumber(): Promise<string> {
-  const lastCase = await db.case.findFirst({
+async function generateCaseNumber(scopedDb: any = db): Promise<string> {
+  const lastCase = await scopedDb.case.findFirst({
     orderBy: { createdAt: 'desc' },
     select: { caseNumber: true },
   });
@@ -37,6 +40,10 @@ async function generateCaseNumber(): Promise<string> {
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
+    const branchId = (session.user as any).branchId || 'mock-branch-id';
+    const scopedDb = getScopedDb(branchId);
+
     const searchParams = request.nextUrl.searchParams;
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10)));
@@ -59,7 +66,7 @@ export async function GET(request: NextRequest) {
     if (category) where.category = category;
 
     const [cases, total] = await Promise.all([
-      db.case.findMany({
+      scopedDb.case.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         skip: (page - 1) * pageSize,
@@ -73,11 +80,17 @@ export async function GET(request: NextRequest) {
           caseDocuments: true,
         },
       }),
-      db.case.count({ where }),
+      scopedDb.case.count({ where }),
     ]);
 
     return NextResponse.json({ success: true, data: cases, total, page, pageSize });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching cases:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch cases' },
@@ -88,27 +101,41 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
+    const branchId = (session.user as any).branchId || 'mock-branch-id';
+    const scopedDb = getScopedDb(branchId);
+
     const body = await request.json();
     const validated = caseCreateSchema.parse(body);
 
-    const caseNumber = await generateCaseNumber();
-    const caseData = await db.case.create({
-      data: {
-        ...validated,
-        caseNumber,
-      } as any,
-      include: {
-        member: true,
-        programme: true,
-        creator: true,
-        assignee: true,
-        caseNotes: true,
-        caseDocuments: true,
-      },
+    const caseData = await createWithGeneratedUniqueValue({
+      generateValue: () => generateCaseNumber(scopedDb),
+      uniqueFields: ['caseNumber'],
+      create: (caseNumber) =>
+        scopedDb.case.create({
+          data: {
+            ...validated,
+            caseNumber,
+          } as any,
+          include: {
+            member: true,
+            programme: true,
+            creator: true,
+            assignee: true,
+            caseNotes: true,
+            caseDocuments: true,
+          },
+        }),
     });
 
     return NextResponse.json({ success: true, data: caseData }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -125,6 +152,10 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
+    const branchId = (session.user as any).branchId || 'mock-branch-id';
+    const scopedDb = getScopedDb(branchId);
+
     const body = await request.json();
     const { id, ...updateData } = body;
 
@@ -135,7 +166,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const existing = await db.case.findUnique({ where: { id } });
+    const existing = await scopedDb.case.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json(
         { success: false, error: 'Case not found' },
@@ -151,7 +182,7 @@ export async function PUT(request: NextRequest) {
       dataToUpdate.closedAt = new Date();
     }
 
-    const caseData = await db.case.update({
+    const caseData = await scopedDb.case.update({
       where: { id },
       data: dataToUpdate,
       include: {
@@ -166,6 +197,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: caseData });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -182,6 +219,10 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
+    const branchId = (session.user as any).branchId || 'mock-branch-id';
+    const scopedDb = getScopedDb(branchId);
+
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -192,7 +233,7 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    const existing = await db.case.findUnique({ where: { id } });
+    const existing = await scopedDb.case.findUnique({ where: { id } });
     if (!existing) {
       return NextResponse.json(
         { success: false, error: 'Case not found' },
@@ -200,10 +241,16 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    await db.case.delete({ where: { id } });
+    await scopedDb.case.delete({ where: { id } });
 
     return NextResponse.json({ success: true, message: 'Case deleted successfully' });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deleting case:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete case' },

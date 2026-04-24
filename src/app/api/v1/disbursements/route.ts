@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { createWithGeneratedUniqueValue } from '@/lib/sequence';
 import { z } from 'zod';
 
 const disbursementCreateSchema = z.object({
@@ -35,6 +37,7 @@ async function generateDisbursementNumber(): Promise<string> {
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10)));
@@ -69,6 +72,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: disbursements, total, page, pageSize });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching disbursements:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch disbursements' },
@@ -79,26 +88,37 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth(request);
     const body = await request.json();
     const validated = disbursementCreateSchema.parse(body);
 
-    const disbursementNumber = await generateDisbursementNumber();
-    const disbursement = await db.disbursement.create({
-      data: {
-        ...validated,
-        disbursementNumber,
-        scheduledDate: validated.scheduledDate ? new Date(validated.scheduledDate) : null,
-        processedDate: validated.processedDate ? new Date(validated.processedDate) : null,
-      },
-      include: {
-        case: true,
-        programme: true,
-        member: true,
-      },
+    const disbursement = await createWithGeneratedUniqueValue({
+      generateValue: generateDisbursementNumber,
+      uniqueFields: ['disbursementNumber'],
+      create: (disbursementNumber) =>
+        db.disbursement.create({
+          data: {
+            ...validated,
+            disbursementNumber,
+            scheduledDate: validated.scheduledDate ? new Date(validated.scheduledDate) : null,
+            processedDate: validated.processedDate ? new Date(validated.processedDate) : null,
+          },
+          include: {
+            case: true,
+            programme: true,
+            member: true,
+          },
+        }),
     });
 
     return NextResponse.json({ success: true, data: disbursement }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -115,6 +135,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    await requireAuth(request);
     const body = await request.json();
     const { id, ...updateData } = body;
 
@@ -152,6 +173,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: disbursement });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -168,6 +195,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -190,6 +218,12 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Disbursement deleted successfully' });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deleting disbursement:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete disbursement' },

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
 
 export async function GET(_request: NextRequest) {
   try {
+    await requireAuth(_request);
     const now = new Date();
 
     // ─── 1. Organization Profile ───
@@ -129,6 +131,12 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching ROS compliance data:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch ROS compliance data' },

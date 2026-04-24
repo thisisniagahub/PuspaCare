@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
+import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '@/lib/api'
 import {
   Card,
@@ -9,9 +10,9 @@ import {
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -33,9 +34,16 @@ import {
   CheckCircle2,
   ClipboardList,
   Package,
+  Zap,
+  Code,
+  Cpu,
+  Terminal,
+  ChevronRight,
 } from 'lucide-react'
 import { useAppStore } from '@/stores/app-store'
 import { cn } from '@/lib/utils'
+import { useSession } from 'next-auth/react'
+import { normalizeUserRole } from '@/lib/auth-shared'
 import {
   BarChart,
   Bar,
@@ -48,10 +56,87 @@ import {
   PieChart,
   Pie,
   Cell,
+  AreaChart,
+  Area,
 } from 'recharts'
+import { AnimatedCounter } from '@/components/ui/animated-counter'
+import { FlowingMenu } from '@/components/ui/flowing-menu'
 
 // ---------------------------------------------------------------------------
-// Types
+// Developer Specific Components
+// ---------------------------------------------------------------------------
+
+function SystemMetrics() {
+  const cpuData = [
+    { time: '10:00', usage: 45 }, { time: '10:05', usage: 52 }, { time: '10:10', usage: 48 },
+    { time: '10:15', usage: 61 }, { time: '10:20', usage: 55 }, { time: '10:25', usage: 42 },
+  ]
+  
+  return (
+    <Card className="border-none shadow-xl bg-slate-950 text-slate-200 overflow-hidden">
+      <CardHeader className="border-b border-slate-800 pb-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Cpu className="h-5 w-5 text-indigo-400" />
+            <CardTitle className="text-sm font-mono uppercase tracking-widest">System Health (Dev Mode)</CardTitle>
+          </div>
+          <Badge variant="outline" className="text-[10px] font-mono border-indigo-500/50 text-indigo-400 bg-indigo-500/10">Live Metrics</Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <div className="grid grid-cols-2 gap-4 mb-6">
+          <div className="space-y-1">
+            <p className="text-[10px] text-slate-500 uppercase font-bold">API Latency</p>
+            <p className="text-xl font-mono font-bold text-emerald-400">124ms</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-[10px] text-slate-500 uppercase font-bold">Server Load</p>
+            <p className="text-xl font-mono font-bold text-amber-400">1.28%</p>
+          </div>
+        </div>
+        <div className="h-[120px] w-full">
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={cpuData}>
+              <defs>
+                <linearGradient id="colorUsage" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <Area type="monotone" dataKey="usage" stroke="#6366f1" fillOpacity={1} fill="url(#colorUsage)" strokeWidth={2} />
+            </AreaChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function AIStatusCard() {
+  const setView = useAppStore((s) => s.setView)
+  return (
+    <Card className="border-none shadow-xl bg-gradient-to-br from-indigo-900 to-slate-900 text-white overflow-hidden group cursor-pointer" onClick={() => setView('openclaw-terminal')}>
+      <CardContent className="p-6 relative">
+        <div className="absolute right-0 top-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
+          <Terminal className="h-24 w-24" />
+        </div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-2 mb-2">
+            <Zap className="h-5 w-5 text-yellow-400 fill-yellow-400" />
+            <h3 className="font-bold text-lg">AI Ops Engine</h3>
+          </div>
+          <p className="text-sm text-indigo-100/70 mb-4 max-w-[200px]">OpenClaw MCP Gateway is active. 12 agents online.</p>
+          <div className="flex items-center gap-2 text-white text-xs font-bold">
+            Enter Console <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// Types & Constants
 // ---------------------------------------------------------------------------
 
 interface DashboardStats {
@@ -67,39 +152,6 @@ interface DashboardStats {
   trendCompliance: number
 }
 
-interface MonthlyDonation {
-  bulan: string
-  zakat: number
-  sadaqah: number
-  waqf: number
-  infaq: number
-  general: number
-}
-
-interface MemberCategory {
-  name: string
-  value: number
-  color: string
-}
-
-interface RecentActivity {
-  id: string
-  type: 'case' | 'donation' | 'member' | 'programme'
-  title: string
-  description: string
-  timestamp: string
-}
-
-interface ComplianceItem {
-  label: string
-  completed: boolean
-  category: string
-}
-
-// ---------------------------------------------------------------------------
-// Color constants
-// ---------------------------------------------------------------------------
-
 const FUND_COLORS: Record<string, string> = {
   zakat: '#7c3aed',
   sadaqah: '#059669',
@@ -108,8 +160,6 @@ const FUND_COLORS: Record<string, string> = {
   general: '#6b7280',
 }
 
-const MEMBER_COLORS = ['#7c3aed', '#059669', '#d97706', '#0ea5e9']
-
 const ACTIVITY_BADGE_STYLES: Record<string, string> = {
   case: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
   donation: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
@@ -117,324 +167,86 @@ const ACTIVITY_BADGE_STYLES: Record<string, string> = {
   programme: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
 }
 
-const MONTH_SHORT = [
-  'Jan', 'Feb', 'Mac', 'Apr', 'Mei', 'Jun',
-  'Jul', 'Ogo', 'Sep', 'Okt', 'Nov', 'Dis',
-]
-
 // ---------------------------------------------------------------------------
-// Default empty stats (used when API returns no data)
+// Helper components
 // ---------------------------------------------------------------------------
 
-const EMPTY_STATS: DashboardStats = {
-  jumlahAhliAsnaf: 0,
-  programAktif: 0,
-  jumlahDonasi: 0,
-  sukarelawanAktif: 0,
-  skorCompliance: 0,
-  trendAhli: 0,
-  trendProgram: 0,
-  trendDonasi: 0,
-  trendSukarelawan: 0,
-  trendCompliance: 0,
-}
-
-// ---------------------------------------------------------------------------
-// Helper functions
-// ---------------------------------------------------------------------------
-
-function getGreeting(): string {
-  const hour = new Date().getHours()
-  if (hour >= 5 && hour < 12) return 'Selamat Pagi'
-  if (hour >= 12 && hour < 17) return 'Selamat Petang'
-  if (hour >= 17 && hour < 20) return 'Selamat Petang'
-  return 'Selamat Malam'
-}
-
-function formatCurrency(amount: number): string {
-  if (amount == null || isNaN(amount)) return 'RM 0'
-  return new Intl.NumberFormat('ms-MY', {
-    style: 'currency',
-    currency: 'MYR',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount)
-}
-
-function formatNumber(n: number): string {
-  if (n == null || isNaN(n)) return '0'
-  return new Intl.NumberFormat('ms-MY').format(n)
-}
-
-function getComplianceColor(score: number): string {
-  if (score >= 80) return 'bg-emerald-500'
-  if (score >= 50) return 'bg-amber-500'
-  return 'bg-rose-500'
-}
-
-function getComplianceTextColor(score: number): string {
-  if (score >= 80) return 'text-emerald-600 dark:text-emerald-400'
-  if (score >= 50) return 'text-amber-600 dark:text-amber-400'
-  return 'text-rose-600 dark:text-rose-400'
-}
-
-function getComplianceLabel(score: number): string {
-  if (score >= 80) return 'Sangat Baik'
-  if (score >= 50) return 'Sederhana'
-  return 'Perlu Perhatian'
-}
-
-function getActivityIcon(type: string) {
-  switch (type) {
-    case 'case':
-      return <FileText className="h-4 w-4" />
-    case 'donation':
-      return <HandCoins className="h-4 w-4" />
-    case 'member':
-      return <UserPlus className="h-4 w-4" />
-    case 'programme':
-      return <Package className="h-4 w-4" />
-    default:
-      return <Activity className="h-4 w-4" />
-  }
-}
-
-function getActivityBadgeColor(type: string): string {
-  return ACTIVITY_BADGE_STYLES[type] || ACTIVITY_BADGE_STYLES.case
-}
-
-function getTrendIcon(trend: number) {
-  if (trend > 0) return <TrendingUp className="h-4 w-4 text-emerald-500" />
-  if (trend < 0) return <TrendingDown className="h-4 w-4 text-rose-500" />
-  return <Activity className="h-4 w-4 text-muted-foreground" />
-}
-
-// ---------------------------------------------------------------------------
-// Custom Tooltip for Bar Chart
-// ---------------------------------------------------------------------------
-
-interface BarTooltipPayloadItem {
-  name: string
-  value: number
-  color: string
-  dataKey: string
-}
-
-function MonthlyDonationTooltip({
-  active,
-  payload,
-  label,
-}: {
-  active?: boolean
-  payload?: BarTooltipPayloadItem[]
-  label?: string
-}) {
-  if (!active || !payload || payload.length === 0) return null
-
-  return (
-    <div className="rounded-lg border bg-background p-3 shadow-lg">
-      <p className="mb-2 text-sm font-semibold">{label} 2024</p>
-      <div className="space-y-1">
-        {payload.map((entry: BarTooltipPayloadItem) => (
-          <div key={entry.dataKey} className="flex items-center justify-between gap-4 text-sm">
-            <span className="flex items-center gap-2">
-              <span
-                className="inline-block h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="capitalize">{entry.name}</span>
-            </span>
-            <span className="font-medium">{formatCurrency(entry.value)}</span>
-          </div>
-        ))}
-      </div>
-      <div className="mt-2 border-t pt-2">
-        <div className="flex items-center justify-between text-sm font-semibold">
-          <span>Jumlah</span>
-          <span>
-            {formatCurrency(payload.reduce((sum: number, e: BarTooltipPayloadItem) => sum + e.value, 0))}
-          </span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Custom label for Pie Chart
-// ---------------------------------------------------------------------------
-
-function renderCustomLabel({
-  cx,
-  cy,
-  midAngle,
-  innerRadius,
-  outerRadius,
-  percent,
-}: {
-  cx: number
-  cy: number
-  midAngle: number
-  innerRadius: number
-  outerRadius: number
-  percent: number
-}) {
-  const RADIAN = Math.PI / 180
-  const radius = innerRadius + (outerRadius - innerRadius) * 0.5
-  const x = cx + radius * Math.cos(-midAngle * RADIAN)
-  const y = cy + radius * Math.sin(-midAngle * RADIAN)
-
-  if (percent < 0.08) return null
-
-  return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central" fontSize={12} fontWeight={600}>
-      {`${(percent * 100).toFixed(0)}%`}
-    </text>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Stat Card Component
-// ---------------------------------------------------------------------------
-
-interface StatCardProps {
+function StatCard({ 
+  title, 
+  value, 
+  subtitle, 
+  icon, 
+  accentColor, 
+  iconBgColor, 
+  trend,
+  isCurrency = false 
+}: { 
   title: string
-  value: string
+  value: number
   subtitle?: string
   icon: React.ReactNode
   accentColor: string
   iconBgColor: string
   trend?: number
-}
+  isCurrency?: boolean
+}) {
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 })
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    setMousePos({ x: e.clientX - rect.left, y: e.clientY - rect.top })
+  }
 
-function StatCard({ title, value, subtitle, icon, accentColor, iconBgColor, trend }: StatCardProps) {
   return (
-    <Card className="relative overflow-hidden">
-      <CardContent className="flex items-start gap-4">
+    <Card 
+      onMouseMove={handleMouseMove}
+      className="group relative overflow-hidden border-white/40 bg-white/70 backdrop-blur-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:bg-slate-900/50"
+    >
+      {/* Spotlight Effect */}
+      <div 
+        className="pointer-events-none absolute -inset-px opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{
+          background: `radial-gradient(600px circle at ${mousePos.x}px ${mousePos.y}px, ${accentColor}10, transparent 40%)`
+        }}
+      />
+      
+      <CardContent className="flex items-start gap-4 p-6">
         <div
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl transition-all duration-500 group-hover:scale-110 group-hover:rotate-3 shadow-sm"
           style={{ backgroundColor: iconBgColor }}
         >
           <span style={{ color: accentColor }}>{icon}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm text-muted-foreground">{title}</p>
-          <p className="mt-1 text-2xl font-bold tracking-tight">{value}</p>
+          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <div className="mt-1 flex items-baseline gap-1">
+            <AnimatedCounter 
+              value={value} 
+              className="text-3xl font-bold tracking-tight"
+              format={(v) => isCurrency ? 
+                new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR', maximumFractionDigits: 0 }).format(v) : 
+                Math.floor(v).toLocaleString('ms-MY')
+              }
+            />
+          </div>
           {subtitle && (
-            <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground font-medium">{subtitle}</p>
           )}
           {trend !== undefined && trend !== 0 && (
-            <div className="mt-1 flex items-center gap-1">
-              {getTrendIcon(trend)}
-              <span
-                className={`text-xs font-medium ${
-                  trend > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'
-                }`}
-              >
-                {trend > 0 ? '+' : ''}
-                {trend}%
-              </span>
-              <span className="text-xs text-muted-foreground">vs bulan lepas</span>
+            <div className="mt-2 flex items-center gap-1.5">
+              <div className={cn(
+                "flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[10px] font-bold",
+                trend > 0 ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40" : "bg-rose-100 text-rose-700 dark:bg-rose-950/40"
+              )}>
+                {trend > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                {Math.abs(trend)}%
+              </div>
+              <span className="text-[10px] text-muted-foreground">vs bulan lepas</span>
             </div>
           )}
         </div>
       </CardContent>
-      {/* Decorative accent line at top */}
-      <div
-        className="absolute left-0 top-0 h-1 w-full"
-        style={{ backgroundColor: accentColor }}
-      />
+      <div className="absolute bottom-0 left-0 h-1 w-full opacity-30 transition-all duration-500 group-hover:opacity-100" style={{ backgroundColor: accentColor }} />
     </Card>
-  )
-}
-
-// ---------------------------------------------------------------------------
-// Loading Skeleton
-// ---------------------------------------------------------------------------
-
-function DashboardSkeleton() {
-  return (
-    <div className="space-y-6">
-      {/* Header skeleton */}
-      <div>
-        <Skeleton className="h-8 w-64" />
-        <Skeleton className="mt-2 h-4 w-96" />
-      </div>
-
-      {/* Stat cards skeleton */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Card key={i}>
-            <CardContent className="flex items-center gap-4">
-              <Skeleton className="h-12 w-12 rounded-xl" />
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-7 w-16" />
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Charts skeleton */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <Skeleton className="h-6 w-48" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-[320px] w-full" />
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-36" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-[320px] w-full rounded-full" />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Bottom section skeleton */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <Skeleton className="h-6 w-40" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-start gap-3">
-                  <Skeleton className="h-10 w-10 rounded-lg" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-48" />
-                    <Skeleton className="h-3 w-72" />
-                  </div>
-                  <Skeleton className="h-5 w-16 rounded-full" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-40" />
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <Skeleton className="h-3 w-full" />
-              <Skeleton className="h-4 w-20" />
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-4 w-full" />
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
   )
 }
 
@@ -443,698 +255,276 @@ function DashboardSkeleton() {
 // ---------------------------------------------------------------------------
 
 export default function DashboardPage() {
-  const [stats, setStats] = useState<DashboardStats>(EMPTY_STATS)
-  const [monthlyData, setMonthlyData] = useState<MonthlyDonation[]>([])
-  const [memberData, setMemberData] = useState<MemberCategory[]>([])
-  const [activities, setActivities] = useState<RecentActivity[]>([])
-  const [complianceItems, setComplianceItems] = useState<ComplianceItem[]>([])
+  const { data: session } = useSession()
+  const effectiveRole = normalizeUserRole(session?.user?.role)
+  const isDeveloper = effectiveRole === 'developer'
+
+  const [stats, setStats] = useState<DashboardStats>({
+    jumlahAhliAsnaf: 0, programAktif: 0, jumlahDonasi: 0, sukarelawanAktif: 0, skorCompliance: 0,
+    trendAhli: 0, trendProgram: 0, trendDonasi: 0, trendSukarelawan: 0, trendCompliance: 0
+  })
+  const [monthlyData, setMonthlyData] = useState<any[]>([])
+  const [memberData, setMemberData] = useState<any[]>([])
+  const [activities, setActivities] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const setView = useAppStore((s) => s.setView)
 
   useEffect(() => {
     async function fetchData() {
       try {
-        const [statsRes, monthlyRes, memberRes, activityRes] = await Promise.allSettled([
-          api.get<DashboardStats>('/dashboard/stats'),
-          api.get<MonthlyDonation[]>('/dashboard/monthly-donations'),
-          api.get<MemberCategory[]>('/dashboard/member-distribution'),
-          api.get<RecentActivity[]>('/dashboard/activities'),
-        ])
-
-        if (statsRes.status === 'fulfilled') {
-          // Map API field names to dashboard field names
-          const raw = statsRes.value as unknown as Record<string, unknown>
+        const res = await api.get<any>('/dashboard');
+        
+        if (res) {
           setStats({
-            jumlahAhliAsnaf: (raw.totalMembers as number) ?? 0,
-            programAktif: (raw.activeProgrammes as number) ?? 0,
-            jumlahDonasi: (raw.totalDonations as number) ?? 0,
-            sukarelawanAktif: (raw.activeVolunteers as number) ?? 0,
-            skorCompliance: (raw.complianceScore as number) ?? 0,
-            trendAhli: (raw.trendMembers as number) ?? 0,
-            trendProgram: (raw.trendProgrammes as number) ?? 0,
-            trendDonasi: (raw.trendDonations as number) ?? 0,
-            trendSukarelawan: (raw.trendVolunteers as number) ?? 0,
-            trendCompliance: (raw.trendCompliance as number) ?? 0,
-          })
+            jumlahAhliAsnaf: res.totalMembers ?? 0,
+            programAktif: res.activeProgrammes ?? 0,
+            jumlahDonasi: res.totalDonations ?? 0,
+            sukarelawanAktif: res.activeVolunteers ?? 0,
+            skorCompliance: res.complianceScore ?? 0,
+            trendAhli: res.trendMembers ?? 0,
+            trendProgram: res.trendProgrammes ?? 0,
+            trendDonasi: res.trendDonations ?? 0,
+            trendSukarelawan: res.trendVolunteers ?? 0,
+            trendCompliance: res.trendCompliance ?? 0,
+          });
+          
+          setMonthlyData(res.monthlyDonationTrend || []);
+          
+          // Map member distribution data colors
+          const distribution = res.memberCategoryBreakdown || [];
+          const statusColors: Record<string, string> = {
+            active: '#10b981',
+            inactive: '#64748b',
+            pending: '#f59e0b',
+            suspended: '#ef4444',
+            graduated: '#3b82f6',
+          };
+          
+          const mappedMemberData = distribution.map((item: any) => ({
+            name: item.status.charAt(0).toUpperCase() + item.status.slice(1),
+            value: item.count,
+            color: statusColors[item.status.toLowerCase()] || '#6366f1',
+          }));
+          setMemberData(mappedMemberData);
+          
+          // Map activities data
+          const activitiesRaw = res.recentActivities || [];
+          const mappedActivities = activitiesRaw.map((act: any) => ({
+            id: act.id,
+            title: act.title,
+            description: act.description,
+            timestamp: new Date(act.createdAt).toLocaleString('ms-MY', {
+              day: 'numeric',
+              month: 'short',
+              hour: '2-digit',
+              minute: '2-digit',
+            }),
+            type: act.type,
+          }));
+          setActivities(mappedActivities);
         }
-        else setStats(EMPTY_STATS)
-
-        if (monthlyRes.status === 'fulfilled') setMonthlyData(monthlyRes.value)
-        else setMonthlyData([])
-
-        if (memberRes.status === 'fulfilled') setMemberData(memberRes.value)
-        else setMemberData([])
-
-        if (activityRes.status === 'fulfilled') setActivities(activityRes.value)
-        else setActivities([])
-
-        setComplianceItems([])
-      } catch {
-        // On error, show zero/empty states
-        setStats(EMPTY_STATS)
-        setMonthlyData([])
-        setMemberData([])
-        setActivities([])
-        setComplianceItems([])
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
       } finally {
         setLoading(false)
       }
     }
-
     fetchData()
   }, [])
 
-  const completedCompliance = useMemo(
-    () => complianceItems.filter((item) => item.completed).length,
-    [complianceItems],
+  if (loading) return (
+    <div className="mx-auto max-w-7xl px-4 py-8"><Skeleton className="h-8 w-64" /><div className="mt-8 grid grid-cols-5 gap-4"><Skeleton className="h-32 rounded-xl" /></div></div>
   )
 
-  const totalCompliance = complianceItems.length
-
-  const incompleteItems = useMemo(
-    () => complianceItems.filter((item) => !item.completed),
-    [complianceItems],
-  )
-
-  const compliancePercentage = totalCompliance > 0 ? Math.round((completedCompliance / totalCompliance) * 100) : 0
-
-  // -------------------------------------------------------------------------
-  // Render
-  // -------------------------------------------------------------------------
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-          <DashboardSkeleton />
-        </div>
-      </div>
-    )
-  }
-
-
+  const flowingItems = [
+    { label: '3 Kes Menunggu', description: 'Permohonan bantuan perlu disemak', icon: Clock, color: '#d97706', onClick: () => setView('cases') },
+    { label: '5 Donasi Baharu', description: 'Sumbangan belum direkodkan', icon: DollarSign, color: '#059669', onClick: () => setView('donations') },
+    { label: '2 eKYC Pending', description: 'Pengesahan identiti menunggu', icon: ShieldCheck, color: '#2563eb', onClick: () => setView('ekyc') },
+    { label: '1 Program Minggu Ini', description: 'Program bantuan perlu dijalankan', icon: Calendar, color: '#7c3aed', onClick: () => setView('programmes') },
+  ]
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* Hero Welcome Banner */}
-        <div className="mb-8 relative overflow-hidden rounded-2xl bg-gradient-to-br from-[#4B0082] via-[#6B21A8] to-[#7C3AED] p-6 text-white shadow-xl shadow-purple-900/30 sm:p-8">
-          {/* Decorative background shapes */}
-          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/5 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-12 -left-12 h-48 w-48 rounded-full bg-purple-400/10 blur-2xl" />
-          <div className="pointer-events-none absolute right-20 bottom-4 h-32 w-32 rounded-full bg-purple-300/10 blur-xl" />
-
-          <div className="relative z-10 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-start gap-5">
-              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-white/95 shadow-lg ring-1 ring-white/50">
-                <Image
-                  src="/puspa-logo-official.png"
-                  alt="PUSPA Logo"
-                  width={52}
-                  height={52}
-                  className="object-contain"
-                  priority
-                />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-                    {getGreeting()}, Admin
-                  </h1>
-                  <span className="hidden sm:inline-block text-lg">👋</span>
-                </div>
-                <p className="mt-1 text-sm text-purple-100 sm:text-base">
-                  Ringkasan data dan statistik terkini organisasi anda.
-                </p>
-                <p className="mt-1 text-xs text-purple-200/70">
-                  Pertubuhan Urus Peduli Asnaf KL & Selangor • PPM-006-14-14032020
-                </p>
-              </div>
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8 space-y-8"
+    >
+      {/* Developer Section (Hidden from others) */}
+      {isDeveloper && (
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Code className="h-5 w-5 text-indigo-600" />
+            <h2 className="text-lg font-bold tracking-tight">Developer Overview</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-2">
+              <AIStatusCard />
             </div>
+            <SystemMetrics />
+          </div>
+        </section>
+      )}
 
-            {/* Stats pills - responsive grid */}
-            <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
-              <div className="flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-white/20">
-                  <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base font-bold leading-tight sm:text-lg">{formatNumber(stats.jumlahAhliAsnaf)}</span>
-                  <span className="text-[10px] leading-tight text-purple-200 sm:text-[11px]">Ahli Asnaf</span>
-                </div>
+      {/* Hero Welcome Banner */}
+      <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-950 p-8 text-white shadow-2xl">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#4B0082] via-[#1e1b4b] to-black opacity-90" />
+        
+        {/* Animated Orbs */}
+        <motion.div 
+          animate={{ x: [0, 50, 0], y: [0, 30, 0] }}
+          transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+          className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-purple-600/20 blur-[100px]" 
+        />
+        <motion.div 
+          animate={{ x: [0, -40, 0], y: [0, 50, 0] }}
+          transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+          className="absolute -left-20 -bottom-20 h-80 w-80 rounded-full bg-indigo-600/20 blur-[80px]" 
+        />
+
+        <div className="relative z-10 flex flex-col gap-8 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-6">
+            <div className="flex h-20 w-20 shrink-0 items-center justify-center rounded-3xl bg-white p-1 shadow-2xl ring-4 ring-white/10">
+              <Image src="/puspa-logo-official.png" alt="PUSPA" width={64} height={64} className="object-contain" />
+            </div>
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold tracking-tight sm:text-4xl text-transparent bg-clip-text bg-gradient-to-r from-white to-purple-200">
+                  Selamat Datang, Admin
+                </h1>
+                <Zap className="h-6 w-6 text-yellow-400 fill-yellow-400" />
               </div>
-              <div className="flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-white/20">
-                  <HandCoins className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base font-bold leading-tight sm:text-lg">{formatCurrency(stats.jumlahDonasi)}</span>
-                  <span className="text-[10px] leading-tight text-purple-200 sm:text-[11px]">Jumlah Donasi</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-white/20">
-                  <Heart className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base font-bold leading-tight sm:text-lg">{stats.programAktif}</span>
-                  <span className="text-[10px] leading-tight text-purple-200 sm:text-[11px]">Program Aktif</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2 rounded-xl bg-white/15 px-3 py-2 sm:px-4 sm:py-2.5 backdrop-blur-sm ring-1 ring-white/10 transition-all hover:bg-white/20">
-                <div className="flex h-8 w-8 sm:h-9 sm:w-9 items-center justify-center rounded-lg bg-white/20">
-                  <UserCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-white" />
-                </div>
-                <div className="flex flex-col">
-                  <span className="text-base font-bold leading-tight sm:text-lg">{stats.sukarelawanAktif}</span>
-                  <span className="text-[10px] leading-tight text-purple-200 sm:text-[11px]">Sukarelawan</span>
-                </div>
+              <p className="mt-2 text-lg text-purple-100/80 font-medium">
+                Sistem Pengurusan Pusat Kebajikan Pintar PUSPA
+              </p>
+              <div className="mt-4 flex items-center gap-3">
+                <Badge className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md px-3 py-1">
+                  v2.2.0 Enterprise
+                </Badge>
+                <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="text-xs text-purple-200 font-medium tracking-wide">SISTEM AKTIF & TERJAMIN</span>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* ----------------------------------------------------------------- */}
-        {/* Statistic Cards                                                    */}
-        {/* ----------------------------------------------------------------- */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-          <StatCard
-            title="Jumlah Ahli Asnaf"
-            value={formatNumber(stats.jumlahAhliAsnaf)}
-            icon={<Users className="h-6 w-6" />}
-            accentColor="#7c3aed"
-            iconBgColor="rgba(124, 58, 237, 0.1)"
-            trend={stats.trendAhli}
-          />
-          <StatCard
-            title="Program Aktif"
-            value={String(stats.programAktif)}
-            subtitle="dalam pelaksanaan"
-            icon={<Heart className="h-6 w-6" />}
-            accentColor="#059669"
-            iconBgColor="rgba(5, 150, 105, 0.1)"
-            trend={stats.trendProgram}
-          />
-          <StatCard
-            title="Jumlah Donasi"
-            value={formatCurrency(stats.jumlahDonasi)}
-            subtitle="setakat 2024"
-            icon={<HandCoins className="h-6 w-6" />}
-            accentColor="#d97706"
-            iconBgColor="rgba(217, 119, 6, 0.1)"
-            trend={stats.trendDonasi}
-          />
-          <StatCard
-            title="Sukarelawan Aktif"
-            value={formatNumber(stats.sukarelawanAktif)}
-            subtitle="telah berdaftar"
-            icon={<UserCheck className="h-6 w-6" />}
-            accentColor="#0ea5e9"
-            iconBgColor="rgba(14, 165, 233, 0.1)"
-            trend={stats.trendSukarelawan}
-          />
-          <StatCard
-            title="Skor Compliance"
-            value={`${stats.skorCompliance}%`}
-            subtitle={getComplianceLabel(stats.skorCompliance)}
-            icon={<ShieldCheck className="h-6 w-6" />}
-            accentColor={
-              stats.skorCompliance >= 80
-                ? '#059669'
-                : stats.skorCompliance >= 50
-                  ? '#d97706'
-                  : '#e11d48'
-            }
-            iconBgColor={
-              stats.skorCompliance >= 80
-                ? 'rgba(5, 150, 105, 0.1)'
-                : stats.skorCompliance >= 50
-                  ? 'rgba(217, 119, 6, 0.1)'
-                  : 'rgba(225, 29, 72, 0.1)'
-            }
-            trend={stats.trendCompliance}
-          />
-        </div>
-
-        {/* ----------------------------------------------------------------- */}
-        {/* Tindakan Seterusnya (Next Actions)                                */}
-        {/* ----------------------------------------------------------------- */}
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <ClipboardList className="h-4 w-4" style={{ color: '#4B0082' }} />
-            <h2 className="text-sm font-semibold" style={{ color: '#4B0082' }}>Tindakan Seterusnya</h2>
-            <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded-full">
-              Perlu perhatian anda
-            </span>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <button
-              type="button"
-              onClick={() => useAppStore.getState().setView('cases')}
-              className="group flex items-start gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800"
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 dark:bg-amber-950/40">
-                <Clock className="h-4 w-4 text-amber-600" />
+          {/* Quick Metrics (Hero) */}
+          <div className="grid grid-cols-2 gap-3 sm:flex">
+            {[
+              { label: 'Skor Pematuhan', value: `${stats.skorCompliance}%`, icon: ShieldCheck, color: 'text-emerald-400' },
+              { label: 'Uptime Sistem', value: '100%', icon: Activity, color: 'text-sky-400' }
+            ].map((m, i) => (
+              <div key={i} className="flex flex-col rounded-2xl bg-white/5 p-4 border border-white/10 backdrop-blur-xl">
+                <div className="flex items-center gap-2 mb-1">
+                  <m.icon className={cn("h-4 w-4", m.color)} />
+                  <span className="text-[11px] font-bold uppercase tracking-widest text-purple-200/60">{m.label}</span>
+                </div>
+                <span className="text-2xl font-bold">{m.value}</span>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground group-hover:text-purple-700 transition-colors">3 Kes Menunggu</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Permohonan bantuan perlu disemak</p>
-              </div>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => useAppStore.getState().setView('donations')}
-              className="group flex items-start gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800"
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-50 dark:bg-emerald-950/40">
-                <DollarSign className="h-4 w-4 text-emerald-600" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground group-hover:text-purple-700 transition-colors">5 Donasi Baharu</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Sumbangan belum direkodkan</p>
-              </div>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => useAppStore.getState().setView('ekyc')}
-              className="group flex items-start gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800"
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 dark:bg-blue-950/40">
-                <ShieldCheck className="h-4 w-4 text-blue-600" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground group-hover:text-purple-700 transition-colors">2 eKYC Pending</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Pengesahan identiti menunggu</p>
-              </div>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => useAppStore.getState().setView('programmes')}
-              className="group flex items-start gap-3 rounded-xl border bg-card p-4 text-left transition-all hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800"
-            >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-950/40">
-                <Calendar className="h-4 w-4" style={{ color: '#4B0082' }} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground group-hover:text-purple-700 transition-colors">1 Program Minggu Ini</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Program bantuan perlu dijalankan</p>
-              </div>
-              <ArrowRight className="h-4 w-4 shrink-0 text-muted-foreground/50 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
-            </button>
+            ))}
           </div>
         </div>
+      </div>
 
-        {/* ----------------------------------------------------------------- */}
-        {/* Workflow Pipeline — End-to-end flow visibility                     */}
-        {/* ----------------------------------------------------------------- */}
-        <div className="mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Activity className="h-4 w-4" style={{ color: '#4B0082' }} />
-            <h2 className="text-sm font-semibold" style={{ color: '#4B0082' }}>Pipeline Workflow</h2>
-          </div>
-          <div className="rounded-xl border bg-card p-4 overflow-x-auto">
-            <div className="flex items-center gap-1 min-w-[600px]">
-              {[
-                { label: 'Daftar Ahli', count: '1,247', icon: UserPlus, done: true },
-                { label: 'Kes Bantuan', count: '12', icon: FileText, done: false, pending: 3 },
-                { label: 'Program', count: '8', icon: Heart, done: false },
-                { label: 'Pembayaran', count: 'RM 45K', icon: HandCoins, done: false, pending: 5 },
-                { label: 'Laporan', count: '3', icon: ClipboardList, done: false },
-              ].map((step, idx) => (
-                <div key={step.label} className="flex items-center gap-1 flex-1">
-                  <div className={cn(
-                    'flex items-center gap-2 rounded-lg border px-3 py-2 flex-1 transition-all',
-                    step.pending ? 'border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20' :
-                    step.done ? 'border-emerald-200 bg-emerald-50/50 dark:border-emerald-800 dark:bg-emerald-950/20' :
-                    'border-border bg-muted/30',
-                  )}>
-                    <step.icon className={cn('h-4 w-4 shrink-0',
-                      step.pending ? 'text-amber-600' : step.done ? 'text-emerald-600' : 'text-muted-foreground'
-                    )} />
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium truncate">{step.label}</p>
-                      <p className={cn('text-[10px]',
-                        step.pending ? 'text-amber-600' : 'text-muted-foreground'
-                      )}>
-                        {step.pending ? `${step.pending} pending` : step.count}
-                      </p>
-                    </div>
-                    {step.done && <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />}
+      {/* Statistic Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <StatCard title="Ahli Asnaf" value={stats.jumlahAhliAsnaf} icon={<Users className="h-6 w-6" />} accentColor="#7c3aed" iconBgColor="rgba(124, 58, 237, 0.1)" trend={stats.trendAhli} />
+        <StatCard title="Program Aktif" value={stats.programAktif} subtitle="sedang berjalan" icon={<Heart className="h-6 w-6" />} accentColor="#059669" iconBgColor="rgba(5, 150, 105, 0.1)" trend={stats.trendProgram} />
+        <StatCard title="Jumlah Donasi" value={stats.jumlahDonasi} subtitle="tahun 2024" icon={<HandCoins className="h-6 w-6" />} accentColor="#d97706" iconBgColor="rgba(217, 119, 6, 0.1)" trend={stats.trendDonasi} isCurrency />
+        <StatCard title="Sukarelawan" value={stats.sukarelawanAktif} subtitle="aktif lapangan" icon={<UserCheck className="h-6 w-6" />} accentColor="#0ea5e9" iconBgColor="rgba(14, 165, 233, 0.1)" trend={stats.trendSukarelawan} />
+        <StatCard title="Compliance" value={stats.skorCompliance} subtitle="keseluruhan" icon={<ShieldCheck className="h-6 w-6" />} accentColor="#6366f1" iconBgColor="rgba(99, 102, 241, 0.1)" trend={stats.trendCompliance} />
+      </div>
+
+      {/* Tindakan Pintas (Flowing Menu) */}
+      <section className="space-y-4">
+        <div className="flex items-center gap-2">
+          <Zap className="h-5 w-5 text-purple-600" />
+          <h2 className="text-lg font-bold tracking-tight">Tindakan Pintas</h2>
+        </div>
+        <FlowingMenu items={flowingItems} />
+      </section>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <Card className="lg:col-span-2 overflow-hidden border-none shadow-xl bg-white/80 backdrop-blur-xl">
+          <CardHeader className="bg-slate-50/50 pb-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-xl font-bold">Trend Sumbangan</CardTitle>
+                <CardDescription>Analisis kemasukan dana bulanan (2024)</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <div className="h-[350px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                  <XAxis dataKey="bulan" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 500 }} dy={10} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(v) => `RM${v/1000}k`} />
+                  <Tooltip cursor={{ fill: '#f1f5f9' }} />
+                  <Bar dataKey="zakat" stackId="a" fill="#7c3aed" radius={[4, 4, 0, 0]} barSize={32} />
+                  <Bar dataKey="sadaqah" stackId="a" fill="#059669" radius={[4, 4, 0, 0]} barSize={32} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-none shadow-xl bg-white/80 backdrop-blur-xl">
+          <CardHeader className="bg-slate-50/50">
+            <CardTitle className="text-xl font-bold">Pecahan Asnaf</CardTitle>
+            <CardDescription>Taburan mengikut kategori</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-10">
+            <div className="h-[250px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={memberData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={8} dataKey="value">
+                    {memberData.map((entry: any, i: number) => <Cell key={i} fill={entry.color} stroke="none" />)}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-8 space-y-3">
+              {memberData.map((entry: any, i: number) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full" style={{ backgroundColor: entry.color }} />
+                    <span className="text-sm font-medium text-slate-600">{entry.name}</span>
                   </div>
-                  {idx < 4 && <ArrowRight className="h-3.5 w-3.5 text-muted-foreground/40 shrink-0" />}
+                  <span className="text-sm font-bold">{entry.value}</span>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-
-        {/* ----------------------------------------------------------------- */}
-        {/* Charts Section                                                    */}
-        {/* ----------------------------------------------------------------- */}
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Bar Chart - Monthly Donation Trend */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Trend Sumbangan Bulanan</CardTitle>
-                  <CardDescription>
-                    Pecahan sumbangan mengikut jenis dana — 2024
-                  </CardDescription>
-                </div>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Calendar className="h-3 w-3" />
-                  2024
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {monthlyData.length === 0 ? (
-                <div className="flex h-[260px] w-full items-center justify-center sm:h-[340px]">
-                  <div className="flex flex-col items-center text-muted-foreground">
-                    <HandCoins className="h-10 w-10 mb-2 opacity-40" />
-                    <p className="text-sm font-medium">Tiada data sumbangan</p>
-                    <p className="text-xs">Data sumbangan bulanan akan dipaparkan di sini.</p>
-                  </div>
-                </div>
-              ) : (
-              <div className="h-[260px] w-full sm:h-[340px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart
-                    data={monthlyData}
-                    margin={{ top: 10, right:10, left: 0, bottom: 0 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="hsl(var(--border))" />
-                    <XAxis
-                      dataKey="bulan"
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
-                      axisLine={false}
-                      tickLine={false}
-                      tickFormatter={(v: number) => `${v / 1000}k`}
-                    />
-                    <Tooltip content={<MonthlyDonationTooltip />} cursor={{ fill: 'hsl(var(--muted))' }} />
-                    <Legend
-                      verticalAlign="top"
-                      height={36}
-                      iconType="circle"
-                      iconSize={8}
-                      formatter={(value: string) => (
-                        <span className="text-sm capitalize">{value}</span>
-                      )}
-                    />
-                    <Bar dataKey="zakat" stackId="a" fill={FUND_COLORS.zakat} radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="sadaqah" stackId="a" fill={FUND_COLORS.sadaqah} radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="waqf" stackId="a" fill={FUND_COLORS.waqf} radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="infaq" stackId="a" fill={FUND_COLORS.infaq} radius={[0, 0, 0, 0]} />
-                    <Bar dataKey="general" stackId="a" fill={FUND_COLORS.general} radius={[4, 4, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Donut Chart - Member Distribution */}
-          <Card>
-            <CardHeader>
-              <div>
-                <CardTitle className="text-lg">Pecahan Ahli</CardTitle>
-                <CardDescription>
-                  Taburan jenis keahlian organisasi
-                </CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {memberData.length === 0 ? (
-                <div className="flex h-[200px] w-full items-center justify-center sm:h-[240px]">
-                  <div className="flex flex-col items-center text-muted-foreground">
-                    <Users className="h-10 w-10 mb-2 opacity-40" />
-                    <p className="text-sm font-medium">Tiada data ahli</p>
-                    <p className="text-xs">Taburan keahlian akan dipaparkan di sini.</p>
-                  </div>
-                </div>
-              ) : (
-              <>
-              <div className="h-[200px] w-full sm:h-[240px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={memberData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={55}
-                      outerRadius={90}
-                      paddingAngle={3}
-                      dataKey="value"
-                      stroke="none"
-                      labelLine={false}
-                      label={renderCustomLabel}
-                    >
-                      {memberData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip
-                      formatter={(value: number, name: string) => [
-                        `${formatNumber(value)} orang`,
-                        name,
-                      ]}
-                      contentStyle={{
-                        borderRadius: '8px',
-                        border: '1px solid hsl(var(--border))',
-                        backgroundColor: 'hsl(var(--background))',
-                        fontSize: '13px',
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </div>
-              {/* Legend */}
-              <div className="mt-2 grid grid-cols-2 gap-2">
-                {memberData.map((entry) => (
-                  <div key={entry.name} className="flex items-center gap-2">
-                    <span
-                      className="inline-block h-3 w-3 shrink-0 rounded-full"
-                      style={{ backgroundColor: entry.color }}
-                    />
-                    <div className="min-w-0">
-                      <p className="truncate text-xs text-muted-foreground">{entry.name}</p>
-                      <p className="text-sm font-semibold">{formatNumber(entry.value)}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              </>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* ----------------------------------------------------------------- */}
-        {/* Bottom Section: Activities + Compliance                            */}
-        {/* ----------------------------------------------------------------- */}
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
-          {/* Recent Activities */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Aktiviti Terkini</CardTitle>
-                  <CardDescription>
-                    Kemas kini dan peristiwa terbaharu organisasi
-                  </CardDescription>
-                </div>
-                <button className="flex items-center gap-1 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground">
-                  Lihat semua
-                  <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {activities.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                    <Activity className="h-10 w-10 mb-2 opacity-40" />
-                    <p className="text-sm font-medium">Tiada aktiviti terkini</p>
-                    <p className="text-xs">Aktiviti akan dipaparkan di sini apabila ada kemas kini.</p>
-                  </div>
-                ) : (
-                  activities.map((activity) => (
-                    <div
-                      key={activity.id}
-                      className="group flex items-start gap-3 rounded-lg p-3 transition-colors hover:bg-muted/50"
-                    >
-                      {/* Icon */}
-                      <div
-                        className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${
-                          activity.type === 'case'
-                            ? 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400'
-                            : activity.type === 'donation'
-                              ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400'
-                              : activity.type === 'member'
-                                ? 'bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400'
-                                : 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400'
-                        }`}
-                      >
-                        {getActivityIcon(activity.type)}
-                      </div>
-
-                      {/* Content */}
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <p className="text-sm font-medium leading-tight">{activity.title}</p>
-                          <Badge
-                            variant="outline"
-                            className={getActivityBadgeColor(activity.type)}
-                          >
-                            {activity.type === 'case'
-                              ? 'Kes'
-                              : activity.type === 'donation'
-                                ? 'Donasi'
-                                : activity.type === 'member'
-                                  ? 'Ahli'
-                                  : 'Program'}
-                          </Badge>
-                        </div>
-                        <p className="mt-0.5 text-sm text-muted-foreground line-clamp-1">
-                          {activity.description}
-                        </p>
-                        <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {activity.timestamp}
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Compliance Widget */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="text-lg">Pematuhan</CardTitle>
-                  <CardDescription>Status pematuhan organisasi</CardDescription>
-                </div>
-                <div
-                  className={`flex h-9 w-9 items-center justify-center rounded-full ${
-                    compliancePercentage >= 80
-                      ? 'bg-emerald-100 dark:bg-emerald-900/30'
-                      : compliancePercentage >= 50
-                        ? 'bg-amber-100 dark:bg-amber-900/30'
-                        : 'bg-rose-100 dark:bg-rose-900/30'
-                  }`}
-                >
-                  <ShieldCheck
-                    className={`h-5 w-5 ${
-                      compliancePercentage >= 80
-                        ? 'text-emerald-600 dark:text-emerald-400'
-                        : compliancePercentage >= 50
-                          ? 'text-amber-600 dark:text-amber-400'
-                          : 'text-rose-600 dark:text-rose-400'
-                    }`}
-                  />
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {/* Progress section */}
-              <div className="space-y-3">
-                <div className="flex items-end justify-between">
-                  <span className="text-3xl font-bold">{compliancePercentage}%</span>
-                  <span className="text-sm text-muted-foreground">
-                    {completedCompliance}/{totalCompliance} selesai
-                  </span>
-                </div>
-                <div className="relative h-3 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className={`h-full rounded-full transition-all duration-700 ${
-                      compliancePercentage >= 80
-                        ? 'bg-emerald-500'
-                        : compliancePercentage >= 50
-                          ? 'bg-amber-500'
-                          : 'bg-rose-500'
-                    }`}
-                    style={{ width: `${compliancePercentage}%` }}
-                  />
-                </div>
-                <p className={`text-sm font-medium ${getComplianceTextColor(compliancePercentage)}`}>
-                  Status: {getComplianceLabel(compliancePercentage)}
-                </p>
-              </div>
-
-              {/* Checklist */}
-              <div className="mt-6 space-y-1">
-                <h4 className="text-sm font-medium">Senarai Semak</h4>
-                <div className="mt-2 space-y-2.5">
-                  {complianceItems.length === 0 ? (
-                    <div className="py-4 text-center text-sm text-muted-foreground">
-                      Tiada item pematuhan dikonfigurasikan.
-                    </div>
-                  ) : (
-                    complianceItems.map((item, index) => (
-                    <div
-                      key={index}
-                      className="flex items-start gap-2.5"
-                    >
-                      {item.completed ? (
-                        <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                      ) : (
-                        <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-                      )}
-                      <div className="min-w-0">
-                        <p
-                          className={`text-sm leading-snug ${
-                            item.completed
-                              ? 'text-muted-foreground line-through'
-                              : 'text-foreground font-medium'
-                          }`}
-                        >
-                          {item.label}
-                        </p>
-                        <p className="text-xs text-muted-foreground">{item.category}</p>
-                      </div>
-                    </div>
-                  )))}
-                </div>
-              </div>
-
-              {/* Quick Links */}
-              {incompleteItems.length > 0 && (
-                <div className="mt-6 border-t pt-4">
-                  <h4 className="mb-2 text-sm font-medium text-amber-600 dark:text-amber-400">
-                    Perlu Tindakan ({incompleteItems.length})
-                  </h4>
-                  <div className="space-y-1.5">
-                    {incompleteItems.map((item, index) => (
-                      <button
-                        key={index}
-                        className="flex w-full items-center justify-between rounded-md px-2 py-1.5 text-left text-sm transition-colors hover:bg-muted"
-                      >
-                        <span className="truncate pr-2">{item.label}</span>
-                        <ArrowRight className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
+          </CardContent>
+        </Card>
       </div>
-    </div>
+
+      {/* Activity Timeline */}
+      <Card className="border-none shadow-xl bg-white/80 backdrop-blur-xl">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-xl font-bold">Log Aktiviti Operasi</CardTitle>
+            <Button variant="ghost" className="text-purple-600 font-bold">Lihat Semua Log</Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="relative space-y-6 before:absolute before:left-5 before:top-2 before:h-[calc(100%-16px)] before:w-0.5 before:bg-slate-100">
+            {activities.map((activity: any, i: number) => (
+              <div key={i} className="relative flex items-start gap-6 pl-12 group">
+                <div className="absolute left-3 top-1 z-10 h-4 w-4 rounded-full border-4 border-white bg-purple-600 shadow-sm transition-transform group-hover:scale-125" />
+                <div className="flex-1 rounded-2xl border bg-white/50 p-4 transition-all hover:shadow-md hover:bg-white">
+                  <div className="flex items-center justify-between mb-1">
+                    <h4 className="font-bold text-slate-900">{activity.title}</h4>
+                    <span className="text-[10px] font-bold uppercase text-slate-400">{activity.timestamp}</span>
+                  </div>
+                  <p className="text-sm text-slate-600">{activity.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
   )
 }

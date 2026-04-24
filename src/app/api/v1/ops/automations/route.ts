@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
@@ -18,6 +19,7 @@ const automationCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    await requireRole(request, ['developer']);
     const searchParams = request.nextUrl.searchParams;
     const enabled = searchParams.get('enabled');
 
@@ -38,6 +40,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: automations });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching automations:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch automations' },
@@ -50,6 +58,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireRole(request, ['developer']);
     const body = await request.json();
     const validated = automationCreateSchema.parse(body);
 
@@ -85,6 +94,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: automation }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },

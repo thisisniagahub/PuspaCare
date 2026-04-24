@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
@@ -15,6 +16,7 @@ const querySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    await requireRole(undefined, ['admin', 'developer'])
     const searchParams = request.nextUrl.searchParams;
     const parsed = querySchema.safeParse(Object.fromEntries(searchParams.entries()));
 
@@ -190,6 +192,12 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching audit logs:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch audit logs' },

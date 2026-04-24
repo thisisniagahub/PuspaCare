@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useRef, type ChangeEvent } from 'react'
 import { api } from '@/lib/api'
 import { toast } from 'sonner'
 import {
@@ -103,6 +103,14 @@ interface PaginatedResponse {
   page: number
   pageSize: number
   totalPages: number
+}
+
+interface UploadResponse {
+  path: string
+  url: string
+  fileName: string
+  size: number
+  mimeType: string
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -249,6 +257,8 @@ export default function DocumentsPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [selectedDoc, setSelectedDoc] = useState<Document | null>(null)
   const [submitting, setSubmitting] = useState(false)
+  const [uploadingFile, setUploadingFile] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Form state
   const [form, setForm] = useState({
@@ -259,6 +269,7 @@ export default function DocumentsPage() {
     fileName: '',
     fileSize: 0,
     mimeType: '',
+    fileUrl: '',
     expiryDate: '',
     tags: '',
   })
@@ -272,6 +283,7 @@ export default function DocumentsPage() {
       fileName: '',
       fileSize: 0,
       mimeType: '',
+      fileUrl: '',
       expiryDate: '',
       tags: '',
     })
@@ -331,6 +343,10 @@ export default function DocumentsPage() {
   // ─── Handlers ─────────────────────────────────────────────────────────
 
   const handleUpload = async () => {
+    if (uploadingFile) {
+      toast.error('Sila tunggu muat naik fail selesai')
+      return
+    }
     if (!form.title.trim()) {
       toast.error('Sila masukkan tajuk dokumen')
       return
@@ -359,6 +375,7 @@ export default function DocumentsPage() {
         fileName: form.fileName,
         fileSize: form.fileSize,
         mimeType: form.mimeType || undefined,
+        fileUrl: form.fileUrl || undefined,
         expiryDate: form.expiryDate || undefined,
         tags: tagsArr.length > 0 ? tagsArr : undefined,
       })
@@ -377,6 +394,10 @@ export default function DocumentsPage() {
 
   const handleEdit = async () => {
     if (!selectedDoc) return
+    if (uploadingFile) {
+      toast.error('Sila tunggu muat naik fail selesai')
+      return
+    }
     if (!form.title.trim()) {
       toast.error('Sila masukkan tajuk dokumen')
       return
@@ -398,6 +419,7 @@ export default function DocumentsPage() {
         fileName: form.fileName,
         fileSize: form.fileSize,
         mimeType: form.mimeType || undefined,
+        fileUrl: form.fileUrl || undefined,
         expiryDate: form.expiryDate || undefined,
         tags: tagsArr.length > 0 ? tagsArr : undefined,
       })
@@ -440,6 +462,7 @@ export default function DocumentsPage() {
       fileName: doc.fileName,
       fileSize: doc.fileSize,
       mimeType: doc.mimeType || '',
+      fileUrl: doc.fileUrl || '',
       expiryDate: doc.expiryDate ? doc.expiryDate.split('T')[0] : '',
       tags: doc.tags?.join(', ') || '',
     })
@@ -456,15 +479,30 @@ export default function DocumentsPage() {
     setDeleteOpen(true)
   }
 
-  const simulateFileSelect = () => {
-    const fakeName = 'dokumen_' + new Date().toISOString().slice(0, 10) + '.pdf'
-    setForm((prev) => ({
-      ...prev,
-      fileName: fakeName,
-      fileSize: 256000,
-      mimeType: 'application/pdf',
-    }))
-    toast.info('Muat naik fail melalui Supabase Storage akan tersedia tidak lama lagi')
+  const handleFileSelect = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0]
+    if (!file) return
+
+    try {
+      setUploadingFile(true)
+      const formData = new FormData()
+      formData.append('bucket', 'documents')
+      formData.append('file', file)
+      const uploaded = await api.postForm<UploadResponse>('/upload', formData)
+      setForm((prev) => ({
+        ...prev,
+        fileName: uploaded.fileName,
+        fileSize: uploaded.size,
+        mimeType: uploaded.mimeType || file.type || 'application/octet-stream',
+        fileUrl: uploaded.url,
+      }))
+      toast.success('Fail berjaya dimuat naik')
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gagal memuat naik fail yang dipilih')
+    } finally {
+      setUploadingFile(false)
+      event.target.value = ''
+    }
   }
 
   // ─── Render ───────────────────────────────────────────────────────────
@@ -937,7 +975,7 @@ export default function DocumentsPage() {
               Muat Naik Dokumen
             </DialogTitle>
             <DialogDescription>
-              Tambah maklumat dokumen baru ke dalam gudang. Fail sebenar akan dimuat naik melalui Supabase Storage.
+              Tambah maklumat dokumen baru ke dalam gudang dan simpan fail untuk rujukan dalaman.
             </DialogDescription>
           </DialogHeader>
 
@@ -947,25 +985,42 @@ export default function DocumentsPage() {
               <Label>Fail</Label>
               <button
                 type="button"
-                onClick={simulateFileSelect}
-                className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-purple-200 dark:border-purple-800 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors cursor-pointer"
+                onClick={() => {
+                  if (!uploadingFile) {
+                    fileInputRef.current?.click()
+                  }
+                }}
+                disabled={uploadingFile}
+                className={`flex flex-col items-center justify-center w-full h-32 border-2 border-dashed border-purple-200 dark:border-purple-800 rounded-xl bg-purple-50/50 dark:bg-purple-950/20 hover:bg-purple-50 dark:hover:bg-purple-950/40 transition-colors cursor-pointer ${uploadingFile ? 'pointer-events-none opacity-70' : ''}`}
               >
                 <FileUp className="h-8 w-8 text-purple-400 mb-2" />
                 <p className="text-sm font-medium text-purple-600">
-                  {form.fileName ? form.fileName : 'Klik untuk memilih fail'}
+                  {uploadingFile ? 'Memuat naik fail...' : form.fileName ? form.fileName : 'Klik untuk memilih fail'}
                 </p>
                 <p className="text-[11px] text-purple-400 mt-1">
                   PDF, DOC, XLS, JPG, PNG (maks. 50MB)
                 </p>
               </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                onChange={handleFileSelect}
+              />
+              {uploadingFile && (
+                <p className="text-[11px] text-purple-500">
+                  Fail sedang dimuat naik ke storan dalaman...
+                </p>
+              )}
               {form.fileName && (
                 <div className="flex items-center gap-2 text-xs text-gray-500">
                   <FileText className="h-3.5 w-3.5" />
                   <span>{form.fileName}</span>
                   <span className="text-gray-400">({formatFileSize(form.fileSize)})</span>
                   <button
-                    onClick={() => setForm((p) => ({ ...p, fileName: '', fileSize: 0, mimeType: '' }))}
+                    onClick={() => setForm((p) => ({ ...p, fileName: '', fileSize: 0, mimeType: '', fileUrl: '' }))}
                     className="text-red-400 hover:text-red-600 ml-auto"
+                    disabled={uploadingFile}
                   >
                     <X className="h-3.5 w-3.5" />
                   </button>
@@ -1072,16 +1127,21 @@ export default function DocumentsPage() {
             <Button
               variant="outline"
               onClick={() => { setUploadOpen(false); resetForm() }}
-              disabled={submitting}
+              disabled={submitting || uploadingFile}
             >
               Batal
             </Button>
             <Button
               onClick={handleUpload}
-              disabled={submitting}
+              disabled={submitting || uploadingFile}
               className="bg-purple-600 hover:bg-purple-700 text-white gap-2"
             >
-              {submitting ? (
+              {uploadingFile ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  Memuat naik fail...
+                </>
+              ) : submitting ? (
                 <>
                   <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
                   Menyimpan...

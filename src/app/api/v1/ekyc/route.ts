@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { AuthorizationError, requireRole } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
@@ -23,6 +24,7 @@ const ekycCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    await requireRole(request, ['admin', 'developer'])
     const searchParams = request.nextUrl.searchParams
     const memberId = searchParams.get('memberId')
 
@@ -130,6 +132,12 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / pageSize),
     })
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      )
+    }
     console.error('Error fetching eKYC verifications:', error)
     return NextResponse.json(
       { success: false, error: 'Gagal memuatkan data pengesahan eKYC' },
@@ -142,6 +150,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireRole(request, ['admin', 'developer'])
     const body = await request.json()
     const validated = ekycCreateSchema.parse(body)
 
@@ -248,6 +257,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: verification }, { status: 201 })
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      )
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },

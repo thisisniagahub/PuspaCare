@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireRole } from '@/lib/auth';
 import { z } from 'zod';
 
 const validTypes = ['donor_churn', 'fraud_detection', 'programme_effectiveness', 'sdg_alignment'] as const;
@@ -554,6 +555,7 @@ function getSDGAlignmentData() {
 
 export async function GET(request: NextRequest) {
   try {
+    await requireRole(request, ['developer']);
     const searchParams = request.nextUrl.searchParams;
     const rawType = searchParams.get('type');
 
@@ -582,6 +584,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Parameter tidak sah', details: error.issues },

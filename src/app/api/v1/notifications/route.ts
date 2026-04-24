@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
+import { writeAuditLog, getRequestIp } from '@/lib/audit';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
@@ -20,9 +22,24 @@ const notificationUpdateSchema = z.object({
 });
 
 const markAllReadSchema = z.object({
-  userId: z.string().min(1, 'ID pengguna diperlukan'),
   markAllRead: z.literal(true),
+  userId: z.string().optional(),
 });
+
+function resolveTargetUserId(
+  session: Awaited<ReturnType<typeof requireAuth>>,
+  requestedUserId?: string | null,
+) {
+  if (!requestedUserId || requestedUserId === session.user.id) {
+    return session.user.id;
+  }
+
+  if (session.user.role === 'admin' || session.user.role === 'developer') {
+    return requestedUserId;
+  }
+
+  throw new AuthorizationError('Anda tidak dibenarkan mengakses notifikasi pengguna lain', 403);
+}
 
 // ---------------------------------------------------------------------------
 // GET — List notifications with pagination & filters
@@ -30,18 +47,15 @@ const markAllReadSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10)));
-    const userId = searchParams.get('userId') || '';
+    const userId = resolveTargetUserId(session, searchParams.get('userId'));
     const isRead = searchParams.get('isRead');
     const type = searchParams.get('type') || '';
 
-    const where: Record<string, unknown> = {};
-
-    if (userId) {
-      where.userId = userId;
-    }
+    const where: Record<string, unknown> = { userId };
 
     if (isRead !== null && isRead !== '' && isRead !== undefined) {
       where.isRead = isRead === 'true';
@@ -78,6 +92,12 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / pageSize),
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching notifications:', error);
     return NextResponse.json(
       { success: false, error: 'Gagal memuatkan notifikasi' },
@@ -92,21 +112,44 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
     const body = await request.json();
     const validated = notificationCreateSchema.parse(body);
+    const targetUserId =
+      validated.userId === undefined
+        ? session.user.id
+        : resolveTargetUserId(session, validated.userId);
 
     const notification = await db.notification.create({
       data: {
         title: validated.title,
         message: validated.message,
         type: validated.type,
-        userId: validated.userId || null,
+        userId: targetUserId,
         link: validated.link || null,
+      },
+    });
+
+    await writeAuditLog({
+      action: 'create',
+      entity: 'Notification',
+      entityId: notification.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        targetUserId,
+        type: notification.type,
       },
     });
 
     return NextResponse.json({ success: true, data: notification }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },
@@ -127,19 +170,33 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
     const body = await request.json();
 
     // ── Batch: mark all as read for a user ──
-    if (body.markAllRead === true && body.userId) {
+    if (body.markAllRead === true) {
       const validated = markAllReadSchema.parse(body);
+      const targetUserId = resolveTargetUserId(session, validated.userId);
 
       const result = await db.notification.updateMany({
         where: {
-          userId: validated.userId,
+          userId: targetUserId,
           isRead: false,
         },
         data: {
           isRead: true,
+        },
+      });
+
+      await writeAuditLog({
+        action: 'update',
+        entity: 'Notification',
+        userId: session.user.id,
+        ipAddress: getRequestIp(request),
+        details: {
+          targetUserId,
+          markAllRead: true,
+          updatedCount: result.count,
         },
       });
 
@@ -168,6 +225,15 @@ export async function PUT(request: NextRequest) {
       );
     }
 
+    if (
+      existing.userId &&
+      existing.userId !== session.user.id &&
+      session.user.role !== 'admin' &&
+      session.user.role !== 'developer'
+    ) {
+      throw new AuthorizationError('Anda tidak dibenarkan mengemas kini notifikasi ini', 403);
+    }
+
     const notification = await db.notification.update({
       where: { id: validated.id },
       data: {
@@ -175,8 +241,25 @@ export async function PUT(request: NextRequest) {
       },
     });
 
+    await writeAuditLog({
+      action: 'update',
+      entity: 'Notification',
+      entityId: notification.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        isRead: notification.isRead,
+      },
+    });
+
     return NextResponse.json({ success: true, data: notification });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },
@@ -185,7 +268,7 @@ export async function PUT(request: NextRequest) {
     }
     console.error('Error updating notification:', error);
     return NextResponse.json(
-      { success: false, error: 'Gunal mengemas kini notifikasi' },
+      { success: false, error: 'Gagal mengemas kini notifikasi' },
       { status: 500 }
     );
   }

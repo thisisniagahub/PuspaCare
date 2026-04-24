@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
+import ReactMarkdown from 'react-markdown'
 import {
   Card,
   CardHeader,
@@ -380,17 +381,36 @@ const initialCommLogs: CommLog[] = [
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-function formatMarkdown(text: string) {
-  return text
-    .replace(/^### (.+)$/gm, '<h3 class="text-base font-semibold mt-4 mb-1">$1</h3>')
-    .replace(/^## (.+)$/gm, '<h2 class="text-lg font-bold mt-5 mb-2">$1</h2>')
-    .replace(/^# (.+)$/gm, '<h1 class="text-xl font-bold mt-4 mb-2">$1</h1>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/^- (.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li class="ml-4 list-decimal">$2</li>')
-    .replace(/\n\n/g, '<br/><br/>')
-    .replace(/\n/g, '<br/>')
-    .replace(/^---$/gm, '<hr class="my-4 border-muted" />')
+function MarkdownContent({ content, className = '' }: { content: string; className?: string }) {
+  return (
+    <div className={`space-y-3 text-sm leading-7 text-slate-700 dark:text-slate-300 ${className}`}>
+      <ReactMarkdown
+        components={{
+          h1: ({ children }) => <h1 className="mt-4 text-xl font-bold text-slate-900 dark:text-white">{children}</h1>,
+          h2: ({ children }) => <h2 className="mt-4 text-lg font-bold text-slate-900 dark:text-white">{children}</h2>,
+          h3: ({ children }) => <h3 className="mt-4 text-base font-semibold text-slate-900 dark:text-white">{children}</h3>,
+          p: ({ children }) => <p className="whitespace-pre-wrap">{children}</p>,
+          ul: ({ children }) => <ul className="ml-5 list-disc space-y-1">{children}</ul>,
+          ol: ({ children }) => <ol className="ml-5 list-decimal space-y-1">{children}</ol>,
+          li: ({ children }) => <li>{children}</li>,
+          hr: () => <hr className="my-4 border-muted" />,
+          strong: ({ children }) => <strong className="font-semibold text-slate-900 dark:text-white">{children}</strong>,
+          a: ({ href, children }) => (
+            <a
+              href={href}
+              target="_blank"
+              rel="noreferrer"
+              className="text-purple-700 underline underline-offset-4"
+            >
+              {children}
+            </a>
+          ),
+        }}
+      >
+        {content}
+      </ReactMarkdown>
+    </div>
+  )
 }
 
 function getRiskBadge(level: string) {
@@ -1267,10 +1287,7 @@ export default function AIToolsPage() {
 
                 {customResponse && !isGeneratingCustom && (
                   <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-6">
-                    <div
-                      className="prose prose-sm max-w-none text-slate-700"
-                      dangerouslySetInnerHTML={{ __html: formatMarkdown(customResponse) }}
-                    />
+                    <MarkdownContent content={customResponse} />
                     <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
                       <Button variant="outline" size="sm" onClick={async () => { await navigator.clipboard.writeText(customResponse) }} className="text-xs">
                         <Copy className="h-3 w-3 mr-1" />Salin
@@ -1391,7 +1408,7 @@ export default function AIToolsPage() {
                               : 'bg-slate-100 text-slate-800 rounded-tl-sm'
                           }`}
                         >
-                          <div dangerouslySetInnerHTML={{ __html: formatMarkdown(msg.content) }} />
+                          <MarkdownContent content={msg.content} />
                           <p
                             className={`text-[10px] mt-2 ${
                               msg.role === 'user' ? 'text-violet-200' : 'text-slate-400'
@@ -1711,7 +1728,7 @@ export default function AIToolsPage() {
                         <p className="text-xs text-amber-600">Skor Kebajikan</p>
                       </div>
                       <div className="p-3 bg-slate-50 rounded-lg">
-                        <div className="text-sm" dangerouslySetInnerHTML={{ __html: formatMarkdown(welfareResult.recommendation) }} />
+                        <MarkdownContent content={welfareResult.recommendation} className="text-sm" />
                       </div>
                     </div>
                   )}
@@ -1795,10 +1812,7 @@ export default function AIToolsPage() {
                   <span className="text-sm text-slate-500 ml-2">Menjana laporan...</span>
                 </div>
               ) : (
-                <div
-                  className="prose prose-sm max-w-none text-slate-700"
-                  dangerouslySetInnerHTML={{ __html: formatMarkdown(generatedReport) }}
-                />
+                <MarkdownContent content={generatedReport} />
               )}
             </div>
           </ScrollArea>

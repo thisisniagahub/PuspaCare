@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { AuthorizationError, requireRole } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
@@ -17,6 +18,7 @@ const verifySchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireRole(request, ['admin', 'developer'])
     const body = await request.json()
     const validated = verifySchema.parse(body)
 
@@ -114,7 +116,7 @@ export async function POST(request: NextRequest) {
         walletEnabled: true,
         bankTransferEnabled: validated.riskLevel !== 'high',
         verifiedAt: new Date(),
-        verifiedBy: 'system',
+        verifiedBy: session.user.email || session.user.name || session.user.id,
       },
       include: {
         member: {
@@ -134,6 +136,12 @@ export async function POST(request: NextRequest) {
       message: `Pengesahan eKYC berjaya. Had dompet dinaikkan kepada RM${newWalletLimit.toLocaleString()}.`,
     })
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      )
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },

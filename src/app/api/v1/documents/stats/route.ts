@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 
 // ─── GET: Document stats for dashboard cards ─────────────────────────────────
 
 export async function GET() {
   try {
+    await requireAuth();
     const now = new Date();
 
     // Count active categories
@@ -64,6 +66,12 @@ export async function GET() {
       },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching document stats:', error);
     return NextResponse.json(
       { success: false, error: 'Gagal memuatkan statistik' },

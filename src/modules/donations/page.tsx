@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format, isThisMonth, parseISO } from 'date-fns'
@@ -28,7 +28,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from '@/components/ui/dialog'
 import {
   Sheet,
@@ -96,7 +95,10 @@ import {
   Building2,
   Smartphone,
   Landmark,
+  Loader2,
 } from 'lucide-react'
+import { toast } from 'sonner'
+import { api } from '@/lib/api'
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -119,6 +121,7 @@ interface Donation {
   method: PaymentMethod
   date: string
   programme?: string
+  programmeName?: string
   receiptNo?: string
   anonymous: boolean
   taxDeductible: boolean
@@ -126,6 +129,34 @@ interface Donation {
   notes?: string
   zakatCategory?: ZakatCategory
   zakatAuthority?: ZakatAuthority
+}
+
+interface ApiDonation {
+  id: string
+  donationNumber: string
+  donorName: string
+  donorIC: string | null
+  donorEmail: string | null
+  donorPhone: string | null
+  amount: number
+  fundType: 'zakat' | 'sadaqah' | 'waqf' | 'infaq' | 'donation_general'
+  status: 'pending' | 'confirmed' | 'failed' | 'refunded'
+  method: 'cash' | 'bank_transfer' | 'online' | 'cheque' | 'ewallet'
+  donatedAt: string
+  programmeId: string | null
+  programme: { id: string; name: string } | null
+  receiptNumber: string | null
+  isAnonymous: boolean
+  isTaxDeductible: boolean
+  shariahCompliant: boolean
+  notes: string | null
+  zakatCategory: ZakatCategory | null
+  zakatAuthority: string | null
+}
+
+interface ProgrammeRecord {
+  id: string
+  name: string
 }
 
 interface DonationFormData {
@@ -187,21 +218,9 @@ const ZAKAT_AUTHORITY_OPTIONS = [
   { value: 'lain_lain', label: 'Lain-lain' },
 ]
 
-const PROGRAMME_OPTIONS = [
-  { value: '', label: 'Tiada Program' },
-  { value: 'pembangunan-masjid', label: 'Pembangunan Masjid' },
-  { value: 'pendidikan-anak-yatim', label: 'Pendidikan Anak Yatim' },
-  { value: 'bantuan-makanan', label: 'Bantuan Makanan' },
-  { value: 'rumah-kebajikan', label: 'Rumah Kebajikan' },
-  { value: 'bantuan-perubatan', label: 'Bantuan Perubatan' },
-  { value: 'pembangunan-komuniti', label: 'Pembangunan Komuniti' },
-]
+const EMPTY_PROGRAMME_OPTION = { value: '', label: 'Tiada Program' }
 
 const ITEMS_PER_PAGE = 8
-
-// ─── Initial Data (empty — populated from API) ──────────────────────────
-
-const INITIAL_DONATIONS: Donation[] = []
 
 // ─── Zod Schema ──────────────────────────────────────────────────────
 
@@ -261,6 +280,97 @@ function getStatusBadge(status: DonationStatus) {
   )
 }
 
+function mapApiFundTypeToUi(fundType: ApiDonation['fundType']): FundType {
+  return fundType === 'donation_general' ? 'am' : fundType
+}
+
+function mapUiFundTypeToApi(fundType: FundType): ApiDonation['fundType'] {
+  return fundType === 'am' ? 'donation_general' : fundType
+}
+
+function mapApiStatusToUi(status: ApiDonation['status']): DonationStatus {
+  switch (status) {
+    case 'confirmed':
+      return 'diterima'
+    case 'failed':
+      return 'gagal'
+    case 'refunded':
+      return 'dikembalikan'
+    default:
+      return 'menunggu'
+  }
+}
+
+function mapUiStatusToApi(status: DonationStatus): ApiDonation['status'] {
+  switch (status) {
+    case 'diterima':
+      return 'confirmed'
+    case 'gagal':
+      return 'failed'
+    case 'dikembalikan':
+      return 'refunded'
+    default:
+      return 'pending'
+  }
+}
+
+function mapApiMethodToUi(method: ApiDonation['method']): PaymentMethod {
+  switch (method) {
+    case 'bank_transfer':
+      return 'transfer_bank'
+    case 'online':
+      return 'dalam_talian'
+    case 'cheque':
+      return 'cek'
+    case 'ewallet':
+      return 'e_wallet'
+    default:
+      return 'tunai'
+  }
+}
+
+function mapUiMethodToApi(method: PaymentMethod): ApiDonation['method'] {
+  switch (method) {
+    case 'transfer_bank':
+      return 'bank_transfer'
+    case 'dalam_talian':
+      return 'online'
+    case 'cek':
+      return 'cheque'
+    case 'e_wallet':
+      return 'ewallet'
+    default:
+      return 'cash'
+  }
+}
+
+function mapApiDonationToUi(donation: ApiDonation): Donation {
+  return {
+    id: donation.id,
+    donationNo: donation.donationNumber,
+    donorName: donation.donorName,
+    donorIC: donation.donorIC || undefined,
+    donorEmail: donation.donorEmail || undefined,
+    donorPhone: donation.donorPhone || undefined,
+    amount: donation.amount,
+    fundType: mapApiFundTypeToUi(donation.fundType),
+    status: mapApiStatusToUi(donation.status),
+    method: mapApiMethodToUi(donation.method),
+    date: donation.donatedAt,
+    programme: donation.programmeId || undefined,
+    programmeName: donation.programme?.name || undefined,
+    receiptNo: donation.receiptNumber || undefined,
+    anonymous: donation.isAnonymous,
+    taxDeductible: donation.isTaxDeductible,
+    shariahCompliant: donation.shariahCompliant,
+    notes: donation.notes || undefined,
+    zakatCategory: donation.zakatCategory || undefined,
+    zakatAuthority: donation.zakatAuthority === 'lznk' || donation.zakatAuthority === 'maips' || donation.zakatAuthority === 'maik' || donation.zakatAuthority === 'lain_lain'
+      ? donation.zakatAuthority
+      : undefined,
+  }
+}
+
 // ─── Custom Tooltip for Chart ────────────────────────────────────────
 
 interface CustomTooltipProps {
@@ -301,7 +411,7 @@ function DonutCenterLabel({ total }: CenterLabelProps) {
 
 export default function DonationsPage() {
   // State
-  const [donations, setDonations] = React.useState<Donation[]>(INITIAL_DONATIONS)
+  const [donations, setDonations] = React.useState<Donation[]>([])
   const [searchQuery, setSearchQuery] = React.useState('')
   const [filterStatus, setFilterStatus] = React.useState<string>('semua')
   const [filterFundType, setFilterFundType] = React.useState<string>('semua')
@@ -313,6 +423,9 @@ export default function DonationsPage() {
   const [viewingDonation, setViewingDonation] = React.useState<Donation | null>(null)
   const [sortField, setSortField] = React.useState<'date' | 'amount' | 'donorName'>('date')
   const [sortDir, setSortDir] = React.useState<'asc' | 'desc'>('desc')
+  const [loading, setLoading] = React.useState(true)
+  const [submitting, setSubmitting] = React.useState(false)
+  const [programmeOptions, setProgrammeOptions] = React.useState([EMPTY_PROGRAMME_OPTION])
 
   // Form
   const form = useForm<DonationFormValues>({
@@ -338,7 +451,43 @@ export default function DonationsPage() {
     },
   })
 
-  const watchedFundType = form.watch('fundType')
+  const watchedFundType = useWatch({
+    control: form.control,
+    name: 'fundType',
+  })
+
+  const fetchDonations = React.useCallback(async () => {
+
+    setLoading(true)
+    try {
+      const response = await api.getEnvelope<ApiDonation[]>('/donations', { page: 1, pageSize: 1000 })
+      setDonations((response.data || []).map(mapApiDonationToUi))
+    } catch (error) {
+      console.error('Error fetching donations:', error)
+      toast.error('Gagal memuatkan rekod donasi')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  const fetchProgrammes = React.useCallback(async () => {
+    try {
+      const response = await api.getEnvelope<ProgrammeRecord[]>('/programmes', { page: 1, pageSize: 200 })
+      const options = (response.data || []).map((programme) => ({
+        value: programme.id,
+        label: programme.name,
+      }))
+      setProgrammeOptions([EMPTY_PROGRAMME_OPTION, ...options])
+    } catch (error) {
+      console.error('Error fetching programmes:', error)
+      setProgrammeOptions([EMPTY_PROGRAMME_OPTION])
+    }
+  }, [])
+
+  React.useEffect(() => {
+    void fetchDonations()
+    void fetchProgrammes()
+  }, [fetchDonations, fetchProgrammes])
 
   // ─── Computed Data ─────────────────────────────────────────────────
 
@@ -472,63 +621,60 @@ export default function DonationsPage() {
     setSheetOpen(true)
   }
 
-  function handleDelete(donation: Donation) {
-    setDonations(prev => prev.filter(d => d.id !== donation.id))
+  async function handleDelete(donation: Donation) {
+    try {
+      await api.delete('/donations', { id: donation.id })
+      if (viewingDonation?.id === donation.id) {
+        setViewingDonation(null)
+        setSheetOpen(false)
+      }
+      await fetchDonations()
+      toast.success('Donasi berjaya dipadam')
+    } catch (error) {
+      console.error('Error deleting donation:', error)
+      toast.error('Gagal memadam donasi')
+    }
   }
 
-  function onSubmit(data: DonationFormValues) {
-    if (editingDonation) {
-      setDonations(prev =>
-        prev.map(d =>
-          d.id === editingDonation.id
-            ? {
-                ...d,
-                donorName: data.anonymous ? 'Penderma Tanpa Nama' : data.donorName,
-                donorIC: data.donorIC || undefined,
-                donorEmail: data.donorEmail || undefined,
-                donorPhone: data.donorPhone || undefined,
-                amount: data.amount,
-                fundType: data.fundType,
-                status: data.status,
-                method: data.method,
-                date: data.date,
-                programme: data.programme || undefined,
-                receiptNo: data.receiptNo || undefined,
-                anonymous: data.anonymous,
-                taxDeductible: data.taxDeductible,
-                shariahCompliant: data.shariahCompliant,
-                notes: data.notes || undefined,
-                zakatCategory: data.fundType === 'zakat' ? data.zakatCategory : undefined,
-                zakatAuthority: data.fundType === 'zakat' ? data.zakatAuthority : undefined,
-              }
-            : d
-        )
-      )
-    } else {
-      const newDonation: Donation = {
-        id: `D${String(donations.length + 1).padStart(3, '0')}`,
-        donationNo: `PUSPA-2025-${String(donations.length + 1).padStart(4, '0')}`,
-        donorName: data.anonymous ? 'Penderma Tanpa Nama' : data.donorName,
-        donorIC: data.donorIC || undefined,
-        donorEmail: data.donorEmail || undefined,
-        donorPhone: data.donorPhone || undefined,
-        amount: data.amount,
-        fundType: data.fundType,
-        status: data.status,
-        method: data.method,
-        date: data.date,
-        programme: data.programme || undefined,
-        receiptNo: data.receiptNo || undefined,
-        anonymous: data.anonymous,
-        taxDeductible: data.taxDeductible,
-        shariahCompliant: data.shariahCompliant,
-        notes: data.notes || undefined,
-        zakatCategory: data.fundType === 'zakat' ? data.zakatCategory : undefined,
-        zakatAuthority: data.fundType === 'zakat' ? data.zakatAuthority : undefined,
-      }
-      setDonations(prev => [newDonation, ...prev])
+  async function onSubmit(data: DonationFormValues) {
+    const payload = {
+      donorName: data.anonymous ? 'Penderma Tanpa Nama' : data.donorName,
+      donorIC: data.donorIC || undefined,
+      donorEmail: data.donorEmail || undefined,
+      donorPhone: data.donorPhone || undefined,
+      amount: data.amount,
+      fundType: mapUiFundTypeToApi(data.fundType),
+      status: mapUiStatusToApi(data.status),
+      method: mapUiMethodToApi(data.method),
+      donatedAt: data.date,
+      programmeId: data.programme || undefined,
+      receiptNumber: data.receiptNo || undefined,
+      isAnonymous: data.anonymous,
+      isTaxDeductible: data.taxDeductible,
+      shariahCompliant: data.shariahCompliant,
+      notes: data.notes || undefined,
+      zakatCategory: data.fundType === 'zakat' ? data.zakatCategory : undefined,
+      zakatAuthority: data.fundType === 'zakat' ? data.zakatAuthority : undefined,
     }
-    setDialogOpen(false)
+
+    setSubmitting(true)
+    try {
+      if (editingDonation) {
+        await api.put('/donations', { id: editingDonation.id, ...payload })
+        toast.success('Donasi berjaya dikemaskini')
+      } else {
+        await api.post('/donations', payload)
+        toast.success('Donasi berjaya dicipta')
+      }
+      setDialogOpen(false)
+      setEditingDonation(null)
+      await fetchDonations()
+    } catch (error) {
+      console.error('Error saving donation:', error)
+      toast.error('Gagal menyimpan donasi')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   // ─── Render ────────────────────────────────────────────────────────
@@ -546,7 +692,7 @@ export default function DonationsPage() {
               Pengurusan donasi dengan pemisahan ISF (Islamic Social Finance)
             </p>
           </div>
-          <Button onClick={handleCreate} size="lg" className="gap-2 shrink-0">
+          <Button onClick={handleCreate} size="lg" className="gap-2 shrink-0" disabled={loading}>
             <Plus className="h-4 w-4" />
             Donasi Baharu
           </Button>
@@ -805,7 +951,7 @@ export default function DonationsPage() {
                   {paginatedDonations.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="h-32 text-center text-muted-foreground">
-                        Tiada rekod donasi dijumpai
+                        {loading ? 'Memuatkan rekod donasi...' : 'Tiada rekod donasi dijumpai'}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -917,7 +1063,7 @@ export default function DonationsPage() {
           {paginatedDonations.length === 0 ? (
             <Card>
               <CardContent className="flex items-center justify-center h-32 text-muted-foreground">
-                Tiada rekod donasi dijumpai
+                {loading ? 'Memuatkan rekod donasi...' : 'Tiada rekod donasi dijumpai'}
               </CardContent>
             </Card>
           ) : (
@@ -1251,7 +1397,7 @@ export default function DonationsPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {PROGRAMME_OPTIONS.map(opt => (
+                            {programmeOptions.map(opt => (
                               <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
                             ))}
                           </SelectContent>
@@ -1355,7 +1501,8 @@ export default function DonationsPage() {
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
                   Batal
                 </Button>
-                <Button type="submit">
+                <Button type="submit" disabled={submitting}>
+                  {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                   {editingDonation ? 'Simpan Perubahan' : 'Cipta Donasi'}
                 </Button>
               </div>
@@ -1443,7 +1590,7 @@ export default function DonationsPage() {
                     <div className="flex items-center justify-between p-3">
                       <span className="text-sm text-muted-foreground">Program</span>
                       <span className="text-sm font-medium">
-                        {PROGRAMME_OPTIONS.find(p => p.value === viewingDonation.programme)?.label ?? viewingDonation.programme}
+                        {viewingDonation.programmeName || programmeOptions.find(p => p.value === viewingDonation.programme)?.label || viewingDonation.programme}
                       </span>
                     </div>
                   )}

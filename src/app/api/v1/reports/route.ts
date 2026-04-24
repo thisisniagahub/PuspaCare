@@ -1,21 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 
 export async function GET(_request: NextRequest) {
   try {
+    await requireRole(_request, ['admin', 'developer']);
     const now = new Date();
 
     // Income by fund type
     const incomeByFundType = await db.donation.groupBy({
       by: ['fundType'],
-      where: { status: { in: ['VERIFIED', 'RECEIVED'] } },
+      where: { status: { in: ['confirmed'] } },
       _sum: { amount: true },
       _count: true,
     });
 
     // Expenditure by programme
     const expenditures = await db.disbursement.findMany({
-      where: { status: { in: ['APPROVED', 'PROCESSING', 'DISBURSED'] } },
+      where: { status: { in: ['approved', 'processing', 'completed'] } },
       include: {
         programme: { select: { id: true, name: true } },
       },
@@ -41,14 +43,14 @@ export async function GET(_request: NextRequest) {
       const [incomeResult, expenditureResult] = await Promise.all([
         db.donation.aggregate({
           where: {
-            status: { in: ['VERIFIED', 'RECEIVED'] },
+            status: { in: ['confirmed'] },
             donatedAt: { gte: start, lte: end },
           },
           _sum: { amount: true },
         }),
         db.disbursement.aggregate({
           where: {
-            status: { in: ['APPROVED', 'PROCESSING', 'DISBURSED'] },
+            status: { in: ['approved', 'processing', 'completed'] },
             processedDate: { gte: start, lte: end },
           },
           _sum: { amount: true },
@@ -87,12 +89,12 @@ export async function GET(_request: NextRequest) {
     // Overall financial summary
     const [totalIncome, totalExpenditure] = await Promise.all([
       db.donation.aggregate({
-        where: { status: { in: ['VERIFIED', 'RECEIVED'] } },
+        where: { status: { in: ['confirmed'] } },
         _sum: { amount: true },
         _count: true,
       }),
       db.disbursement.aggregate({
-        where: { status: { in: ['APPROVED', 'PROCESSING', 'DISBURSED'] } },
+        where: { status: { in: ['approved', 'processing', 'completed'] } },
         _sum: { amount: true },
         _count: true,
       }),
@@ -112,7 +114,7 @@ export async function GET(_request: NextRequest) {
 
     // Programme budgets vs spent
     const programmeBudgets = await db.programme.findMany({
-      where: { status: 'ACTIVE' },
+      where: { status: 'active' },
       select: {
         id: true,
         name: true,
@@ -151,6 +153,12 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching reports:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch reports' },

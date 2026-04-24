@@ -1,25 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import {
+  normalizePartnerRelationship,
+  normalizePartnerType,
+  normalizePartnerVerifiedStatus,
+} from '@/lib/domain';
 import { z } from 'zod';
 
 const partnerCreateSchema = z.object({
   name: z.string().min(1, 'Name is required'),
-  type: z.enum(['GOVERNMENT', 'CORPORATE', 'NGO', 'ACADEMIC', 'RELIGIOUS', 'HEALTHCARE', 'MEDIA', 'COMMUNITY', 'INTERNATIONAL', 'OTHER']).optional(),
-  relationship: z.enum(['ACTIVE', 'INACTIVE', 'PROSPECT', 'FORMER']).optional().default('PROSPECT'),
+  type: z.string().optional(),
+  relationship: z.string().optional(),
   contactPerson: z.string().optional(),
   contactPhone: z.string().optional(),
   contactEmail: z.string().email().optional().or(z.literal('')),
   address: z.string().optional(),
-  verifiedStatus: z.enum(['VERIFIED', 'UNVERIFIED', 'PENDING']).optional().default('UNVERIFIED'),
+  verifiedStatus: z.string().optional(),
   verificationUrl: z.string().optional(),
   notes: z.string().optional(),
 });
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
-    const type = searchParams.get('type') || '';
-    const verifiedStatus = searchParams.get('verifiedStatus') || '';
+    const type = normalizePartnerType(searchParams.get('type'));
+    const verifiedStatus = normalizePartnerVerifiedStatus(searchParams.get('verifiedStatus'));
 
     const where: Record<string, unknown> = {};
     if (type) where.type = type;
@@ -32,6 +39,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: partners });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching partners:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch partners' },
@@ -42,18 +55,28 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth(request);
     const body = await request.json();
     const validated = partnerCreateSchema.parse(body);
 
     const partner = await db.partner.create({
       data: {
         ...validated,
+        type: normalizePartnerType(validated.type) || 'ngo',
+        relationship: normalizePartnerRelationship(validated.relationship) || null,
+        verifiedStatus: normalizePartnerVerifiedStatus(validated.verifiedStatus) || 'claimed',
         contactEmail: validated.contactEmail || null,
       },
     });
 
     return NextResponse.json({ success: true, data: partner }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -70,6 +93,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    await requireAuth(request);
     const body = await request.json();
     const { id, ...updateData } = body;
 
@@ -93,6 +117,16 @@ export async function PUT(request: NextRequest) {
 
     const dataToUpdate: Record<string, unknown> = { ...validated };
     if (validated.contactEmail === '') dataToUpdate.contactEmail = null;
+    if (validated.type !== undefined) {
+      dataToUpdate.type = normalizePartnerType(validated.type) || 'ngo';
+    }
+    if (validated.relationship !== undefined) {
+      dataToUpdate.relationship = normalizePartnerRelationship(validated.relationship) || null;
+    }
+    if (validated.verifiedStatus !== undefined) {
+      dataToUpdate.verifiedStatus =
+        normalizePartnerVerifiedStatus(validated.verifiedStatus) || 'claimed';
+    }
 
     const partner = await db.partner.update({
       where: { id },
@@ -101,6 +135,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: partner });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -117,6 +157,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -139,6 +180,12 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Partner deleted successfully' });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deleting partner:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete partner' },

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
+import { getRequestIp, getSessionActor, writeAuditLog } from '@/lib/audit';
 import { z } from 'zod';
 
 // ── Zod Schemas ─────────────────────────────────────────────────────────────
@@ -16,19 +18,33 @@ const communicationCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10)));
     const donorId = searchParams.get('donorId') || '';
+    const search = searchParams.get('search') || '';
     const type = searchParams.get('type') || '';
+    const status = searchParams.get('status') || '';
 
     const where: Record<string, unknown> = {};
 
     if (donorId) {
       where.donorId = donorId;
     }
+    if (search) {
+      where.OR = [
+        { subject: { contains: search, mode: 'insensitive' } },
+        { content: { contains: search, mode: 'insensitive' } },
+        { donor: { name: { contains: search, mode: 'insensitive' } } },
+        { donor: { donorNumber: { contains: search, mode: 'insensitive' } } },
+      ];
+    }
     if (type) {
       where.type = type;
+    }
+    if (status) {
+      where.status = status;
     }
 
     const [communications, total] = await Promise.all([
@@ -64,6 +80,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
+    const actor = getSessionActor(session);
     const body = await request.json();
     const validated = communicationCreateSchema.parse(body);
 
@@ -84,14 +102,34 @@ export async function POST(request: NextRequest) {
         content: validated.content || null,
         status: validated.status,
         sentAt: validated.status === 'sent' ? new Date() : null,
+        sentBy: validated.status === 'sent' ? actor : null,
       },
       include: {
         donor: { select: { id: true, name: true, donorNumber: true } },
       },
     });
 
+    await writeAuditLog({
+      action: 'create',
+      entity: 'DonorCommunication',
+      entityId: communication.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        donorId: communication.donorId,
+        type: communication.type,
+        status: communication.status,
+      },
+    });
+
     return NextResponse.json({ success: true, data: communication }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },
@@ -110,6 +148,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -130,8 +169,27 @@ export async function DELETE(request: NextRequest) {
 
     await db.donorCommunication.delete({ where: { id } });
 
+    await writeAuditLog({
+      action: 'delete',
+      entity: 'DonorCommunication',
+      entityId: existing.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        donorId: existing.donorId,
+        type: existing.type,
+        status: existing.status,
+      },
+    });
+
     return NextResponse.json({ success: true, message: 'Komunikasi berjaya dipadam' });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deleting communication:', error);
     return NextResponse.json(
       { success: false, error: 'Gagal memadam komunikasi' },

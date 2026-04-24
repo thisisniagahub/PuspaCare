@@ -425,7 +425,7 @@ model EKYCVerification {
   memberId          String   @unique
   member            Member   @relation(fields: [memberId], references: [id])
 
-  // IC Images (stored as base64 data URIs)
+  // eKYC evidence file URLs (served through authenticated upload routes)
   icFrontUrl        String?
   icBackUrl         String?
 

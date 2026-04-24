@@ -1,0 +1,97 @@
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { getToken } from 'next-auth/jwt'
+import { getAuthSecret } from '@/lib/auth-shared'
+import { buildRateLimitHeaders, rateLimit } from '@/lib/rate-limit'
+
+const STATIC_FILE_PATTERN = /\.[^/]+$/
+
+function isPublicPath(pathname: string) {
+  return (
+    pathname === '/login' ||
+    pathname.startsWith('/api/auth') ||
+    pathname.startsWith('/_next') ||
+    pathname === '/favicon.ico' ||
+    STATIC_FILE_PATTERN.test(pathname)
+  )
+}
+
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const authSecret = getAuthSecret()
+  const token = authSecret
+    ? await getToken({
+        req: request,
+        secret: authSecret,
+      })
+    : null
+
+  if (pathname === '/login') {
+    if (token) {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+
+    return NextResponse.next()
+  }
+
+  if (isPublicPath(pathname)) {
+    return NextResponse.next()
+  }
+
+  if (pathname.startsWith('/api/v1/')) {
+    const limit = rateLimit(request, {
+      limit: 100,
+      windowMs: 15 * 60 * 1000,
+      keyPrefix: 'api',
+    })
+
+    if (!limit.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Terlalu banyak permintaan. Sila cuba semula sebentar lagi.',
+        },
+        {
+          status: 429,
+          headers: buildRateLimitHeaders(limit),
+        },
+      )
+    }
+
+    if (token) {
+      return NextResponse.next()
+    }
+
+    const apiKey = request.headers.get('x-api-key')
+    const validKey = process.env.API_SECRET_KEY
+
+    if (validKey && apiKey === validKey) {
+      return NextResponse.next()
+    }
+
+    return NextResponse.json(
+      {
+        success: false,
+        error: 'Akses API memerlukan sesi sah atau API key yang sah.',
+      },
+      { status: 401 },
+    )
+  }
+
+  if (!token) {
+    const loginUrl = new URL('/login', request.url)
+    const callbackUrl = `${pathname}${request.nextUrl.search}`
+
+    if (callbackUrl !== '/') {
+      loginUrl.searchParams.set('callbackUrl', callbackUrl)
+    }
+
+    return NextResponse.redirect(loginUrl)
+  }
+
+  return NextResponse.next()
+}
+
+export const config = {
+  matcher: ['/((?!_next/static|_next/image).*)'],
+}

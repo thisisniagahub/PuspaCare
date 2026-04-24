@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { AuthorizationError, requireRole } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { z } from 'zod'
 
@@ -16,6 +17,7 @@ const rejectSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    await requireRole(request, ['admin', 'developer'])
     const body = await request.json()
     const validated = rejectSchema.parse(body)
 
@@ -102,6 +104,12 @@ export async function POST(request: NextRequest) {
       message: 'Pengesahan eKYC telah ditolak.',
     })
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      )
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },

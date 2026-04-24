@@ -1,9 +1,11 @@
 import { PrismaClient } from '@prisma/client'
+import { hashPassword } from '../src/lib/password'
 
 const db = new PrismaClient()
 
 async function main() {
   await db.$connect()
+  const adminPasswordHash = await hashPassword('Puspa@2026')
 
   console.log('🌱 Seeding PUSPA NGO database...\n')
 
@@ -42,7 +44,7 @@ async function main() {
   const admin = await db.user.create({
     data: {
       email: 'admin@puspa.org.my',
-      password: 'admin123',
+      password: adminPasswordHash,
       name: 'Pentadbir PUSPA',
       role: 'admin',
       phone: '03-4107 8899',

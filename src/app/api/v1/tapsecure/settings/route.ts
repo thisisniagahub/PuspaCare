@@ -1,11 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
 // ─── Schemas ───────────────────────────────────────────────────────
 
 const securitySettingsUpdateSchema = z.object({
-  userId: z.string().min(1, 'ID pengguna diperlukan'),
+  userId: z.string().min(1, 'ID pengguna diperlukan').optional(),
   biometricTransactions: z.boolean().optional(),
   boundDeviceOnly: z.boolean().optional(),
   sessionTimeout: z
@@ -22,20 +23,29 @@ const defaultSettings = {
   sessionTimeout: 30,
 };
 
+function resolveTargetUserId(
+  session: Awaited<ReturnType<typeof requireAuth>>,
+  requestedUserId: string | null | undefined,
+) {
+  if (!requestedUserId || requestedUserId === session.user.id) {
+    return session.user.id
+  }
+
+  if (session.user.role !== 'admin' && session.user.role !== 'developer') {
+    throw new AuthorizationError('Anda tidak boleh mengakses tetapan pengguna lain', 403)
+  }
+
+  return requestedUserId
+}
+
 // ─── GET /api/v1/tapsecure/settings?userId=xxx ────────────────────
 // Retrieve security settings for a user (creates defaults if none exist)
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await requireAuth()
     const searchParams = request.nextUrl.searchParams;
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-      return NextResponse.json(
-        { success: false, error: 'ID pengguna diperlukan' },
-        { status: 400 }
-      );
-    }
+    const userId = resolveTargetUserId(session, searchParams.get('userId'));
 
     // Verify user exists
     const user = await db.user.findUnique({ where: { id: userId } });
@@ -70,6 +80,12 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching security settings:', error);
     return NextResponse.json(
       { success: false, error: 'Gagal memuatkan tetapan keselamatan' },
@@ -83,8 +99,11 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await requireAuth()
     const body = await request.json();
-    const { userId, ...updateData } = securitySettingsUpdateSchema.parse(body);
+    const parsed = securitySettingsUpdateSchema.parse(body);
+    const userId = resolveTargetUserId(session, parsed.userId);
+    const { userId: _ignoredUserId, ...updateData } = parsed;
 
     // Verify user exists
     const user = await db.user.findUnique({ where: { id: userId } });
@@ -152,6 +171,12 @@ export async function PUT(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },

@@ -1,6 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback, useSyncExternalStore } from 'react';
+import { signOut, useSession } from 'next-auth/react';
+import { normalizeUserRole } from '@/lib/auth-shared';
 import { useAppStore, type UserRole } from '@/stores/app-store';
 import type { ViewId } from '@/types';
 import Image from 'next/image';
@@ -29,9 +31,12 @@ import {
   ScanFace,
   Fingerprint,
   BookOpen,
+  LogOut,
   PanelLeftClose,
   PanelLeftOpen,
   ChevronRight,
+  Eye,
+  EyeOff,
   Package,
   UtensilsCrossed,
   Zap,
@@ -86,12 +91,19 @@ const ROLE_CONFIG: Record<UserRole, { label: string; description: string }> = {
   developer: { label: 'Developer', description: 'Penuh termasuk AI & Automasi' },
 };
 
-
 // ═══════════════════════════════════════════════════════════════════════════════
 // Navigation configuration — role-based, consistent naming
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const ALL_GROUPS: NavGroup[] = [
+  {
+    title: 'Keusahawanan',
+    roles: ['staff', 'admin', 'developer'],
+    items: [
+      { id: 'asnafpreneur', label: 'Asnafpreneur', icon: Rocket, roles: ['staff', 'admin', 'developer'] },
+      { id: 'programmes', label: 'Program Inkubasi', icon: Heart, roles: ['staff', 'admin', 'developer'] },
+    ],
+  },
   {
     title: 'Utama',
     roles: ['staff', 'admin', 'developer'],
@@ -99,8 +111,6 @@ const ALL_GROUPS: NavGroup[] = [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['staff', 'admin', 'developer'] },
       { id: 'members', label: 'Ahli Asnaf', icon: Users, roles: ['staff', 'admin', 'developer'] },
       { id: 'cases', label: 'Kes Bantuan', icon: FileText, roles: ['staff', 'admin', 'developer'] },
-      { id: 'programmes', label: 'Program', icon: Heart, roles: ['staff', 'admin', 'developer'] },
-      { id: 'asnafpreneur', label: 'ASNAFPRENEUR AI SaaS', icon: Rocket, roles: ['admin', 'developer'] },
     ],
   },
   {
@@ -182,7 +192,7 @@ const BRAND_COLOR = '#4B0082';
 function SidebarBrand({ collapsed }: { collapsed: boolean }) {
   return (
     <div className={cn(
-      'flex items-center px-4 py-5 transition-all duration-300 ease-in-out',
+      'flex items-center px-4 py-5 cursor-pointer transition-all duration-300 ease-in-out hover:bg-muted/30 active:scale-[0.98]',
       collapsed ? 'justify-center' : 'gap-3',
     )}>
       <div className={cn(
@@ -237,10 +247,10 @@ function NavItemButton({
       type="button"
       onClick={onClick}
       className={cn(
-        'group relative flex w-full items-center gap-3 rounded-lg text-sm font-medium transition-all duration-200',
+        'group relative flex w-full items-center gap-3 rounded-lg text-sm font-medium cursor-pointer transition-all duration-200 ease-in-out',
         collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2 pl-3.5',
         'outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2',
-        isActive ? 'text-white shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+        isActive ? 'text-white shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95',
       )}
       style={
         isActive
@@ -253,7 +263,7 @@ function NavItemButton({
       )}
       <Icon className={cn(
         'h-[18px] w-[18px] shrink-0 transition-all duration-200',
-        isActive ? 'text-white' : 'text-muted-foreground group-hover:text-foreground',
+        isActive ? 'text-white' : 'text-muted-foreground group-hover:text-foreground group-hover:scale-110',
       )} />
       <span className={cn(
         'truncate whitespace-nowrap transition-all duration-300 ease-in-out',
@@ -317,33 +327,64 @@ function NavSubGroupLabel({ label, collapsed }: { label: string; collapsed: bool
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// SidebarFooter — Org info + live role badge
+// SidebarFooter — Session summary + org info
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function SidebarFooter({ collapsed }: { collapsed: boolean }) {
-  const userRole = useAppStore((s) => s.userRole);
-  const config = ROLE_CONFIG[userRole];
+function SidebarFooter({
+  collapsed,
+  role,
+  userLabel,
+}: {
+  collapsed: boolean;
+  role: UserRole;
+  userLabel: string;
+}) {
+  const config = ROLE_CONFIG[role];
+  const avatarLabel = userLabel.trim().charAt(0).toUpperCase() || 'P';
 
   return (
     <div className={cn('px-4 py-3 transition-all duration-300', collapsed ? 'flex flex-col items-center gap-2' : 'space-y-2')}>
-      <div className={cn(
-        'flex items-center gap-2 rounded-lg px-2 py-1.5 transition-all duration-200 bg-muted/50',
-        collapsed ? 'justify-center' : '',
-      )}>
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-purple-50 dark:bg-purple-950/40">
-          <span className="text-[10px] font-bold" style={{ color: BRAND_COLOR }}>{config.label[0]}</span>
+      <div
+        className={cn(
+          'flex items-center gap-2 rounded-lg border border-border/60 bg-muted/30 px-2.5 py-2',
+          collapsed ? 'justify-center' : '',
+        )}
+      >
+        <div
+          className={cn(
+            'flex shrink-0 items-center justify-center rounded-full bg-purple-50 text-xs font-bold dark:bg-purple-950/40',
+            collapsed ? 'h-8 w-8' : 'h-9 w-9',
+          )}
+          style={{ color: BRAND_COLOR }}
+        >
+          {avatarLabel}
         </div>
-        <div className={cn(
-          'flex flex-col overflow-hidden transition-all duration-300',
-          collapsed ? 'max-h-0 max-w-0 opacity-0' : 'max-h-10 max-w-[160px] opacity-100',
-        )}>
-          <span className="text-[10px] font-semibold whitespace-nowrap" style={{ color: BRAND_COLOR }}>
-            Peranan server: {config.label}
+        <div
+          className={cn(
+            'flex min-w-0 flex-col overflow-hidden transition-all duration-300',
+            collapsed ? 'max-h-0 max-w-0 opacity-0' : 'max-h-12 max-w-[160px] opacity-100',
+          )}
+        >
+          <span className="truncate text-[11px] font-semibold text-foreground">{userLabel}</span>
+          <span className="truncate text-[10px] text-muted-foreground">
+            {config.label} · {config.description}
           </span>
-          <span className="text-[9px] text-muted-foreground whitespace-nowrap">{config.description}</span>
         </div>
       </div>
+
+      <Button
+        type="button"
+        variant="outline"
+        size={collapsed ? 'icon' : 'sm'}
+        className={cn('w-full border-border/70', collapsed ? 'h-9 w-9' : 'justify-start gap-2')}
+        onClick={() => void signOut({ callbackUrl: '/login' })}
+      >
+        <LogOut className="h-4 w-4" />
+        {!collapsed && <span>Log keluar</span>}
+      </Button>
+
       <Separator className="bg-border/40" />
+      {/* Org info */}
       <div className={cn(
         'flex items-center gap-3 transition-all duration-300 ease-in-out overflow-hidden',
         collapsed ? 'justify-center' : '',
@@ -422,6 +463,8 @@ function SidebarContent({
 }) {
   const currentView = useAppStore((s) => s.currentView);
   const userRole = useAppStore((s) => s.userRole);
+  const setUserRole = useAppStore((s) => s.setUserRole);
+  const { data: session } = useSession();
 
   const handleNavigate = (id: ViewId) => {
     onNavigate(id);
@@ -429,7 +472,14 @@ function SidebarContent({
   };
 
   const isCollapsed = !!collapsed;
-  const visibleGroups = getVisibleGroups(userRole);
+  const effectiveRole = normalizeUserRole(session?.user?.role || userRole);
+  const visibleGroups = getVisibleGroups(effectiveRole);
+
+  useEffect(() => {
+    if (userRole !== effectiveRole) {
+      setUserRole(effectiveRole);
+    }
+  }, [effectiveRole, setUserRole, userRole]);
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -464,7 +514,11 @@ function SidebarContent({
         </ScrollArea>
 
         <Separator className="mx-4" />
-        <SidebarFooter collapsed={isCollapsed} />
+        <SidebarFooter
+          collapsed={isCollapsed}
+          role={effectiveRole}
+          userLabel={session?.user?.name || session?.user?.email || 'Pengguna PUSPA'}
+        />
       </div>
     </TooltipProvider>
   );
@@ -516,7 +570,7 @@ export function AppSidebar() {
       {/* Desktop aside */}
       <aside
         className={cn(
-          'fixed inset-y-0 left-0 z-30 hidden border-r border-border bg-card',
+          'fixed inset-y-0 left-0 z-50 hidden border-r border-border bg-card',
           'lg:flex lg:flex-col lg:transition-all lg:duration-300 lg:ease-in-out',
           expanded ? 'lg:w-[260px]' : 'lg:w-[72px]',
         )}

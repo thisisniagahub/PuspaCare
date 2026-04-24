@@ -1,378 +1,421 @@
-'use client';
+'use client'
 
-import { useMemo } from 'react';
-import { useAppStore } from '@/stores/app-store';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import {
-  ArrowRight,
-  Banknote,
-  Bot,
-  Briefcase,
-  CheckCircle2,
-  Coins,
-  Cpu,
-  ExternalLink,
-  GraduationCap,
-  HandCoins,
-  Laptop,
-  Layers3,
-  LineChart,
-  Rocket,
-  Server,
-  Target,
-  Users,
-  Wallet,
-} from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react'
+import { motion, AnimatePresence, useScroll, useSpring, useInView } from 'framer-motion'
+import { 
+  Rocket, 
+  Brain, 
+  Code, 
+  Users, 
+  Target, 
+  ArrowRight, 
+  Shield, 
+  Zap, 
+  Bot, 
+  Layers, 
+  Cpu, 
+  Globe, 
+  Layout, 
+  Smartphone, 
+  Home, 
+  LayoutDashboard, 
+  Info, 
+  Star,
+  ExternalLink
+} from 'lucide-react'
+import './asnafpreneur.css'
 
-const PROGRAMME_PHASES = [
-  {
-    title: 'Fasa 1 — Latihan (12 minggu)',
-    duration: '12 minggu',
-    outcome: 'Prompting, vibe coding, deploy app pertama',
-    items: [
-      'Asas digital, prompt engineering, model routing',
-      'Bina web app dengan AI tooling',
-      'Deploy MVP awal dan biasakan workflow product',
-    ],
-  },
-  {
-    title: 'Fasa 2 — SaaS Builder Sprint (8 minggu)',
-    duration: '8 minggu',
-    outcome: '1 MVP SaaS live per peserta',
-    items: [
-      'Niche discovery, validation, pilih idea paling viable',
-      'Build MVP, payment, auth, dashboard, landing page',
-      'Launch, dapatkan pelanggan pertama, iterate cepat',
-    ],
-  },
-  {
-    title: 'Fasa 3 — Inkubator (6 bulan)',
-    duration: '6 bulan',
-    outcome: 'MRR tracking, mentor support, scale batch 1',
-    items: [
-      'Weekly check-in dan revenue review',
-      'Pivot support kalau idea tak convert',
-      'Alumni loop, mentor lane, prep Demo Day',
-    ],
-  },
-] as const;
+// ─── Animations ─────────────────────────────────────────────────────────────
 
-const FUNDERS = [
-  {
-    name: 'Hijrah Selangor',
-    amount: 'RM 70,000',
-    fit: 'Track program-level, latihan, laptop, coordinator, Demo Day',
-  },
-  {
-    name: 'Bank Muamalat iTEKAD',
-    amount: 'RM 200,000',
-    fit: 'Track per-asnaf modal RM10K untuk AI tokens, hosting, tools, buffer',
-  },
-  {
-    name: 'Tech credits / grants',
-    amount: 'Bonus upside',
-    fit: 'Google.org, Anthropic, AWS/GCP, MDEC, HRD Corp untuk credits dan latihan',
-  },
-] as const;
+const FadeInView = ({ children, delay = 0, y = 20 }: { children: React.ReactNode; delay?: number; y?: number }) => {
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: "-100px" })
 
-const SAAS_IDEAS = [
-  ['KedaiAI', 'Peniaga kecil', 'RM29-99/bulan'],
-  ['InvoiceKu', 'Freelancer/SME', 'RM19-49/bulan'],
-  ['TuisyenAI', 'Ibu bapa/pelajar', 'RM15-39/bulan'],
-  ['ResepiBot', 'Food creator', 'RM9-29/bulan'],
-  ['MasjidOS', 'Masjid/surau', 'RM49-149/bulan'],
-  ['ContractAI', 'Agen hartanah', 'RM39-99/bulan'],
-  ['KlinikQ', 'Klinik panel', 'RM79-199/bulan'],
-  ['WarungPOS', 'Kedai makan kecil', 'RM29-79/bulan'],
-  ['CerpenAI', 'Penulis BM', 'RM19-49/bulan'],
-  ['AsnafCare', 'NGO lain', 'RM99-499/bulan'],
-] as const;
-
-const PUSPA2_MAP = [
-  ['Programme', 'Track ASNAFPRENEUR sebagai program induk + cohort batch'],
-  ['Members', 'Setiap peserta asnaf, mentor, partner, alumni'],
-  ['Cases', 'Progress setiap SaaS: idea → MVP → launch → MRR'],
-  ['Donations', 'Dana masuk dari Hijrah Selangor, sponsor, tech credits'],
-  ['Disbursements', 'Token purchases, hosting, domain, laptop, incentives'],
-  ['Reports', 'MRR per peserta, burn rate, funding runway, cohort impact'],
-  ['Volunteers', 'Mentor industri, reviewer produk, growth advisor'],
-  ['Ops Conductor', 'Route requests, cadence review, follow-up tasks'],
-] as const;
-
-const TIMELINE = [
-  ['Q2 2026', 'Proposal, funder outreach, recruit 20 peserta, setup infra'],
-  ['Q3 2026', 'Latihan 12 minggu, idea validation, app basics'],
-  ['Q4 2026', 'Builder sprint, payment integration, launch'],
-  ['Q1 2027', 'Inkubator, mentor cadence, MRR tracking, Demo Day'],
-  ['Q2 2027', 'Batch 2, alumni mentor loop, repeatable system'],
-] as const;
-
-function Table({ headers, rows }: { headers: string[]; rows: readonly (readonly string[])[] }) {
   return (
-    <div className="overflow-x-auto rounded-xl border">
-      <table className="w-full text-sm">
-        <thead className="bg-muted/50">
-          <tr>
-            {headers.map((h) => (
-              <th key={h} className="px-4 py-3 text-left font-semibold text-foreground">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, idx) => (
-            <tr key={idx} className="border-t">
-              {row.map((cell, cellIdx) => (
-                <td key={cellIdx} className="px-4 py-3 text-muted-foreground align-top">{cell}</td>
-              ))}
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y }}
+      animate={isInView ? { opacity: 1, y: 0 } : { opacity: 0, y }}
+      transition={{ duration: 0.8, delay, ease: [0.21, 0.47, 0.32, 0.98] }}
+    >
+      {children}
+    </motion.div>
+  )
 }
 
-export default function AsnafpreneurPage() {
-  const { setView } = useAppStore();
+const RotatingText = ({ words }: { words: string[] }) => {
+  const [index, setIndex] = useState(0)
 
-  const quickActions = useMemo(
-    () => [
-      { label: 'Buka Programmes', view: 'programmes' as const },
-      { label: 'Buka Donations', view: 'donations' as const },
-      { label: 'Buka Disbursements', view: 'disbursements' as const },
-      { label: 'Buka Reports', view: 'reports' as const },
-    ],
-    [setView],
-  );
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((prev) => (prev + 1) % words.length)
+    }, 3000)
+    return () => clearInterval(timer)
+  }, [words.length])
 
   return (
-    <div className="space-y-6 p-4 sm:p-6">
-      <Card className="border-purple-200 bg-gradient-to-br from-purple-50 via-white to-indigo-50 dark:border-purple-900/40 dark:from-purple-950/30 dark:via-background dark:to-indigo-950/20">
-        <CardHeader className="space-y-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <Badge className="bg-purple-600 hover:bg-purple-600">Program Strategik 2026-2027</Badge>
-            <Badge variant="outline">AI-first entrepreneurship</Badge>
-            <Badge variant="outline">Recurring revenue</Badge>
-          </div>
-          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-            <div className="space-y-3">
-              <CardTitle className="text-3xl tracking-tight flex items-center gap-3">
-                <Rocket className="h-8 w-8 text-purple-600" />
-                ASNAFPRENEUR — PUSPA AI SaaS Enterprise
-              </CardTitle>
-              <CardDescription className="max-w-3xl text-sm sm:text-base leading-relaxed">
-                Program keusahawanan digital untuk latih asnaf bina micro-SaaS dengan AI, launch cepat,
-                dan capai recurring revenue tanpa model bisnes berat inventori atau kedai fizikal.
-              </CardDescription>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {quickActions.map((action) => (
-                <Button key={action.label} variant="outline" onClick={() => setView(action.view)}>
-                  {action.label}
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardHeader>
-      </Card>
+    <div className="rotating-wrapper">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={words[index]}
+          initial={{ opacity: 0, y: 30, filter: 'blur(10px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          exit={{ opacity: 0, y: -30, filter: 'blur(10px)' }}
+          transition={{ duration: 0.6, ease: "circOut" }}
+          className="gradient-text"
+          style={{ display: 'block', position: 'absolute', width: '100%' }}
+        >
+          {words[index]}
+        </motion.span>
+      </AnimatePresence>
+    </div>
+  )
+}
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Target peserta</p>
-                <p className="text-3xl font-bold">20</p>
-              </div>
-              <Users className="h-8 w-8 text-purple-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Funding target</p>
-                <p className="text-3xl font-bold">RM270K</p>
-              </div>
-              <HandCoins className="h-8 w-8 text-emerald-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Annual programme cost</p>
-                <p className="text-3xl font-bold">RM140.2K</p>
-              </div>
-              <Wallet className="h-8 w-8 text-amber-600" />
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Projected cumulative revenue</p>
-                <p className="text-3xl font-bold">RM145.2K</p>
-              </div>
-              <LineChart className="h-8 w-8 text-blue-600" />
-            </div>
-          </CardContent>
-        </Card>
+// ─── Sub-Components ─────────────────────────────────────────────────────────
+
+const SpotlightCard = ({ 
+  icon: Icon, 
+  title, 
+  description, 
+  color = 'emerald' 
+}: { 
+  icon: any; 
+  title: string; 
+  description: string; 
+  color?: string 
+}) => {
+  const cardRef = useRef<HTMLDivElement>(null)
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return
+    const { left, top } = cardRef.current.getBoundingClientRect()
+    cardRef.current.style.setProperty('--mouse-x', `${e.clientX - left}px`)
+    cardRef.current.style.setProperty('--mouse-y', `${e.clientY - top}px`)
+  }
+
+  return (
+    <div 
+      ref={cardRef} 
+      className="spotlight-card" 
+      onMouseMove={handleMouseMove}
+    >
+      <div className={`card-icon ${color}`}>
+        <Icon size={24} />
       </div>
+      <h3>{title}</h3>
+      <p>{description}</p>
+    </div>
+  )
+}
 
-      <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Layers3 className="h-5 w-5 text-purple-600" />Kenapa model ini kuat</CardTitle>
-            <CardDescription>Switch daripada bantuan ekonomi tradisional kepada software business yang scale lebih laju.</CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 md:grid-cols-2">
-            {[
-              ['Modal rendah', 'Laptop + AI tokens + hosting. Tak perlu sewa kedai atau stok besar.', <Laptop className="h-5 w-5 text-purple-600" key="a" />],
-              ['Recurring revenue', 'Pelanggan bayar bulan-bulan, bukan one-off sale sahaja.', <Coins className="h-5 w-5 text-emerald-600" key="b" />],
-              ['Margin tinggi', 'SaaS margin boleh cecah 80-90% bila AI handle banyak kerja.', <Target className="h-5 w-5 text-blue-600" key="c" />],
-              ['Scale tanpa headcount berat', 'Tambah pelanggan lebih mudah berbanding tambah operasi fizikal.', <Server className="h-5 w-5 text-amber-600" key="d" />],
-            ].map(([title, desc, icon]) => (
-              <div key={title as string} className="rounded-xl border p-4">
-                <div className="mb-3 flex items-center gap-2 font-semibold text-foreground">{icon}{title}</div>
-                <p className="text-sm text-muted-foreground">{desc}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+const IdeaCard = ({ emoji, title, description, price }: { emoji: string; title: string; description: string; price: string }) => (
+  <motion.div 
+    className="idea-card"
+    whileHover={{ x: 5 }}
+  >
+    <div className="idea-emoji">{emoji}</div>
+    <div className="idea-info">
+      <h4>{title}</h4>
+      <p>{description}</p>
+      <div className="idea-price">{price}</div>
+    </div>
+  </motion.div>
+)
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Cpu className="h-5 w-5 text-purple-600" />AI-first cost model</CardTitle>
-            <CardDescription>Operating stack per asnaf entrepreneur</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {[
-              ['AI tokens', 'RM80-200 / bulan'],
-              ['Hosting + database', 'RM0-90 / bulan'],
-              ['Domain + email', 'RM5-25 / bulan'],
-              ['Cursor Pro', 'RM80 / bulan'],
-              ['Estimated total', 'RM165-395 / bulan'],
-            ].map(([label, value]) => (
-              <div key={label} className="flex items-center justify-between rounded-lg border px-3 py-2">
-                <span className="text-muted-foreground">{label}</span>
-                <span className="font-semibold text-foreground">{value}</span>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
+// ─── Main Page ───────────────────────────────────────────────────────────────
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><GraduationCap className="h-5 w-5 text-purple-600" />Programme phases</CardTitle>
-          <CardDescription>Struktur delivery yang boleh terus di-track dalam PUSPA2.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 lg:grid-cols-3">
-          {PROGRAMME_PHASES.map((phase) => (
-            <div key={phase.title} className="rounded-xl border p-4">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="font-semibold text-foreground">{phase.title}</p>
-                <Badge variant="outline">{phase.duration}</Badge>
-              </div>
-              <p className="mb-3 text-sm text-muted-foreground">{phase.outcome}</p>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                {phase.items.map((item) => (
-                  <div key={item} className="flex gap-2">
-                    <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
-                    <span>{item}</span>
-                  </div>
-                ))}
+export default function AsnafpreneurLanding() {
+  const [activeStep, setActiveStep] = useState(0)
+  const { scrollYProgress } = useScroll()
+  const scaleX = useSpring(scrollYProgress, {
+    stiffness: 100,
+    damping: 30,
+    restDelta: 0.001
+  })
+
+  return (
+    <div className="asnafpreneur-root">
+      <div className="grain-overlay" />
+      
+      {/* Scroll Progress Bar */}
+      <motion.div 
+        className="scroll-progress" 
+        style={{ 
+          scaleX, 
+          position: 'fixed', 
+          top: 0, 
+          left: 0, 
+          right: 0, 
+          height: '3px', 
+          background: 'var(--accent-emerald)', 
+          zIndex: 1000, 
+          transformOrigin: '0%' 
+        }} 
+      />
+
+      {/* Navigation */}
+      <nav className="pill-nav">
+        <a href="#hero" className="active">Mula</a>
+        <a href="#program">Program</a>
+        <a href="#cara">Cara</a>
+        <a href="#saas">SaaS</a>
+        <a href="#sponsor">Sponsor</a>
+      </nav>
+
+      {/* Hero Section */}
+      <section id="hero" className="hero">
+        <div className="hero-bg" />
+        <div className="hero-grid" />
+        
+        <div className="hero-content">
+          <FadeInView delay={0}>
+            <div className="hero-badge">
+              <span className="dot" />
+              PENDAFTARAN DIBUKA — 2026
+            </div>
+          </FadeInView>
+
+          <FadeInView delay={0.1}>
+            <h1>
+              Dari Asnaf ke<br />
+              <RotatingText words={['Usahawan AI', 'SaaS Developer', 'Digital CEO']} />
+            </h1>
+          </FadeInView>
+
+          <FadeInView delay={0.2}>
+            <p className="hero-subtitle">
+              Program keusahawanan AI pertama di Malaysia. Bina bisnes perisian SaaS — modal RM200/bulan, potensi income RM2,000-10,000/bulan. 100% percuma.
+            </p>
+          </FadeInView>
+
+          <FadeInView delay={0.3}>
+            <div className="cta-group">
+              <a href="#daftar" className="btn-primary">
+                Daftar Sekarang <ArrowRight size={18} />
+              </a>
+              <a href="#program" className="btn-secondary">
+                Bagaimana ia Berfungsi
+              </a>
+            </div>
+          </FadeInView>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="stats-section">
+        <div className="stats-grid">
+          <div className="stat-item">
+            <div className="stat-number">RM0</div>
+            <div className="stat-label">Kos Latihan</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-number">12</div>
+            <div className="stat-label">Bulan Inkubasi</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-number">100%</div>
+            <div className="stat-label">Tajaan Penuh</div>
+          </div>
+          <div className="stat-item">
+            <div className="stat-number">AI</div>
+            <div className="stat-label">Fokus Utama</div>
+          </div>
+        </div>
+      </section>
+
+      <div className="divider" />
+
+      {/* Program Features */}
+      <section id="program">
+        <div className="section-header">
+          <span className="section-tag emerald">Modul Utama</span>
+          <h2>Kenapa ASNAFPRENEUR?</h2>
+          <p>Kami tidak mengajar cara manual. Kami mengajar cara membina empayar digital menggunakan kuasa AI.</p>
+        </div>
+
+        <div className="cards-grid">
+          <SpotlightCard 
+            icon={Brain} 
+            title="AI Proficiency" 
+            description="Belajar menggunakan ChatGPT, Claude, dan Midjourney untuk menggantikan 80% kerja manual dalam bisnes."
+            color="emerald"
+          />
+          <SpotlightCard 
+            icon={Code} 
+            title="Vibe Coding" 
+            description="Bina apps tanpa perlu hafal sintaks. Fokus pada logic dan prompt engineering untuk hasilkan software."
+            color="cyan"
+          />
+          <SpotlightCard 
+            icon={Zap} 
+            title="SaaS Ecosystem" 
+            description="Lancar perisian SaaS sendiri (Monthly Subscription) untuk dapatkan income berterusan (Recurring Revenue)."
+            color="violet"
+          />
+          <SpotlightCard 
+            icon={Target} 
+            title="Market Validation" 
+            description="Kami bantu validate idea SaaS anda supaya ia betul-betul ada pembeli sebelum anda mula bina."
+            color="amber"
+          />
+          <SpotlightCard 
+            icon={Shield} 
+            title="Funding Support" 
+            description="Tajaan penuh token AI dan server selama 1 tahun pertama untuk anda fokus pada growth."
+            color="rose"
+          />
+          <SpotlightCard 
+            icon={Users} 
+            title="Mentor Network" 
+            description="Akses terus kepada founder SaaS dan pakar AI yang sudah berjaya menjana RM100k+ sebulan."
+            color="emerald"
+          />
+        </div>
+      </section>
+
+      <div className="divider" />
+
+      {/* How it works (Stepper) */}
+      <section id="cara">
+        <div className="section-header">
+          <span className="section-tag violet">Roadmap 2026</span>
+          <h2>Laluan Kejayaan Anda</h2>
+          <p>Dari zero ke Digital CEO dalam masa 12 bulan melalui 3 fasa intensif.</p>
+        </div>
+
+        <div className="stepper">
+          {[
+            { 
+              title: "Fasa 1: AI Foundation", 
+              desc: "Belajar Prompt Engineering, Vibe Coding (Next.js/React), dan design thinking. Fokus pada membina MVP (Minimum Viable Product).",
+              duration: "Bulan 1-4"
+            },
+            { 
+              title: "Fasa 2: Builder Sprint", 
+              desc: "Membangunkan SaaS yang sebenar. Integrasi Stripe/Billplz untuk payment. Ujian beta kepada pengguna real-world.",
+              duration: "Bulan 5-8"
+            },
+            { 
+              title: "Fasa 3: Scale & Launch", 
+              desc: "Marketing menggunakan AI Automation. Pelancaran rasmi dan scaling ke pasaran global. Persediaan untuk Seed Funding.",
+              duration: "Bulan 9-12"
+            }
+          ].map((step, i) => (
+            <div 
+              key={i} 
+              className={`step ${activeStep >= i ? 'active' : ''}`}
+              onMouseEnter={() => setActiveStep(i)}
+            >
+              <div className="step-number">{i + 1}</div>
+              <div className="step-content">
+                <h3>{step.title}</h3>
+                <p>{step.desc}</p>
+                <span className="step-duration">{step.duration}</span>
               </div>
             </div>
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Briefcase className="h-5 w-5 text-purple-600" />10 SaaS idea lane</CardTitle>
-            <CardDescription>Idea yang sesuai untuk niche Malaysia dan operator kecil.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table headers={['SaaS', 'Niche', 'Revenue model']} rows={SAAS_IDEAS} />
-          </CardContent>
-        </Card>
+      <div className="divider" />
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Banknote className="h-5 w-5 text-purple-600" />Dual-track funding</CardTitle>
-            <CardDescription>Setup funder utama dan leverage tambahan.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {FUNDERS.map((funder) => (
-              <div key={funder.name} className="rounded-xl border p-4">
-                <div className="mb-1 flex items-center justify-between gap-3">
-                  <p className="font-semibold text-foreground">{funder.name}</p>
-                  <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100 dark:bg-purple-900/30 dark:text-purple-300">{funder.amount}</Badge>
-                </div>
-                <p className="text-sm text-muted-foreground">{funder.fit}</p>
-              </div>
-            ))}
-            <Separator />
-            <div className="rounded-xl bg-emerald-50 p-4 dark:bg-emerald-950/20">
-              <p className="font-semibold text-foreground">Recommended target structure</p>
-              <p className="mt-1 text-sm text-muted-foreground">Hijrah Selangor untuk program-level capex/ops, iTEKAD untuk per-asnaf runway 12 bulan, kemudian tambah cloud/API credits untuk extend burn runway.</p>
+      {/* SaaS Ideas */}
+      <section id="saas">
+        <div className="section-header">
+          <span className="section-tag cyan">Idea Bisnes</span>
+          <h2>Apa yang Anda Boleh Bina?</h2>
+          <p>Potensi SaaS yang asnaf boleh bina menggunakan AI dengan kos yang sangat rendah.</p>
+        </div>
+
+        <div className="ideas-grid">
+          <IdeaCard 
+            emoji="🏪" 
+            title="KedaiAI" 
+            description="SaaS untuk bantu kedai runcit auto-generate caption & poster marketing harian."
+            price="RM49/bulan"
+          />
+          <IdeaCard 
+            emoji="📝" 
+            title="TutorBot" 
+            description="Platform AI untuk bantu pelajar sekolah buat latihan subjek mengikut silibus KPM."
+            price="RM29/bulan"
+          />
+          <IdeaCard 
+            emoji="📋" 
+            title="HR-Simple" 
+            description="Sistem pengurusan staf & payroll untuk SME yang tak nak guna software mahal."
+            price="RM99/bulan"
+          />
+          <IdeaCard 
+            emoji="⚖️" 
+            title="Shariah-Check" 
+            description="AI tool untuk check status pelaburan atau kontrak mengikut hukum Shariah secara pantas."
+            price="RM59/bulan"
+          />
+        </div>
+      </section>
+
+      {/* Sponsors */}
+      <section id="sponsor" className="logo-section">
+        <div className="section-header" style={{ marginBottom: '2rem' }}>
+          <p style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Dibiayai & Disokong Oleh</p>
+        </div>
+        <div className="logo-track">
+          {[
+            { icon: "🕌", name: "PUSPA KL & Selangor" },
+            { icon: "🛡️", name: "HIJRAH SELANGOR" },
+            { icon: "🏦", name: "Bank Muamalat (iTEKAD)" },
+            { icon: "💻", name: "Codex AI SaaS Lab" },
+            { icon: "🌐", name: "Teraju Ekonomi" },
+            { icon: "🕌", name: "PUSPA KL & Selangor" },
+            { icon: "🛡️", name: "HIJRAH SELANGOR" },
+            { icon: "🏦", name: "Bank Muamalat (iTEKAD)" },
+            { icon: "💻", name: "Codex AI SaaS Lab" },
+            { icon: "🌐", name: "Teraju Ekonomi" }
+          ].map((logo, i) => (
+            <div key={i} className="logo-item">
+              <span className="logo-icon">{logo.icon}</span>
+              <span>{logo.name}</span>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          ))}
+        </div>
+      </section>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2"><Bot className="h-5 w-5 text-purple-600" />How it plugs into PUSPA2</CardTitle>
-          <CardDescription>Module mapping yang terus boleh dijadikan operating model dalam sistem.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Table headers={['Module', 'Implementation role']} rows={PUSPA2_MAP} />
-        </CardContent>
-      </Card>
+      {/* CTA Final */}
+      <section id="daftar" className="cta-final">
+        <div className="cta-final-bg" />
+        <div className="cta-final-content">
+          <FadeInView delay={0}>
+            <h2>Ubah Masa Depan Anda Hari Ini</h2>
+          </FadeInView>
+          <FadeInView delay={0.1}>
+            <p>Penyertaan adalah terhad kepada 50 asnaf terpilih di Selangor & KL bagi kohort pertama 2026.</p>
+          </FadeInView>
+          <FadeInView delay={0.2}>
+            <div className="cta-group">
+              <button className="btn-primary" onClick={() => window.location.href='/login'}>
+                Login ke PuspaCare & Daftar <ArrowRight size={18} />
+              </button>
+            </div>
+          </FadeInView>
+        </div>
+      </section>
 
-      <div className="grid gap-6 xl:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><LineChart className="h-5 w-5 text-purple-600" />Conservative revenue path</CardTitle>
-            <CardDescription>Target yang patut monitor per cohort.</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            {[
-              ['Bulan 1-3', 'Latihan, MRR RM0, fokus skill dan idea validation'],
-              ['Bulan 4-6', '8 peserta aktif, purata RM500 MRR, total RM4,000'],
-              ['Bulan 7-9', '12 peserta aktif, purata RM1,200 MRR, total RM14,400'],
-              ['Bulan 10-12', '15 peserta aktif, purata RM2,000 MRR, total RM30,000'],
-              ['Break-even', 'Sekitar bulan 10-11 pada senario konservatif'],
-            ].map(([title, desc]) => (
-              <div key={title} className="rounded-lg border px-4 py-3">
-                <p className="font-semibold text-foreground">{title}</p>
-                <p className="mt-1 text-muted-foreground">{desc}</p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
+      {/* Footer */}
+      <footer>
+        <p>© 2026 ASNAFPRENEUR — Program di bawah naungan <a href="https://puspacare.org">PUSPA KL & Selangor</a>.</p>
+      </footer>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2"><ExternalLink className="h-5 w-5 text-purple-600" />Roadmap 2026-2027</CardTitle>
-            <CardDescription>Timeline execution yang align dengan cadangan proposal.</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Table headers={['Window', 'Target outcome']} rows={TIMELINE} />
-          </CardContent>
-        </Card>
+      {/* Mobile Dock */}
+      <div className="dock-wrapper">
+        <div className="dock">
+          <a href="#hero" className="dock-item"><Home size={20} /></a>
+          <a href="#program" className="dock-item"><LayoutDashboard size={20} /></a>
+          <a href="#saas" className="dock-item"><Bot size={20} /></a>
+          <a href="#daftar" className="dock-item"><Users size={20} /></a>
+        </div>
       </div>
     </div>
-  );
+  )
 }

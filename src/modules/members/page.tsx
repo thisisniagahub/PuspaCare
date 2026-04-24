@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import {
   Plus,
   Search,
@@ -88,6 +89,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { api } from '@/lib/api';
+import { getMaritalStatusLabel, getMemberStatusLabel } from '@/lib/domain';
 
 // ===================== Types =====================
 
@@ -133,6 +136,28 @@ interface RelatedCase {
   status: string;
   date: string;
   amount: number;
+}
+
+interface MemberApiRecord {
+  id: string;
+  memberNumber: string;
+  name: string;
+  ic: string;
+  phone: string;
+  email: string | null;
+  address: string;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  householdSize: number;
+  monthlyIncome: number;
+  maritalStatus: string;
+  occupation: string | null;
+  bankAccount: string | null;
+  bankName: string | null;
+  status: string;
+  notes: string | null;
+  joinedAt: string;
 }
 
 // ===================== Zod Schema =====================
@@ -502,11 +527,37 @@ function generateMemberNo(members: Member[]): string {
   return `ASN-2024-${String(count).padStart(3, '0')}`;
 }
 
+function mapMemberFromApi(member: MemberApiRecord): Member {
+  return {
+    id: member.id,
+    memberNo: member.memberNumber,
+    name: member.name,
+    icNumber: member.ic,
+    phone: member.phone,
+    email: member.email || '',
+    address: member.address,
+    city: member.city || '',
+    state: member.state || '',
+    postalCode: member.postalCode || '',
+    householdSize: member.householdSize,
+    monthlyIncome: member.monthlyIncome,
+    maritalStatus: getMaritalStatusLabel(member.maritalStatus) as MaritalStatus,
+    occupation: member.occupation || '',
+    bankAccount: member.bankAccount || '',
+    bankName: member.bankName || '',
+    status: getMemberStatusLabel(member.status) as MemberStatus,
+    notes: member.notes || '',
+    joinDate: member.joinedAt.split('T')[0],
+  };
+}
+
 // ===================== Component =====================
 
 export default function MembersPage() {
   // State
   const [members, setMembers] = useState<Member[]>(initialMembers);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('Semua');
   const [maritalFilter, setMaritalFilter] = useState<string>('Semua');
@@ -520,6 +571,23 @@ export default function MembersPage() {
   const [deletingMember, setDeletingMember] = useState<Member | null>(null);
 
   const ITEMS_PER_PAGE = 10;
+
+  const loadMembers = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get<MemberApiRecord[]>('/members', { pageSize: 100 });
+      setMembers(data.map(mapMemberFromApi));
+    } catch {
+      setMembers([]);
+      toast.error('Gagal memuatkan data ahli');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadMembers();
+  }, []);
 
   // Form
   const form = useForm<MemberFormValues>({
@@ -676,40 +744,98 @@ export default function MembersPage() {
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deletingMember) {
-      setMembers((prev) => prev.filter((m) => m.id !== deletingMember.id));
-      setDeleteDialogOpen(false);
-      setDeletingMember(null);
+      try {
+        await api.delete('/members', { id: deletingMember.id });
+        setMembers((prev) => prev.filter((m) => m.id !== deletingMember.id));
+        if (viewingMember?.id === deletingMember.id) {
+          setViewingMember(null);
+          setSheetOpen(false);
+        }
+        toast.success('Ahli berjaya dipadam');
+      } catch {
+        toast.error('Gagal memadam ahli');
+        return;
+      } finally {
+        setDeleteDialogOpen(false);
+        setDeletingMember(null);
+      }
     }
   };
 
-  const onSubmit = (data: MemberFormValues) => {
-    if (editingMember) {
-      // Update
-      setMembers((prev) =>
-        prev.map((m) =>
-          m.id === editingMember.id
-            ? { ...m, ...data }
-            : m
-        )
-      );
-    } else {
-      // Create
-      const newMember: Member = {
-        id: Date.now().toString(),
-        memberNo: generateMemberNo(members),
-        ...data,
-        joinDate: new Date().toISOString().split('T')[0],
-      } as Member;
-      setMembers((prev) => [newMember, ...prev]);
+  const onSubmit = async (data: MemberFormValues) => {
+    try {
+      setSubmitting(true);
+      const payload = {
+        name: data.name,
+        ic: data.icNumber,
+        phone: data.phone,
+        email: data.email,
+        address: data.address,
+        city: data.city,
+        state: data.state,
+        postalCode: data.postalCode,
+        householdSize: data.householdSize,
+        monthlyIncome: data.monthlyIncome,
+        maritalStatus: data.maritalStatus,
+        occupation: data.occupation,
+        bankAccount: data.bankAccount,
+        bankName: data.bankName,
+        status: data.status,
+        notes: data.notes,
+      };
+
+      if (editingMember) {
+        const updated = await api.put<MemberApiRecord>('/members', {
+          id: editingMember.id,
+          ...payload,
+        });
+        const mapped = mapMemberFromApi(updated);
+        setMembers((prev) => prev.map((member) => (member.id === editingMember.id ? mapped : member)));
+        if (viewingMember?.id === editingMember.id) {
+          setViewingMember(mapped);
+        }
+        toast.success('Maklumat ahli berjaya dikemas kini');
+      } else {
+        const created = await api.post<MemberApiRecord>('/members', payload);
+        setMembers((prev) => [mapMemberFromApi(created), ...prev]);
+        toast.success('Ahli berjaya ditambah');
+      }
+
+      setDialogOpen(false);
+      form.reset();
+      setEditingMember(null);
+    } catch {
+      toast.error(editingMember ? 'Gagal mengemas kini ahli' : 'Gagal menambah ahli');
+    } finally {
+      setSubmitting(false);
     }
-    setDialogOpen(false);
-    form.reset();
-    setEditingMember(null);
   };
 
   // ===================== Render =====================
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-stone-100 dark:from-slate-950 dark:to-slate-900">
+        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mb-6 space-y-2">
+            <div className="h-8 w-56 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+            <div className="h-4 w-80 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+          </div>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Card key={index} className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50">
+                <CardContent className="p-4">
+                  <div className="h-12 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-stone-100 dark:from-slate-950 dark:to-slate-900">
@@ -1444,8 +1570,9 @@ export default function MembersPage() {
                   <Button
                     type="submit"
                     className="bg-emerald-600 hover:bg-emerald-700"
+                    disabled={submitting}
                   >
-                    {editingMember ? 'Simpan Perubahan' : 'Tambah Ahli'}
+                    {submitting ? 'Menyimpan...' : editingMember ? 'Simpan Perubahan' : 'Tambah Ahli'}
                   </Button>
                 </DialogFooter>
               </form>

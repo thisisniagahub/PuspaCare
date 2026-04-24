@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireRole } from '@/lib/auth';
 import { z } from 'zod';
 
 const chatSchema = z.object({
@@ -26,6 +27,7 @@ Jika tidak pasti, katakan dengan jujur dan cadangkan rujukan kepada pentadbir PU
 
 export async function POST(request: NextRequest) {
   try {
+    await requireRole(request, ['developer']);
     const body = await request.json();
     const { message, context } = chatSchema.parse(body);
 
@@ -72,6 +74,12 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
@@ -13,6 +14,7 @@ const bulkUpdateSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    await requireRole(request, ['developer']);
     const body = await request.json();
     const validated = bulkUpdateSchema.parse(body);
 
@@ -45,6 +47,12 @@ export async function POST(request: NextRequest) {
       data: { updated: result.count },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },

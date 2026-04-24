@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireRole } from '@/lib/auth';
 import { z } from 'zod';
 
 const sendMessageSchema = z.object({
@@ -86,8 +87,9 @@ const messageTemplates = [
 
 // ── Route Handlers ───────────────────────────────────────────────────────────
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    await requireRole(request, ['developer']);
     return NextResponse.json({
       success: true,
       data: {
@@ -97,6 +99,12 @@ export async function GET() {
       },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching WhatsApp templates:', error);
     return NextResponse.json(
       { success: false, error: 'Gagal mendapatkan templat mesej' },
@@ -107,6 +115,7 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireRole(request, ['developer']);
     const body = await request.json();
     const { to, message, type } = sendMessageSchema.parse(body);
 
@@ -141,6 +150,12 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },

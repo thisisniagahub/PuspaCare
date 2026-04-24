@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
@@ -13,6 +14,7 @@ const setPrimarySchema = z.object({
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await requireAuth();
     const body = await request.json();
     const { id } = setPrimarySchema.parse(body);
 
@@ -23,6 +25,14 @@ export async function PUT(request: NextRequest) {
         { success: false, error: 'Peranti tidak dijumpai' },
         { status: 404 }
       );
+    }
+
+    if (
+      device.userId !== session.user.id &&
+      session.user.role !== 'admin' &&
+      session.user.role !== 'developer'
+    ) {
+      throw new AuthorizationError('Anda tidak boleh menetapkan peranti utama pengguna lain', 403);
     }
 
     if (!device.isActive) {
@@ -85,6 +95,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: updatedDevice });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },

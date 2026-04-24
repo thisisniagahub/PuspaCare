@@ -1,11 +1,12 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
+import type { AppRole } from '@/lib/auth-shared'
 import type { ViewId } from '@/types'
 
 // ---------------------------------------------------------------------------
 // Role types — determines which nav sections are visible
 // ---------------------------------------------------------------------------
-export type UserRole = 'staff' | 'admin' | 'developer'
+export type UserRole = AppRole
 
 export interface AppState {
   currentView: ViewId

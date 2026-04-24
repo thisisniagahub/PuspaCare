@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
+import { getRequestIp, getSessionActor, writeAuditLog } from '@/lib/audit';
 import { z } from 'zod';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────
@@ -17,6 +19,7 @@ const hourLogCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const volunteerId = searchParams.get('volunteerId') || '';
     const status = searchParams.get('status') || '';
@@ -64,6 +67,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
+    const actor = getSessionActor(session);
     const body = await request.json();
     const validated = hourLogCreateSchema.parse(body);
 
@@ -86,7 +91,7 @@ export async function POST(request: NextRequest) {
         hours: validated.hours,
         activity: validated.activity || null,
         status: validated.status,
-        approvedBy: validated.status === 'approved' ? 'auto' : null,
+        approvedBy: validated.status === 'approved' ? actor : null,
         approvedAt: validated.status === 'approved' ? new Date() : null,
       },
       include: {
@@ -102,8 +107,27 @@ export async function POST(request: NextRequest) {
       });
     }
 
+    await writeAuditLog({
+      action: 'create',
+      entity: 'VolunteerHourLog',
+      entityId: hourLog.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        volunteerId: hourLog.volunteerId,
+        hours: hourLog.hours,
+        status: hourLog.status,
+      },
+    });
+
     return NextResponse.json({ success: true, data: hourLog }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -122,6 +146,8 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
+    const actor = getSessionActor(session);
     const body = await request.json();
     const { id, status } = body;
 
@@ -164,7 +190,7 @@ export async function PUT(request: NextRequest) {
       where: { id },
       data: {
         status,
-        approvedBy: 'admin',
+        approvedBy: actor,
         approvedAt: status === 'approved' ? new Date() : null,
       },
       include: {
@@ -172,8 +198,27 @@ export async function PUT(request: NextRequest) {
       },
     });
 
+    await writeAuditLog({
+      action: 'update',
+      entity: 'VolunteerHourLog',
+      entityId: hourLog.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        volunteerId: hourLog.volunteerId,
+        hours: hourLog.hours,
+        status: hourLog.status,
+      },
+    });
+
     return NextResponse.json({ success: true, data: hourLog });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error updating hour log:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to update hour log' },
@@ -186,6 +231,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -214,8 +260,27 @@ export async function DELETE(request: NextRequest) {
 
     await db.volunteerHourLog.delete({ where: { id } });
 
+    await writeAuditLog({
+      action: 'delete',
+      entity: 'VolunteerHourLog',
+      entityId: existing.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        volunteerId: existing.volunteerId,
+        hours: existing.hours,
+        status: existing.status,
+      },
+    });
+
     return NextResponse.json({ success: true, message: 'Log jam berjaya dipadam' });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deleting hour log:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete hour log' },

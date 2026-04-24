@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
@@ -17,12 +18,19 @@ const boardMemberCreateSchema = z.object({
 
 export async function GET(_request: NextRequest) {
   try {
+    await requireAuth(_request);
     const boardMembers = await db.boardMember.findMany({
       orderBy: [{ isCurrent: 'desc' }, { appointmentDate: 'desc' }],
     });
 
     return NextResponse.json({ success: true, data: boardMembers });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching board members:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch board members' },
@@ -33,6 +41,7 @@ export async function GET(_request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth(request);
     const body = await request.json();
     const validated = boardMemberCreateSchema.parse(body);
 
@@ -48,6 +57,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: boardMember }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -64,6 +79,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    await requireAuth(request);
     const body = await request.json();
     const { id, ...updateData } = body;
 
@@ -97,6 +113,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: boardMember });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -113,6 +135,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -135,6 +158,12 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Board member deleted successfully' });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deleting board member:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete board member' },

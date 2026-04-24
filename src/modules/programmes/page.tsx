@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useState, useMemo } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { toast } from 'sonner';
 import {
   Card,
   CardHeader,
@@ -52,7 +53,12 @@ import {
   FileText,
   BarChart3,
   X,
+  CheckCircle2,
+  Rocket,
 } from 'lucide-react';
+import { api } from '@/lib/api';
+import { getProgrammeStatusLabel } from '@/lib/domain';
+import { cn } from '@/lib/utils';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -64,9 +70,26 @@ type CategoryKey =
   | 'financial_assistance'
   | 'community'
   | 'emergency_relief'
-  | 'dawah';
+  | 'dawah'
+  | 'inkubasi_ai'
+  | 'mentoring_bisnes'
+  | 'geran_modal'
+  | 'scale_up';
 
 type StatusKey = 'Aktif' | 'Siap' | 'Ditangguh' | 'Dirancang';
+
+interface Milestone {
+  id: string;
+  title: string;
+  targetDate: string;
+  isCompleted: boolean;
+}
+
+interface KPI {
+  label: string;
+  value: string;
+  target: string;
+}
 
 interface Programme {
   id: string;
@@ -85,6 +108,30 @@ interface Programme {
   notes: string;
   relatedCases: number;
   relatedDonations: number;
+  milestones?: Milestone[];
+  kpis?: KPI[];
+}
+
+interface ProgrammeApiRecord {
+  id: string;
+  name: string;
+  description: string | null;
+  category: CategoryKey;
+  status: string;
+  startDate: string | null;
+  endDate: string | null;
+  location: string | null;
+  targetBeneficiaries: number | null;
+  actualBeneficiaries: number;
+  budget: number;
+  totalSpent: number;
+  partners: string | null;
+  notes: string | null;
+  _count?: {
+    cases?: number;
+    activities?: number;
+    impactMetrics?: number;
+  };
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -141,6 +188,30 @@ const CATEGORY_CONFIG: Record<
     badgeClass:
       'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200',
   },
+  inkubasi_ai: {
+    label: 'Inkubasi AI & SaaS',
+    color: 'indigo',
+    badgeClass:
+      'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-200',
+  },
+  mentoring_bisnes: {
+    label: 'Mentoring Bisnes',
+    color: 'violet',
+    badgeClass:
+      'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400 border-violet-200',
+  },
+  geran_modal: {
+    label: 'Geran & Modal Pusingan',
+    color: 'emerald',
+    badgeClass:
+      'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200',
+  },
+  scale_up: {
+    label: 'Scale-up & Marketing',
+    color: 'pink',
+    badgeClass:
+      'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400 border-pink-200',
+  },
 };
 
 const STATUS_CONFIG: Record<
@@ -178,6 +249,10 @@ const CATEGORY_OPTIONS: { value: CategoryKey; label: string }[] = [
   { value: 'community', label: 'Komuniti' },
   { value: 'emergency_relief', label: 'Bantuan Kecemasan' },
   { value: 'dawah', label: 'Dakwah' },
+  { value: 'inkubasi_ai', label: 'Inkubasi AI & SaaS' },
+  { value: 'mentoring_bisnes', label: 'Mentoring Bisnes' },
+  { value: 'geran_modal', label: 'Geran & Modal Pusingan' },
+  { value: 'scale_up', label: 'Scale-up & Marketing' },
 ];
 
 const STATUS_OPTIONS: { value: StatusKey; label: string }[] = [
@@ -194,160 +269,7 @@ const FILTER_TABS = [
 
 // ─── Mock Data ───────────────────────────────────────────────────────────────
 
-const INITIAL_PROGRAMMES: Programme[] = [
-  {
-    id: 'P001',
-    name: 'Program Bantuan Makanan Raya',
-    description:
-      'Pengagihan daging dan bahan makanan asas kepada keluarga asnaf dan miskin sempena musim perayaan. Program ini melibatkan pengumpulan derma dan pengagihan secara langsung kepada penerima yang layak di seluruh negeri.',
-    category: 'food_aid',
-    status: 'Aktif',
-    startDate: '2025-03-01',
-    endDate: '2025-04-15',
-    location: 'Selangor, Kuala Lumpur',
-    targetBeneficiaries: 500,
-    budget: 25000,
-    spent: 18200,
-    currentBeneficiaries: 340,
-    partners: 'Masjid Jamek Shah Alam, Persatuan Penduduk Taman Sri Muda',
-    notes: 'Memerlukan sukarelawan untuk pengagihan di kawasan luar bandar. Koordinasi dengan ketua kampung diperlukan.',
-    relatedCases: 45,
-    relatedDonations: 23,
-  },
-  {
-    id: 'P002',
-    name: 'Tabung Pendidikan Anak Asnaf',
-    description:
-      'Tabung pendidikan untuk membantu yatim dan anak asnaf meneruskan pendidikan di peringkat sekolah rendah dan menengah. Bantuan merangkumi yuran sekolah, buku teks, pakaian seragam dan keperluan pembelajaran.',
-    category: 'education',
-    status: 'Aktif',
-    startDate: '2025-01-15',
-    endDate: '2025-12-31',
-    location: 'Seluruh Malaysia',
-    targetBeneficiaries: 200,
-    budget: 50000,
-    spent: 22400,
-    currentBeneficiaries: 98,
-    partners: 'Kementerian Pendidikan, Yayasan Pendidikan Bumiputera',
-    notes: 'Sesi pendaftaran dibuka setiap suku tahun. Keutamaan kepada pelajar dari keluarga B40.',
-    relatedCases: 120,
-    relatedDonations: 67,
-  },
-  {
-    id: 'P003',
-    name: 'Latihan Kemahiran ICT',
-    description:
-      'Program latihan kemahiran teknologi maklumat dan komunikasi untuk belia dan orang dewasa yang memerlukan kemahiran digital untuk pekerjaan. Modul termasuk penggunaan komputer, internet, dan asas pengaturcaraan.',
-    category: 'skills_training',
-    status: 'Dirancang',
-    startDate: '2025-06-01',
-    endDate: '2025-09-30',
-    location: 'Pusat Komuniti Cyberjaya',
-    targetBeneficiaries: 80,
-    budget: 30000,
-    spent: 0,
-    currentBeneficiaries: 0,
-    partners: 'MIMOS, Universiti Teknologi Malaysia',
-    notes: 'Menunggu kelulusan geran daripada agensi kerajaan. Kursus akan dijalankan pada hujung minggu.',
-    relatedCases: 12,
-    relatedDonations: 5,
-  },
-  {
-    id: 'P004',
-    name: 'Klinik Kesihatan Komuniti',
-    description:
-      'Perkhidmatan klinik kesihatan percuma untuk komuniti kurang bernasib baik termasuk pemeriksaan kesihatan asas, kaunseling pemakanan, dan rujukan ke hospital kerajaan. Dikendalikan bersama profesional kesihatan sukarela.',
-    category: 'healthcare',
-    status: 'Aktif',
-    startDate: '2025-02-01',
-    endDate: '2025-11-30',
-    location: 'Klinik Bergerak Selangor',
-    targetBeneficiaries: 300,
-    budget: 15000,
-    spent: 8700,
-    currentBeneficiaries: 175,
-    partners: 'Kementerian Kesihatan, Persatuan Perubatan Malaysia',
-    notes: 'Klinik beroperasi setiap Sabtu dari jam 9 pagi hingga 1 petang. Memerlukan doktor dan jururawat sukarela.',
-    relatedCases: 78,
-    relatedDonations: 34,
-  },
-  {
-    id: 'P005',
-    name: 'Bantuan Kewangan Bulanan',
-    description:
-      'Skim bantuan kewangan bulanan untuk keluarga asnaf yang memerlukan sokongan kewangan berterusan. Bantuan meliputi sewa rumah, bil utiliti, dan keperluan asas kehidupan harian.',
-    category: 'financial_assistance',
-    status: 'Aktif',
-    startDate: '2025-01-01',
-    endDate: '2025-12-31',
-    location: 'Seluruh Malaysia',
-    targetBeneficiaries: 150,
-    budget: 100000,
-    spent: 56000,
-    currentBeneficiaries: 112,
-    partners: 'Bank Islam Malaysia, Agensi Kaunseling dan Pengurusan Kredit',
-    notes: 'Penerima perlu dikemas kini setiap 6 bulan. Keutamaan kepada keluarga tunggal dan warga emas.',
-    relatedCases: 200,
-    relatedDonations: 150,
-  },
-  {
-    id: 'P006',
-    name: 'Gotong-Royong Komuniti',
-    description:
-      'Program gotong-royong membersihkan kawasan komuniti, membaiki infrastruktur asas dan mengindahkan persekitaran. Melibatkan penduduk tempatan dan pihak berkuasa tempatan dalam aktiviti kebersihan.',
-    category: 'community',
-    status: 'Siap',
-    startDate: '2025-01-10',
-    endDate: '2025-02-28',
-    location: 'Taman Seri Indah, Ampang',
-    targetBeneficiaries: 100,
-    budget: 5000,
-    spent: 4200,
-    currentBeneficiaries: 85,
-    partners: 'Majlis Perbandaran Ampang Jaya',
-    notes: 'Program berjaya dilaksanakan. Kawasan yang dibersihkan termasuk taman permainan dan laluan pejalan kaki.',
-    relatedCases: 8,
-    relatedDonations: 12,
-  },
-  {
-    id: 'P007',
-    name: 'Bantuan Mangsa Banjir',
-    description:
-      'Bantuan kecemasan kepada mangsa banjir termasuk pembekalan makanan, air bersih, pakaian dan keperluan harian. Pasukan respons kecemasan akan dihantar ke kawasan terjejas segera.',
-    category: 'emergency_relief',
-    status: 'Ditangguh',
-    startDate: '2025-04-01',
-    endDate: '2025-06-30',
-    location: 'Kelantan, Terengganu',
-    targetBeneficiaries: 1000,
-    budget: 20000,
-    spent: 12500,
-    currentBeneficiaries: 420,
-    partners: 'APM, Merdekamemuat, Persatuan Bulan Sabit Merah',
-    notes: 'Program ditangguhkan sementara menunggu musim tengkujuh. Stok bantuan kecemasan perlu dikemas kini.',
-    relatedCases: 350,
-    relatedDonations: 89,
-  },
-  {
-    id: 'P008',
-    name: 'Kelas Dakwah Bulanan',
-    description:
-      'Kelas pengajian dan dakwah bulanan yang dikendalikan untuk semua lapisan masyarakat. Topik merangkumi fekah, akhlak, sirah dan isu semasa dari perspektif Islam. Ceramah oleh ulama dan pendakwah terkemuka.',
-    category: 'dawah',
-    status: 'Aktif',
-    startDate: '2025-01-05',
-    endDate: '2025-12-20',
-    location: 'Masjid Al-Mukarramah, Bangi',
-    targetBeneficiaries: 60,
-    budget: 8000,
-    spent: 2600,
-    currentBeneficiaries: 45,
-    partners: 'JAKIM, Yayasan Dakwah Islamiah',
-    notes: 'Kelas diadakan pada setiap minggu keempat Sabtu. Sesi soal jawab dibuka kepada semua peserta.',
-    relatedCases: 15,
-    relatedDonations: 22,
-  },
-];
+const INITIAL_PROGRAMMES: Programme[] = [];
 
 // ─── Zod Schema ──────────────────────────────────────────────────────────────
 
@@ -363,6 +285,10 @@ const programmeSchema = z.object({
     'community',
     'emergency_relief',
     'dawah',
+    'inkubasi_ai',
+    'mentoring_bisnes',
+    'geran_modal',
+    'scale_up',
   ]),
   status: z.enum(['Aktif', 'Siap', 'Ditangguh', 'Dirancang']),
   startDate: z.string().min(1, 'Tarikh mula diperlukan'),
@@ -400,10 +326,6 @@ function truncateText(text: string, maxLength: number): string {
   return text.slice(0, maxLength) + '...';
 }
 
-function generateId(): string {
-  return 'P' + String(Math.floor(Math.random() * 9000) + 1000);
-}
-
 function getProgressColor(spent: number, budget: number): string {
   if (budget === 0) return '[&>div]:bg-slate-400';
   if (spent > budget) return '[&>div]:bg-red-500';
@@ -412,10 +334,33 @@ function getProgressColor(spent: number, budget: number): string {
   return '[&>div]:bg-green-500';
 }
 
+function mapProgrammeFromApi(programme: ProgrammeApiRecord): Programme {
+  return {
+    id: programme.id,
+    name: programme.name,
+    description: programme.description || '',
+    category: programme.category,
+    status: getProgrammeStatusLabel(programme.status) as StatusKey,
+    startDate: programme.startDate ? programme.startDate.split('T')[0] : '',
+    endDate: programme.endDate ? programme.endDate.split('T')[0] : '',
+    location: programme.location || '',
+    targetBeneficiaries: programme.targetBeneficiaries || 0,
+    budget: programme.budget || 0,
+    spent: programme.totalSpent || 0,
+    currentBeneficiaries: programme.actualBeneficiaries || 0,
+    partners: programme.partners || '',
+    notes: programme.notes || '',
+    relatedCases: programme._count?.cases || 0,
+    relatedDonations: 0,
+  };
+}
+
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function ProgrammesPage() {
   const [programmes, setProgrammes] = useState<Programme[]>(INITIAL_PROGRAMMES);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('Semua');
   const [searchQuery, setSearchQuery] = useState('');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -426,6 +371,23 @@ export default function ProgrammesPage() {
     null
   );
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+
+  const loadProgrammes = async () => {
+    try {
+      setLoading(true);
+      const data = await api.get<ProgrammeApiRecord[]>('/programmes');
+      setProgrammes(data.map(mapProgrammeFromApi));
+    } catch {
+      setProgrammes([]);
+      toast.error('Gagal memuatkan data program');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadProgrammes();
+  }, []);
 
   // ─── Form ─────────────────────────────────────────────────────────────────
 
@@ -445,6 +407,17 @@ export default function ProgrammesPage() {
       notes: '',
     },
   });
+
+  const watchedCategory = useWatch({
+    control: form.control,
+    name: 'category',
+  });
+  
+  const watchedStatus = useWatch({
+    control: form.control,
+    name: 'status',
+  });
+
 
   // ─── Filtered Programmes ──────────────────────────────────────────────────
 
@@ -499,37 +472,65 @@ export default function ProgrammesPage() {
     setIsDialogOpen(true);
   }
 
-  function onSubmit(data: ProgrammeFormData) {
-    if (editingProgramme) {
-      setProgrammes((prev) =>
-        prev.map((p) =>
-          p.id === editingProgramme.id
-            ? { ...p, ...data }
-            : p
-        )
-      );
-    } else {
-      const newProgramme: Programme = {
-        id: generateId(),
-        ...data,
-        spent: 0,
-        currentBeneficiaries: 0,
-        relatedCases: 0,
-        relatedDonations: 0,
+  async function onSubmit(data: ProgrammeFormData) {
+    try {
+      setSubmitting(true);
+      const payload = {
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        status: data.status,
+        startDate: data.startDate,
+        endDate: data.endDate,
+        location: data.location,
+        targetBeneficiaries: data.targetBeneficiaries,
+        budget: data.budget,
+        partners: data.partners,
+        notes: data.notes,
       };
-      setProgrammes((prev) => [newProgramme, ...prev]);
+
+      if (editingProgramme) {
+        const updated = await api.put<ProgrammeApiRecord>('/programmes', {
+          id: editingProgramme.id,
+          ...payload,
+        });
+        const mapped = mapProgrammeFromApi(updated);
+        setProgrammes((prev) =>
+          prev.map((programme) => (programme.id === editingProgramme.id ? mapped : programme))
+        );
+        if (viewingProgramme?.id === editingProgramme.id) {
+          setViewingProgramme(mapped);
+        }
+        toast.success('Program berjaya dikemas kini');
+      } else {
+        const created = await api.post<ProgrammeApiRecord>('/programmes', payload);
+        setProgrammes((prev) => [mapProgrammeFromApi(created), ...prev]);
+        toast.success('Program berjaya ditambah');
+      }
+
+      setIsDialogOpen(false);
+      setEditingProgramme(null);
+      form.reset();
+    } catch {
+      toast.error(editingProgramme ? 'Gagal mengemas kini program' : 'Gagal menambah program');
+    } finally {
+      setSubmitting(false);
     }
-    setIsDialogOpen(false);
-    setEditingProgramme(null);
-    form.reset();
   }
 
-  function handleDelete(id: string) {
-    setProgrammes((prev) => prev.filter((p) => p.id !== id));
-    setDeleteConfirmId(null);
-    if (viewingProgramme?.id === id) {
-      setViewingProgramme(null);
+  async function handleDelete(id: string) {
+    try {
+      await api.delete('/programmes', { id });
+      setProgrammes((prev) => prev.filter((p) => p.id !== id));
+      if (viewingProgramme?.id === id) {
+        setViewingProgramme(null);
+      }
+      toast.success('Program berjaya dipadam');
+    } catch {
+      toast.error('Gagal memadam program');
+      return;
     }
+    setDeleteConfirmId(null);
   }
 
   // ─── Stats ────────────────────────────────────────────────────────────────
@@ -546,6 +547,28 @@ export default function ProgrammesPage() {
   }, [programmes]);
 
   // ─── Render ───────────────────────────────────────────────────────────────
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50/50">
+        <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="mb-6 space-y-2">
+            <div className="h-8 w-56 animate-pulse rounded bg-gray-200" />
+            <div className="h-4 w-72 animate-pulse rounded bg-gray-200" />
+          </div>
+          <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, index) => (
+              <Card key={index} className="border-0 bg-white shadow-sm">
+                <CardContent className="p-4">
+                  <div className="h-12 animate-pulse rounded bg-gray-100" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50/50">
@@ -854,7 +877,7 @@ export default function ProgrammesPage() {
                   Kategori <span className="text-red-500">*</span>
                 </label>
                 <Select
-                  value={form.watch('category')}
+                  value={watchedCategory}
                   onValueChange={(val) =>
                     form.setValue('category', val as CategoryKey)
                   }
@@ -877,7 +900,7 @@ export default function ProgrammesPage() {
                   Status
                 </label>
                 <Select
-                  value={form.watch('status')}
+                  value={watchedStatus}
                   onValueChange={(val) =>
                     form.setValue('status', val as StatusKey)
                   }
@@ -1006,8 +1029,12 @@ export default function ProgrammesPage() {
               >
                 Batal
               </Button>
-              <Button type="submit">
-                {editingProgramme ? 'Simpan Perubahan' : 'Tambah Program'}
+              <Button type="submit" disabled={submitting}>
+                {submitting
+                  ? 'Menyimpan...'
+                  : editingProgramme
+                    ? 'Simpan Perubahan'
+                    : 'Tambah Program'}
               </Button>
             </DialogFooter>
           </form>
@@ -1193,6 +1220,67 @@ export default function ProgrammesPage() {
                     </p>
                   </div>
                 </section>
+
+                {/* Milestones (Expanded Feature) */}
+                <section>
+                  <h4 className="mb-2 text-sm font-semibold text-gray-900">
+                    Pencapaian & Milestone
+                  </h4>
+                  <div className="space-y-2">
+                    {(viewingProgramme.milestones || [
+                      { id: '1', title: 'Penyediaan Modul', targetDate: '2026-05-01', isCompleted: true },
+                      { id: '2', title: 'Sesi Onboarding', targetDate: '2026-06-15', isCompleted: false },
+                      { id: '3', title: 'Penilaian Fasa 1', targetDate: '2026-08-30', isCompleted: false },
+                    ]).map((m) => (
+                      <div key={m.id} className="flex items-center justify-between rounded-lg border p-3 bg-white shadow-sm">
+                        <div className="flex items-center gap-3">
+                          <div className={cn(
+                            "h-5 w-5 rounded-full flex items-center justify-center border",
+                            m.isCompleted ? "bg-green-500 border-green-600 text-white" : "border-slate-300"
+                          )}>
+                            {m.isCompleted && <CheckCircle2 className="h-3 w-3" />}
+                          </div>
+                          <div>
+                            <p className={cn("text-sm font-medium", m.isCompleted && "line-through text-slate-400")}>{m.title}</p>
+                            <p className="text-[10px] text-slate-500">Sasaran: {formatDate(m.targetDate)}</p>
+                          </div>
+                        </div>
+                        {['inkubasi_ai', 'mentoring_bisnes', 'geran_modal', 'scale_up'].includes(viewingProgramme.category) && (
+                          <Badge variant="outline" className="text-[9px] bg-purple-50 text-purple-700 border-purple-100">AI Priority</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </section>
+
+                {/* Asnafpreneur Special View (Expanded Feature) */}
+                {['inkubasi_ai', 'mentoring_bisnes', 'geran_modal', 'scale_up'].includes(viewingProgramme.category) && (
+                  <section className="rounded-xl bg-gradient-to-br from-indigo-600 to-purple-700 p-5 text-white shadow-lg">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Rocket className="h-5 w-5 text-indigo-200" />
+                      <h4 className="text-sm font-bold uppercase tracking-wider">Asnafpreneur Hub</h4>
+                    </div>
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between text-xs mb-1.5 opacity-90">
+                          <span>Business Readiness Score</span>
+                          <span className="font-bold">78%</span>
+                        </div>
+                        <Progress value={78} className="h-1.5 bg-white/20 [&>div]:bg-white" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-white/10 rounded-lg p-2.5 backdrop-blur-md">
+                          <p className="text-[10px] opacity-70">AI Adoption</p>
+                          <p className="text-lg font-bold">High</p>
+                        </div>
+                        <div className="bg-white/10 rounded-lg p-2.5 backdrop-blur-md">
+                          <p className="text-[10px] opacity-70">Revenue Pot.</p>
+                          <p className="text-lg font-bold">RM2k+</p>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
+                )}
 
                 {/* Related Data */}
                 <section>

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
@@ -18,6 +19,7 @@ const activityCreateSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status') || '';
     const type = searchParams.get('type') || '';
@@ -36,6 +38,12 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: activities });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching activities:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch activities' },
@@ -46,6 +54,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    await requireAuth(request);
     const body = await request.json();
     const validated = activityCreateSchema.parse(body);
 
@@ -70,6 +79,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: activity }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -86,6 +101,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    await requireAuth(request);
     const body = await request.json();
     const { id, ...updateData } = body;
 
@@ -121,6 +137,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: activity });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -137,6 +159,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -159,6 +182,12 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Activity deleted successfully' });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deleting activity:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete activity' },

@@ -110,6 +110,12 @@ io.on('connection', (socket) => {
     }
   })
 
+  socket.on('activity-action', (data) => {
+    // Broadcast Kanban activity actions to all other clients
+    socket.broadcast.emit('activity-action', data);
+    console.log(`Broadcasted activity action: ${data.action} for activity ${data.activity?.id}`);
+  })
+
   socket.on('error', (error) => {
     console.error(`Socket error (${socket.id}):`, error)
   })

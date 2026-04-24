@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+import { AuthorizationError, requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 
 // ─── GET: Aggregated ops dashboard summary ────────────────────────────────────
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    await requireRole(request, ['developer']);
     // Run all queries in parallel for performance
     const [
       workItemsByStatus,
@@ -79,6 +81,12 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: dashboard });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching ops dashboard:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch dashboard data' },

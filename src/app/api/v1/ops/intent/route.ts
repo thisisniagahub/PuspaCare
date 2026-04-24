@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireRole } from '@/lib/auth';
 import { z } from 'zod';
 
 // ─── Validation Schema ────────────────────────────────────────────────────────
@@ -56,6 +57,7 @@ Examples:
 
 export async function POST(request: NextRequest) {
   try {
+    await requireRole(request, ['developer']);
     const body = await request.json();
     const { message } = intentRequestSchema.parse(body);
 
@@ -116,6 +118,12 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: response });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },

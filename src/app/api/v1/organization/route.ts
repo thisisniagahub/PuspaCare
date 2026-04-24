@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
@@ -28,6 +29,7 @@ const organizationUpdateSchema = z.object({
 
 export async function GET(_request: NextRequest) {
   try {
+    await requireAuth(_request);
     let profile = await db.organizationProfile.findFirst();
 
     if (!profile) {
@@ -43,6 +45,12 @@ export async function GET(_request: NextRequest) {
 
     return NextResponse.json({ success: true, data: profile });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching organization profile:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch organization profile' },
@@ -53,6 +61,7 @@ export async function GET(_request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    await requireAuth(request);
     const body = await request.json();
     const validated = organizationUpdateSchema.parse(body);
 
@@ -76,6 +85,12 @@ export async function PUT(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: profile });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },

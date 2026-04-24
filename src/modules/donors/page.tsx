@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Card,
   CardContent,
@@ -53,6 +53,7 @@ import {
   Receipt,
   Search,
   Plus,
+  Eye,
   Pencil,
   Trash2,
   FileText,
@@ -124,6 +125,72 @@ interface DonorStats {
   totalReceipts: number
 }
 
+interface DonorOption {
+  id: string
+  name: string
+  donorNumber: string
+  status: string
+}
+
+interface DonorStatsEnvelope {
+  stats?: DonorStats
+}
+
+interface DonorListEnvelope {
+  data?: Donor[]
+  total?: number
+  stats?: DonorStats
+}
+
+interface ReceiptListEnvelope {
+  data?: TaxReceipt[]
+  total?: number
+  totalAmount?: number
+}
+
+interface CommunicationListEnvelope {
+  data?: Communication[]
+  total?: number
+}
+
+interface DonorDetailReceipt {
+  id: string
+  receiptNumber: string
+  amount: number
+  donationDate: string
+  issuedAt: string
+  purpose: string
+  lhdnRef: string | null
+}
+
+interface DonorDetailCommunication {
+  id: string
+  type: string
+  subject: string
+  content: string | null
+  status: string
+  sentAt: string | null
+  createdAt: string
+}
+
+interface DonorDetailPayload {
+  donor: Donor
+  receipts: {
+    total: number
+    totalAmount: number
+    latestIssuedAt: string | null
+    items: DonorDetailReceipt[]
+  }
+  communications: {
+    total: number
+    sentCount: number
+    draftCount: number
+    failedCount: number
+    latestActivityAt: string | null
+    items: DonorDetailCommunication[]
+  }
+}
+
 // ─── Segment / Status Maps ──────────────────────────────────────────────────
 
 const segmentMap: Record<string, { label: string; color: string }> = {
@@ -149,6 +216,12 @@ const commStatusMap: Record<string, { label: string; color: string }> = {
   draft: { label: 'Draf', color: 'bg-gray-100 text-gray-600' },
   sent: { label: 'Dihantar', color: 'bg-emerald-100 text-emerald-700' },
   failed: { label: 'Gagal', color: 'bg-red-100 text-red-700' },
+}
+
+const preferredContactMap: Record<string, string> = {
+  email: 'E-mel',
+  phone: 'Telefon',
+  whatsapp: 'WhatsApp',
 }
 
 // ─── Default form state ─────────────────────────────────────────────────────
@@ -200,8 +273,14 @@ export default function DonorsPage() {
   const [editingDonor, setEditingDonor] = useState<Donor | null>(null)
   const [donorForm, setDonorForm] = useState(emptyDonorForm)
   const [donorLoading, setDonorLoading] = useState(false)
+  const [donorDetailOpen, setDonorDetailOpen] = useState(false)
+  const [donorDetailLoading, setDonorDetailLoading] = useState(false)
+  const [donorDetailError, setDonorDetailError] = useState(false)
+  const [selectedDonorId, setSelectedDonorId] = useState<string | null>(null)
+  const [selectedDonorPreview, setSelectedDonorPreview] = useState<Donor | null>(null)
+  const [donorDetail, setDonorDetail] = useState<DonorDetailPayload | null>(null)
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string; name: string } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ type: string; id: string; name: string; relatedDonorId?: string } | null>(null)
 
   // Receipts tab state
   const [receipts, setReceipts] = useState<TaxReceipt[]>([])
@@ -217,9 +296,15 @@ export default function DonorsPage() {
   const [communications, setCommunications] = useState<Communication[]>([])
   const [commPage, setCommPage] = useState(1)
   const [commTotal, setCommTotal] = useState(0)
+  const [commSearch, setCommSearch] = useState('')
+  const [commType, setCommType] = useState('')
+  const [commStatus, setCommStatus] = useState('')
   const [commDialogOpen, setCommDialogOpen] = useState(false)
   const [commForm, setCommForm] = useState(emptyCommForm)
   const [commLoading, setCommLoading] = useState(false)
+  const [donorOptions, setDonorOptions] = useState<DonorOption[]>([])
+  const [donorOptionsLoading, setDonorOptionsLoading] = useState(false)
+  const donorDetailRequestIdRef = useRef(0)
 
   const pageSize = 10
 
@@ -227,14 +312,10 @@ export default function DonorsPage() {
 
   const fetchStats = useCallback(async () => {
     try {
-      interface DonorResponse {
-        stats: DonorStats
-        total: number
-        page: number
-        pageSize: number
+      const response = await api.getEnvelope<Donor[]>('/donors', { page: 1, pageSize: 1 }) as DonorStatsEnvelope
+      if (response.stats) {
+        setStats(response.stats)
       }
-      const data = await api.get<DonorResponse>('/donors', { page: 1, pageSize: 1 })
-      setStats(data.stats)
     } catch {
       // Stats are optional, don't show error
     }
@@ -245,23 +326,16 @@ export default function DonorsPage() {
   const fetchDonors = useCallback(async () => {
     setDonorLoading(true)
     try {
-      interface DonorListResponse {
-        data: Donor[]
-        total: number
-        page: number
-        pageSize: number
-        stats: DonorStats
-      }
-      const data = await api.get<DonorListResponse>('/donors', {
+      const response = await api.getEnvelope<Donor[]>('/donors', {
         page: donorPage,
         pageSize,
         search: donorSearch,
         segment: donorSegment,
         status: donorStatus,
-      })
-      setDonors(data.data || [])
-      setDonorTotal(data.total)
-      if (data.stats) setStats(data.stats)
+      }) as DonorListEnvelope
+      setDonors(response.data || [])
+      setDonorTotal(response.total || 0)
+      if (response.stats) setStats(response.stats)
     } catch {
       toast.error('Gagal memuatkan senarai penderma')
     } finally {
@@ -269,26 +343,48 @@ export default function DonorsPage() {
     }
   }, [donorPage, donorSearch, donorSegment, donorStatus])
 
+  const fetchDonorDetail = useCallback(async (donorId: string) => {
+    if (!donorId) return null
+
+    const requestId = donorDetailRequestIdRef.current + 1
+    donorDetailRequestIdRef.current = requestId
+    setDonorDetailError(false)
+    setDonorDetailLoading(true)
+    try {
+      const data = await api.get<DonorDetailPayload>(`/donors/${donorId}`)
+      if (donorDetailRequestIdRef.current !== requestId) {
+        return null
+      }
+      setDonorDetailError(false)
+      setDonorDetail(data)
+      setSelectedDonorPreview(data.donor)
+      return data
+    } catch {
+      if (donorDetailRequestIdRef.current === requestId) {
+        setDonorDetailError(true)
+        toast.error('Gagal memuatkan butiran penderma')
+      }
+      return null
+    } finally {
+      if (donorDetailRequestIdRef.current === requestId) {
+        setDonorDetailLoading(false)
+      }
+    }
+  }, [])
+
   // ─── Fetch Receipts ───────────────────────────────────────────────────────
 
   const fetchReceipts = useCallback(async () => {
     setReceiptLoading(true)
     try {
-      interface ReceiptListResponse {
-        data: TaxReceipt[]
-        total: number
-        page: number
-        pageSize: number
-        totalAmount: number
-      }
-      const data = await api.get<ReceiptListResponse>('/donors/receipts', {
+      const response = await api.getEnvelope<TaxReceipt[]>('/donors/receipts', {
         page: receiptPage,
         pageSize,
         search: receiptSearch,
         year: receiptYear,
-      })
-      setReceipts(data.data || [])
-      setReceiptTotal(data.total)
+      }) as ReceiptListEnvelope
+      setReceipts(response.data || [])
+      setReceiptTotal(response.total || 0)
     } catch {
       toast.error('Gagal memuatkan senarai resit cukai')
     } finally {
@@ -301,24 +397,21 @@ export default function DonorsPage() {
   const fetchCommunications = useCallback(async () => {
     setCommLoading(true)
     try {
-      interface CommListResponse {
-        data: Communication[]
-        total: number
-        page: number
-        pageSize: number
-      }
-      const data = await api.get<CommListResponse>('/donors/communications', {
+      const response = await api.getEnvelope<Communication[]>('/donors/communications', {
         page: commPage,
         pageSize,
-      })
-      setCommunications(data.data || [])
-      setCommTotal(data.total)
+        search: commSearch,
+        type: commType,
+        status: commStatus,
+      }) as CommunicationListEnvelope
+      setCommunications(response.data || [])
+      setCommTotal(response.total || 0)
     } catch {
       toast.error('Gagal memuatkan senarai komunikasi')
     } finally {
       setCommLoading(false)
     }
-  }, [commPage])
+  }, [commPage, commSearch, commType, commStatus])
 
   // ─── Load data on mount and filter changes ────────────────────────────────
 
@@ -337,6 +430,40 @@ export default function DonorsPage() {
   useEffect(() => {
     fetchCommunications()
   }, [fetchCommunications])
+
+  const fetchDonorOptions = useCallback(async () => {
+    setDonorOptionsLoading(true)
+    try {
+      const data = await api.get<DonorOption[]>('/donors/options', { limit: 200 })
+      setDonorOptions(data)
+    } catch {
+      toast.error('Gagal memuatkan pilihan penderma')
+    } finally {
+      setDonorOptionsLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchDonorOptions()
+  }, [fetchDonorOptions])
+
+  const closeDonorDetail = useCallback(() => {
+    donorDetailRequestIdRef.current += 1
+    setDonorDetailOpen(false)
+    setSelectedDonorId(null)
+    setSelectedDonorPreview(null)
+    setDonorDetail(null)
+    setDonorDetailError(false)
+    setDonorDetailLoading(false)
+  }, [])
+
+  const openDonorDetail = useCallback((donor: Donor) => {
+    setSelectedDonorId(donor.id)
+    setSelectedDonorPreview(donor)
+    setDonorDetail(null)
+    setDonorDetailOpen(true)
+    void fetchDonorDetail(donor.id)
+  }, [fetchDonorDetail])
 
   // ─── Donor CRUD handlers ──────────────────────────────────────────────────
 
@@ -380,13 +507,17 @@ export default function DonorsPage() {
       setDonorDialogOpen(false)
       fetchDonors()
       fetchStats()
+      fetchDonorOptions()
+      if (editingDonor && selectedDonorId === editingDonor.id) {
+        void fetchDonorDetail(editingDonor.id)
+      }
     } catch {
       toast.error('Gagal menyimpan penderma')
     }
   }
 
-  const confirmDelete = (type: string, id: string, name: string) => {
-    setDeleteTarget({ type, id, name })
+  const confirmDelete = (type: string, id: string, name: string, relatedDonorId?: string) => {
+    setDeleteTarget({ type, id, name, relatedDonorId })
     setDeleteDialogOpen(true)
   }
 
@@ -398,14 +529,24 @@ export default function DonorsPage() {
         toast.success('Penderma berjaya dipadam')
         fetchDonors()
         fetchStats()
+        fetchDonorOptions()
+        if (selectedDonorId === deleteTarget.id) {
+          closeDonorDetail()
+        }
       } else if (deleteTarget.type === 'receipt') {
         await api.delete('/donors/receipts', { id: deleteTarget.id })
         toast.success('Resit cukai berjaya dipadam')
         fetchReceipts()
+        if (selectedDonorId && deleteTarget.relatedDonorId === selectedDonorId) {
+          void fetchDonorDetail(selectedDonorId)
+        }
       } else if (deleteTarget.type === 'communication') {
         await api.delete('/donors/communications', { id: deleteTarget.id })
         toast.success('Komunikasi berjaya dipadam')
         fetchCommunications()
+        if (selectedDonorId && deleteTarget.relatedDonorId === selectedDonorId) {
+          void fetchDonorDetail(selectedDonorId)
+        }
       }
     } catch {
       toast.error('Gagal memadam rekod')
@@ -440,6 +581,9 @@ export default function DonorsPage() {
       setReceiptForm(emptyReceiptForm)
       fetchReceipts()
       fetchStats()
+      if (selectedDonorId === receiptForm.donorId) {
+        void fetchDonorDetail(receiptForm.donorId)
+      }
     } catch {
       toast.error('Gagal menjana resit cukai')
     }
@@ -462,6 +606,9 @@ export default function DonorsPage() {
       setCommDialogOpen(false)
       setCommForm(emptyCommForm)
       fetchCommunications()
+      if (selectedDonorId === commForm.donorId) {
+        void fetchDonorDetail(commForm.donorId)
+      }
     } catch {
       toast.error('Gagal merekod komunikasi')
     }
@@ -475,7 +622,20 @@ export default function DonorsPage() {
   const formatDate = (d: string) =>
     d ? new Date(d).toLocaleDateString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
 
+  const formatDateTime = (d: string | null) =>
+    d ? new Date(d).toLocaleString('ms-MY', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—'
+
   const totalPages = (total: number) => Math.max(1, Math.ceil(total / pageSize))
+
+  const detailDonor = donorDetail?.donor || selectedDonorPreview
+  const detailSegment = detailDonor ? (segmentMap[detailDonor.segment] || segmentMap.occasional) : null
+  const detailStatus = detailDonor ? (statusMap[detailDonor.status] || statusMap.active) : null
+  const detailAddress = detailDonor
+    ? [detailDonor.address, detailDonor.city, detailDonor.state].filter(Boolean).join(', ') || '—'
+    : '—'
+  const detailPreferredContact = detailDonor?.preferredContact
+    ? (preferredContactMap[detailDonor.preferredContact] || detailDonor.preferredContact)
+    : '—'
 
   // ─── Pagination component ─────────────────────────────────────────────────
 
@@ -685,10 +845,13 @@ export default function DonorsPage() {
                                 </TableCell>
                                 <TableCell className="text-right">
                                   <div className="flex items-center justify-end gap-1">
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-purple-600" onClick={() => openEditDonor(d)}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-blue-600" onClick={() => void openDonorDetail(d)} title="Lihat butiran">
+                                      <Eye className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-purple-600" onClick={() => openEditDonor(d)} title="Kemaskini">
                                       <Pencil className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600" onClick={() => confirmDelete('donor', d.id, d.name)}>
+                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600" onClick={() => confirmDelete('donor', d.id, d.name, d.id)} title="Padam">
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
                                   </div>
@@ -790,7 +953,7 @@ export default function DonorsPage() {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-right">
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600" onClick={() => confirmDelete('receipt', r.id, r.receiptNumber)}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600" onClick={() => confirmDelete('receipt', r.id, r.receiptNumber, r.donorId)}>
                                   <Trash2 className="h-4 w-4" />
                                 </Button>
                               </TableCell>
@@ -818,6 +981,40 @@ export default function DonorsPage() {
                     <Send className="h-4 w-4" />
                     Hantar Komunikasi
                   </Button>
+                </div>
+                <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:items-center">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                    <Input
+                      placeholder="Cari subjek, kandungan, atau penderma..."
+                      value={commSearch}
+                      onChange={(e) => { setCommSearch(e.target.value); setCommPage(1) }}
+                      className="pl-9"
+                    />
+                  </div>
+                  <Select value={commType || '__all__'} onValueChange={(v) => { setCommType(v === '__all__' ? '' : v); setCommPage(1) }}>
+                    <SelectTrigger className="w-full sm:w-[150px]">
+                      <SelectValue placeholder="Semua Jenis" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Semua Jenis</SelectItem>
+                      <SelectItem value="email">E-mel</SelectItem>
+                      <SelectItem value="phone">Telefon</SelectItem>
+                      <SelectItem value="whatsapp">WhatsApp</SelectItem>
+                      <SelectItem value="letter">Surat</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={commStatus || '__all__'} onValueChange={(v) => { setCommStatus(v === '__all__' ? '' : v); setCommPage(1) }}>
+                    <SelectTrigger className="w-full sm:w-[150px]">
+                      <SelectValue placeholder="Semua Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__all__">Semua Status</SelectItem>
+                      <SelectItem value="draft">Draf</SelectItem>
+                      <SelectItem value="sent">Dihantar</SelectItem>
+                      <SelectItem value="failed">Gagal</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardHeader>
               <CardContent>
@@ -870,7 +1067,7 @@ export default function DonorsPage() {
                                 </TableCell>
                                 <TableCell className="text-gray-500 hidden md:table-cell">{formatDate(c.sentAt || c.createdAt)}</TableCell>
                                 <TableCell className="text-right">
-                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600" onClick={() => confirmDelete('communication', c.id, c.subject)}>
+                                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-400 hover:text-red-600" onClick={() => confirmDelete('communication', c.id, c.subject, c.donorId)}>
                                     <Trash2 className="h-4 w-4" />
                                   </Button>
                                 </TableCell>
@@ -995,6 +1192,229 @@ export default function DonorsPage() {
         </DialogContent>
       </Dialog>
 
+      {/* ── Donor Detail Dialog ──────────────────────────────────────────── */}
+      <Dialog open={donorDetailOpen} onOpenChange={(open) => { if (!open) closeDonorDetail() }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[880px]">
+          <DialogHeader>
+            <DialogTitle className="text-purple-900">
+              {detailDonor?.name || 'Butiran Penderma'}
+            </DialogTitle>
+            <DialogDescription>
+              {detailDonor ? `${detailDonor.donorNumber} • Ringkasan resit cukai dan komunikasi terkini` : 'Memuatkan maklumat penderma...'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {donorDetailLoading && !donorDetail ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
+            </div>
+          ) : donorDetailError && !donorDetail ? (
+            <div className="rounded-lg border border-dashed border-red-200 bg-red-50 px-4 py-10 text-center text-sm text-red-600">
+              Butiran penderma gagal dimuatkan. Cuba buka semula dialog ini.
+            </div>
+          ) : !detailDonor ? (
+            <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-10 text-center text-sm text-gray-500">
+              Butiran penderma tidak tersedia.
+            </div>
+          ) : (
+            <div className="grid gap-5 py-2">
+              <div className="rounded-xl border border-purple-100 bg-purple-50/70 p-5">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary" className="bg-white text-purple-700 border border-purple-100">
+                        {detailDonor.donorNumber}
+                      </Badge>
+                      {detailSegment && (
+                        <Badge variant="secondary" className={`${detailSegment.color} text-[11px] font-semibold px-2 py-0.5`}>
+                          {detailSegment.label}
+                        </Badge>
+                      )}
+                      {detailStatus && (
+                        <Badge variant="secondary" className={`${detailStatus.color} text-[11px] font-semibold px-2 py-0.5`}>
+                          {detailStatus.label}
+                        </Badge>
+                      )}
+                      {detailDonor.isAnonymous && (
+                        <Badge variant="secondary" className="bg-slate-100 text-slate-700 text-[11px] font-semibold px-2 py-0.5">
+                          Tanpa Nama
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="grid gap-2 text-sm text-gray-600 sm:grid-cols-2">
+                      <div>
+                        <span className="text-gray-400">Telefon:</span>{' '}
+                        <span className="font-medium text-gray-800">{detailDonor.phone || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Emel:</span>{' '}
+                        <span className="font-medium text-gray-800">{detailDonor.email || '—'}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Kaedah hubungan:</span>{' '}
+                        <span className="font-medium text-gray-800">{detailPreferredContact}</span>
+                      </div>
+                      <div>
+                        <span className="text-gray-400">Tarikh daftar:</span>{' '}
+                        <span className="font-medium text-gray-800">{formatDate(detailDonor.createdAt)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid min-w-full grid-cols-2 gap-3 sm:min-w-[320px]">
+                    <div className="rounded-lg bg-white/90 p-3 shadow-sm">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Jumlah Derma</p>
+                      <p className="mt-1 text-lg font-bold text-gray-900">{formatCurrency(detailDonor.totalDonated)}</p>
+                    </div>
+                    <div className="rounded-lg bg-white/90 p-3 shadow-sm">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Kali Derma</p>
+                      <p className="mt-1 text-lg font-bold text-gray-900">{detailDonor.donationCount}</p>
+                    </div>
+                    <div className="rounded-lg bg-white/90 p-3 shadow-sm">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Resit Direkod</p>
+                      <p className="mt-1 text-lg font-bold text-gray-900">{donorDetail?.receipts.total ?? detailDonor._count.taxReceipts}</p>
+                    </div>
+                    <div className="rounded-lg bg-white/90 p-3 shadow-sm">
+                      <p className="text-[11px] font-medium uppercase tracking-wide text-gray-400">Komunikasi</p>
+                      <p className="mt-1 text-lg font-bold text-gray-900">{donorDetail?.communications.total ?? detailDonor._count.communications}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid gap-5 lg:grid-cols-[1.05fr_1.4fr]">
+                <Card className="border border-gray-200 shadow-none">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base text-gray-900">Profil Ringkas</CardTitle>
+                  </CardHeader>
+                  <CardContent className="grid gap-3 text-sm">
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">No. Kad Pengenalan</p>
+                      <p className="mt-1 font-medium text-gray-900">{detailDonor.ic || '—'}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Alamat</p>
+                      <p className="mt-1 text-gray-700">{detailAddress}</p>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Derma Pertama</p>
+                        <p className="mt-1 font-medium text-gray-900">{formatDate(detailDonor.firstDonationAt || '')}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Derma Terakhir</p>
+                        <p className="mt-1 font-medium text-gray-900">{formatDate(detailDonor.lastDonationAt || '')}</p>
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Catatan</p>
+                      <p className="mt-1 whitespace-pre-wrap text-gray-700">{detailDonor.notes || 'Tiada catatan tambahan.'}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <div className="grid gap-5">
+                  <Card className="border border-gray-200 shadow-none">
+                    <CardHeader className="pb-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <CardTitle className="text-base text-gray-900">Resit Terkini</CardTitle>
+                          <p className="mt-1 text-sm text-gray-500">
+                            {donorDetail?.receipts.total ?? 0} resit • {formatCurrency(donorDetail?.receipts.totalAmount ?? 0)}
+                          </p>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                          Terakhir dikeluarkan: {formatDate(donorDetail?.receipts.latestIssuedAt || '')}
+                        </p>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {(donorDetail?.receipts.items || []).length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+                          Tiada resit direkodkan untuk penderma ini.
+                        </div>
+                      ) : (
+                        donorDetail?.receipts.items.map((receipt) => (
+                          <div key={receipt.id} className="rounded-lg border border-gray-100 bg-gray-50/70 p-4">
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                              <div>
+                                <p className="font-medium text-gray-900">{receipt.receiptNumber}</p>
+                                <p className="mt-1 text-xs text-gray-500">
+                                  Tarikh derma {formatDate(receipt.donationDate)} • Dikeluarkan {formatDate(receipt.issuedAt)}
+                                </p>
+                              </div>
+                              <p className="text-sm font-semibold text-gray-900">{formatCurrency(receipt.amount)}</p>
+                            </div>
+                            <p className="mt-2 text-sm text-gray-700">{receipt.purpose}</p>
+                            <p className="mt-2 text-xs text-gray-500">Rujukan LHDN: {receipt.lhdnRef || '—'}</p>
+                          </div>
+                        ))
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  <Card className="border border-gray-200 shadow-none">
+                    <CardHeader className="pb-3">
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <CardTitle className="text-base text-gray-900">Komunikasi Terkini</CardTitle>
+                          <p className="mt-1 text-sm text-gray-500">
+                            {donorDetail?.communications.total ?? 0} rekod • {donorDetail?.communications.sentCount ?? 0} dihantar
+                          </p>
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          Aktiviti terakhir: {formatDateTime(donorDetail?.communications.latestActivityAt || null)}
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        <Badge variant="secondary" className="bg-emerald-50 text-emerald-700">Dihantar {donorDetail?.communications.sentCount ?? 0}</Badge>
+                        <Badge variant="secondary" className="bg-gray-100 text-gray-700">Draf {donorDetail?.communications.draftCount ?? 0}</Badge>
+                        <Badge variant="secondary" className="bg-red-50 text-red-700">Gagal {donorDetail?.communications.failedCount ?? 0}</Badge>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {(donorDetail?.communications.items || []).length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 px-4 py-6 text-center text-sm text-gray-500">
+                          Tiada komunikasi direkodkan untuk penderma ini.
+                        </div>
+                      ) : (
+                        donorDetail?.communications.items.map((communication) => {
+                          const commType = commTypeMap[communication.type] || commTypeMap.email
+                          const commStatus = commStatusMap[communication.status] || commStatusMap.sent
+                          const CommIcon = commType.icon
+
+                          return (
+                            <div key={communication.id} className="rounded-lg border border-gray-100 bg-gray-50/70 p-4">
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <CommIcon className={`h-4 w-4 ${commType.color}`} />
+                                    <p className="truncate font-medium text-gray-900">{communication.subject}</p>
+                                  </div>
+                                  <p className="mt-1 text-xs text-gray-500">
+                                    {commType.label} • {formatDateTime(communication.sentAt || communication.createdAt)}
+                                  </p>
+                                </div>
+                                <Badge variant="secondary" className={`${commStatus.color} text-[11px] font-semibold px-2 py-0.5`}>
+                                  {commStatus.label}
+                                </Badge>
+                              </div>
+                              <p className="mt-2 whitespace-pre-wrap text-sm text-gray-700">
+                                {communication.content || 'Tiada kandungan tambahan.'}
+                              </p>
+                            </div>
+                          )
+                        })
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* ── Receipt Form Dialog ──────────────────────────────────────────── */}
       <Dialog open={receiptDialogOpen} onOpenChange={setReceiptDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
@@ -1012,7 +1432,8 @@ export default function DonorsPage() {
                   <SelectValue placeholder="Pilih penderma" />
                 </SelectTrigger>
                 <SelectContent>
-                  {donors.map((d) => (
+                  {donorOptionsLoading && <SelectItem value="__loading-receipt" disabled>Memuatkan penderma...</SelectItem>}
+                  {donorOptions.map((d) => (
                     <SelectItem key={d.id} value={d.id}>
                       {d.name} ({d.donorNumber})
                     </SelectItem>
@@ -1073,7 +1494,8 @@ export default function DonorsPage() {
                   <SelectValue placeholder="Pilih penderma" />
                 </SelectTrigger>
                 <SelectContent>
-                  {donors.map((d) => (
+                  {donorOptionsLoading && <SelectItem value="__loading-communication" disabled>Memuatkan penderma...</SelectItem>}
+                  {donorOptions.map((d) => (
                     <SelectItem key={d.id} value={d.id}>
                       {d.name} ({d.donorNumber})
                     </SelectItem>

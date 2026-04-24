@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { z } from 'zod';
 
 // ─── Validation Schemas ──────────────────────────────────────────────────────
@@ -26,7 +27,6 @@ const documentCreateSchema = z.object({
   fileUrl: z.string().optional(),
   expiryDate: z.string().optional().nullable(),
   tags: z.array(z.string()).optional(),
-  uploadedBy: z.string().optional(),
 });
 
 const documentUpdateSchema = documentCreateSchema.partial().extend({
@@ -37,6 +37,7 @@ const documentUpdateSchema = documentCreateSchema.partial().extend({
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10)));
@@ -93,6 +94,12 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / pageSize),
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching documents:', error);
     return NextResponse.json(
       { success: false, error: 'Gagal memuatkan dokumen' },
@@ -105,8 +112,10 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
     const body = await request.json();
     const validated = documentCreateSchema.parse(body);
+    const actor = session.user.email || session.user.name || session.user.id;
 
     // Auto-generate title from fileName if not provided
     const title = validated.title || validated.fileName.replace(/\.[^/.]+$/, '');
@@ -123,7 +132,7 @@ export async function POST(request: NextRequest) {
         fileUrl: validated.fileUrl || null,
         expiryDate: validated.expiryDate ? new Date(validated.expiryDate) : null,
         tags: validated.tags ? JSON.stringify(validated.tags) : null,
-        uploadedBy: validated.uploadedBy || null,
+        uploadedBy: actor,
       },
     });
 
@@ -135,6 +144,12 @@ export async function POST(request: NextRequest) {
       { status: 201 }
     );
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },
@@ -153,6 +168,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    await requireAuth(request);
     const body = await request.json();
     const { id, ...updateData } = body;
 
@@ -181,7 +197,6 @@ export async function PUT(request: NextRequest) {
         subcategory: validated.subcategory ?? undefined,
         mimeType: validated.mimeType ?? undefined,
         fileUrl: validated.fileUrl ?? undefined,
-        uploadedBy: validated.uploadedBy ?? undefined,
         expiryDate: validated.expiryDate ? new Date(validated.expiryDate) : null,
         tags: validated.tags ? JSON.stringify(validated.tags) : null,
       },
@@ -192,6 +207,12 @@ export async function PUT(request: NextRequest) {
       data: { ...document, tags: document.tags ? JSON.parse(document.tags as string) : [] },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },
@@ -210,6 +231,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -235,6 +257,12 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'Dokumen berjaya dipadam' });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deleting document:', error);
     return NextResponse.json(
       { success: false, error: 'Gagal memadam dokumen' },

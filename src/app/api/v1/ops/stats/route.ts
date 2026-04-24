@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
+import { AuthorizationError, requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 
 // ─── GET: Comprehensive ops statistics ────────────────────────────────────────
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    await requireRole(request, ['developer']);
     const now = new Date();
 
     // Start of today (midnight)
@@ -135,6 +137,12 @@ export async function GET() {
 
     return NextResponse.json({ success: true, data: stats });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching ops stats:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch ops statistics' },

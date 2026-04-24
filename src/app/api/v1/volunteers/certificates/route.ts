@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
+import { getRequestIp, getSessionActor, writeAuditLog } from '@/lib/audit';
+import { createWithGeneratedUniqueValue } from '@/lib/sequence';
 import { z } from 'zod';
 
 // ─── Zod Schemas ────────────────────────────────────────────────────────────
@@ -30,6 +33,7 @@ async function generateCertificateNumber(): Promise<string> {
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const volunteerId = searchParams.get('volunteerId') || '';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
@@ -73,6 +77,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
+    const actor = getSessionActor(session);
     const body = await request.json();
     const validated = certificateCreateSchema.parse(body);
 
@@ -87,24 +93,47 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const certificateNumber = await generateCertificateNumber();
-    const certificate = await db.volunteerCertificate.create({
-      data: {
-        volunteerId: validated.volunteerId,
-        certificateNumber,
-        title: validated.title,
-        description: validated.description || null,
-        totalHours: validated.totalHours,
-        issuedAt: new Date(),
-        issuedBy: 'admin',
-      },
-      include: {
-        volunteer: { select: { id: true, name: true, volunteerNumber: true } },
+    const certificate = await createWithGeneratedUniqueValue({
+      generateValue: generateCertificateNumber,
+      uniqueFields: ['certificateNumber'],
+      create: (certificateNumber) =>
+        db.volunteerCertificate.create({
+          data: {
+            volunteerId: validated.volunteerId,
+            certificateNumber,
+            title: validated.title,
+            description: validated.description || null,
+            totalHours: volunteer.totalHours,
+            issuedAt: new Date(),
+            issuedBy: actor,
+          },
+          include: {
+            volunteer: { select: { id: true, name: true, volunteerNumber: true } },
+          },
+        }),
+    });
+
+    await writeAuditLog({
+      action: 'create',
+      entity: 'VolunteerCertificate',
+      entityId: certificate.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        volunteerId: certificate.volunteerId,
+        certificateNumber: certificate.certificateNumber,
+        title: certificate.title,
       },
     });
 
     return NextResponse.json({ success: true, data: certificate }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Validation failed', details: error.issues },
@@ -123,6 +152,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -143,8 +173,27 @@ export async function DELETE(request: NextRequest) {
 
     await db.volunteerCertificate.delete({ where: { id } });
 
+    await writeAuditLog({
+      action: 'delete',
+      entity: 'VolunteerCertificate',
+      entityId: existing.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        volunteerId: existing.volunteerId,
+        certificateNumber: existing.certificateNumber,
+        title: existing.title,
+      },
+    });
+
     return NextResponse.json({ success: true, message: 'Sijil berjaya dipadam' });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deleting certificate:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to delete certificate' },

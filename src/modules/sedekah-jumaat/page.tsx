@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { format, parseISO, isThisMonth } from 'date-fns'
@@ -513,8 +513,14 @@ export default function SedekahJumaatPage() {
   }
 
   // ─── Watch institution for auto-fill ───────────────────────────────
-  const watchedInstitutionId = form.watch('institutionId')
-  const watchedNumberOfPeople = form.watch('numberOfPeople')
+  const watchedInstitutionId = useWatch({
+    control: form.control,
+    name: 'institutionId'
+  })
+  const watchedNumberOfPeople = useWatch({
+    control: form.control,
+    name: 'numberOfPeople'
+  })
 
   React.useEffect(() => {
     const inst = getInstitutionById(watchedInstitutionId)

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
+import { getRequestIp, getSessionActor, writeAuditLog } from '@/lib/audit';
+import { createWithGeneratedUniqueValue } from '@/lib/sequence';
 import { z } from 'zod';
 
 // ── Zod Schemas ─────────────────────────────────────────────────────────────
@@ -36,6 +39,7 @@ async function generateReceiptNumber(): Promise<string> {
 
 export async function GET(request: NextRequest) {
   try {
+    await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const pageSize = Math.min(100, Math.max(1, parseInt(searchParams.get('pageSize') || '20', 10)));
@@ -102,6 +106,8 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
+    const actor = getSessionActor(session);
     const body = await request.json();
     const validated = receiptCreateSchema.parse(body);
 
@@ -114,35 +120,49 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const receiptNumber = await generateReceiptNumber();
-    const receipt = await db.taxReceipt.create({
-      data: {
-        donorId: validated.donorId,
-        amount: validated.amount,
-        donationDate: new Date(validated.donationDate),
-        purpose: validated.purpose,
-        lhdnRef: validated.lhdnRef || null,
-        receiptNumber,
-        issuedAt: new Date(),
-      },
-      include: {
-        donor: { select: { id: true, name: true, donorNumber: true, ic: true } },
-      },
+    const donationDate = new Date(validated.donationDate);
+    const receipt = await createWithGeneratedUniqueValue({
+      generateValue: generateReceiptNumber,
+      uniqueFields: ['receiptNumber'],
+      create: (receiptNumber) =>
+        db.taxReceipt.create({
+          data: {
+            donorId: validated.donorId,
+            amount: validated.amount,
+            donationDate,
+            purpose: validated.purpose,
+            lhdnRef: validated.lhdnRef || null,
+            receiptNumber,
+            issuedAt: new Date(),
+            issuedBy: actor,
+          },
+          include: {
+            donor: { select: { id: true, name: true, donorNumber: true, ic: true } },
+          },
+        }),
     });
 
-    // Update donor stats
-    await db.donor.update({
-      where: { id: validated.donorId },
-      data: {
-        totalDonated: { increment: validated.amount },
-        donationCount: { increment: 1 },
-        lastDonationAt: new Date(),
-        firstDonationAt: donor.firstDonationAt || new Date(validated.donationDate),
+    await writeAuditLog({
+      action: 'create',
+      entity: 'TaxReceipt',
+      entityId: receipt.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        donorId: receipt.donorId,
+        receiptNumber: receipt.receiptNumber,
+        amount: receipt.amount,
       },
     });
 
     return NextResponse.json({ success: true, data: receipt }, { status: 201 });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },
@@ -161,6 +181,7 @@ export async function POST(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
+    const session = await requireAuth(request);
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
@@ -179,19 +200,29 @@ export async function DELETE(request: NextRequest) {
       );
     }
 
-    // Reverse donor stats
-    await db.donor.update({
-      where: { id: existing.donorId },
-      data: {
-        totalDonated: { decrement: existing.amount },
-        donationCount: { decrement: 1 },
+    await db.taxReceipt.delete({ where: { id } });
+
+    await writeAuditLog({
+      action: 'delete',
+      entity: 'TaxReceipt',
+      entityId: existing.id,
+      userId: session.user.id,
+      ipAddress: getRequestIp(request),
+      details: {
+        donorId: existing.donorId,
+        receiptNumber: existing.receiptNumber,
+        amount: existing.amount,
       },
     });
 
-    await db.taxReceipt.delete({ where: { id } });
-
     return NextResponse.json({ success: true, message: 'Resit cukai berjaya dipadam' });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error deleting receipt:', error);
     return NextResponse.json(
       { success: false, error: 'Gagal memadam resit cukai' },

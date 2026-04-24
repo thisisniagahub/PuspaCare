@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -735,6 +735,19 @@ export default function DisbursementsPage() {
   }
 
   function DisbursementForm() {
+    const bankName = useWatch({
+      control: form.control,
+      name: 'bankName',
+    });
+    const linkedCase = useWatch({
+      control: form.control,
+      name: 'linkedCase',
+    });
+    const linkedProgramme = useWatch({
+      control: form.control,
+      name: 'linkedProgramme',
+    });
+
     return (
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
         {/* Recipient info */}
@@ -777,7 +790,7 @@ export default function DisbursementsPage() {
               Nama Bank
             </Label>
             <Select
-              value={form.watch('bankName')}
+              value={bankName}
               onValueChange={(val) => form.setValue('bankName', val)}
             >
               <SelectTrigger id="bankName">
@@ -877,7 +890,7 @@ export default function DisbursementsPage() {
               Kes Berkaitan
             </Label>
             <Select
-              value={form.watch('linkedCase')}
+              value={linkedCase}
               onValueChange={(val) => form.setValue('linkedCase', val)}
             >
               <SelectTrigger id="linkedCase">
@@ -899,7 +912,7 @@ export default function DisbursementsPage() {
               Program Berkaitan
             </Label>
             <Select
-              value={form.watch('linkedProgramme')}
+              value={linkedProgramme}
               onValueChange={(val) => form.setValue('linkedProgramme', val)}
             >
               <SelectTrigger id="linkedProgramme">

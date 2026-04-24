@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireRole } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
@@ -29,6 +30,7 @@ function getMonthDates(year: number, month: number) {
 
 export async function GET(request: NextRequest) {
   try {
+    await requireRole(request, ['admin', 'developer']);
     const searchParams = request.nextUrl.searchParams;
     const parsed = querySchema.safeParse({
       period: searchParams.get('period') || 'yearly',
@@ -48,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     // Build donation where clause
     const donationWhere: Record<string, unknown> = {
-      status: { in: ['confirmed', 'VERIFIED', 'RECEIVED'] },
+      status: { in: ['confirmed'] },
       donatedAt: { gte: start, lte: end },
     };
     if (fundType) {
@@ -57,8 +59,8 @@ export async function GET(request: NextRequest) {
 
     // Build disbursement where clause
     const disbursementWhere: Record<string, unknown> = {
-      status: { in: ['approved', 'APPROVED', 'processing', 'PROCESSING', 'completed', 'DISBURSED'] },
-      createdAt: { gte: start, lte: end },
+      status: { in: ['approved', 'processing', 'completed'] },
+      processedDate: { gte: start, lte: end },
     };
 
     // ─── 1. Total Donations by FundType (ISF Segregation) ───
@@ -162,7 +164,7 @@ export async function GET(request: NextRequest) {
         const [inc, exp] = await Promise.all([
           db.donation.aggregate({
             where: {
-              status: { in: ['confirmed', 'VERIFIED', 'RECEIVED'] },
+              status: { in: ['confirmed'] },
               donatedAt: { gte: ms, lte: me },
               ...(fundType ? { fundType } : {}),
             },
@@ -170,8 +172,8 @@ export async function GET(request: NextRequest) {
           }),
           db.disbursement.aggregate({
             where: {
-              status: { in: ['approved', 'APPROVED', 'processing', 'PROCESSING', 'completed', 'DISBURSED'] },
-              createdAt: { gte: ms, lte: me },
+              status: { in: ['approved', 'processing', 'completed'] },
+              processedDate: { gte: ms, lte: me },
             },
             _sum: { amount: true },
           }),
@@ -191,7 +193,7 @@ export async function GET(request: NextRequest) {
         const [inc, exp] = await Promise.all([
           db.donation.aggregate({
             where: {
-              status: { in: ['confirmed', 'VERIFIED', 'RECEIVED'] },
+              status: { in: ['confirmed'] },
               donatedAt: { gte: qs, lte: qe },
               ...(fundType ? { fundType } : {}),
             },
@@ -199,8 +201,8 @@ export async function GET(request: NextRequest) {
           }),
           db.disbursement.aggregate({
             where: {
-              status: { in: ['approved', 'APPROVED', 'processing', 'PROCESSING', 'completed', 'DISBURSED'] },
-              createdAt: { gte: qs, lte: qe },
+              status: { in: ['approved', 'processing', 'completed'] },
+              processedDate: { gte: qs, lte: qe },
             },
             _sum: { amount: true },
           }),
@@ -262,6 +264,12 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     console.error('Error fetching financial reports:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch financial reports' },

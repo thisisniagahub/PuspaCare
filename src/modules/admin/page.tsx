@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import {
   Building2,
   Users,
@@ -53,6 +53,8 @@ import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
+import { api } from '@/lib/api'
+import { toast } from 'sonner'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -101,8 +103,16 @@ interface Partner {
   name: string
   type: string
   relationship: string
-  verificationLevel: 'dakwaan' | 'disahkan_rakan' | 'disahkan_awam'
+  verificationLevel: 'claimed' | 'partner_confirmed' | 'publicly_verified'
   verified: boolean
+}
+
+interface PartnerApiRecord {
+  id: string
+  name: string
+  type: string
+  relationship: string | null
+  verifiedStatus: 'claimed' | 'partner_confirmed' | 'publicly_verified'
 }
 
 interface BankingInfo {
@@ -229,73 +239,6 @@ const initialBoardMembers: BoardMember[] = [
   },
 ]
 
-const initialPartners: Partner[] = [
-  {
-    id: 'p-1',
-    name: 'Masjid Al-Ikhlas Hulu Klang',
-    type: 'masjid',
-    relationship: 'Penganjur Program Langgar',
-    verificationLevel: 'disahkan_awam',
-    verified: true,
-  },
-  {
-    id: 'p-2',
-    name: 'Masjid Jamek Ampang',
-    type: 'masjid',
-    relationship: 'Rakan Distribusi Bantuan',
-    verificationLevel: 'disahkan_rakan',
-    verified: true,
-  },
-  {
-    id: 'p-3',
-    name: 'Masjid Al-Muttaqin Gombak',
-    type: 'masjid',
-    relationship: 'Rakan Pengumpulan Derma',
-    verificationLevel: 'disahkan_awam',
-    verified: true,
-  },
-  {
-    id: 'p-4',
-    name: 'Masjid At-Taqwa Setapak',
-    type: 'masjid',
-    relationship: 'Penganjur Program Quran',
-    verificationLevel: 'disahkan_rakan',
-    verified: true,
-  },
-  {
-    id: 'p-5',
-    name: 'Masjid Nurul Hidayah Keramat',
-    type: 'masjid',
-    relationship: 'Rakan Program Khairat',
-    verificationLevel: 'dakwaan',
-    verified: false,
-  },
-  {
-    id: 'p-6',
-    name: 'Yayasan Hasanah',
-    type: 'yayasan',
-    relationship: 'Penderma Utama',
-    verificationLevel: 'disahkan_awam',
-    verified: true,
-  },
-  {
-    id: 'p-7',
-    name: 'Majlis Perbandaran Ampang',
-    type: 'kerajaan',
-    relationship: 'Rakan Strategik',
-    verificationLevel: 'disahkan_awam',
-    verified: true,
-  },
-  {
-    id: 'p-8',
-    name: 'Kementerian Kesihatan Malaysia',
-    type: 'kerajaan',
-    relationship: 'Rakan Program Kesihatan Komuniti',
-    verificationLevel: 'disahkan_rakan',
-    verified: true,
-  },
-]
-
 const initialBankingInfo: BankingInfo = {
   bankName: 'Bank Islam Malaysia Berhad',
   accountNumber: '076012345678',
@@ -320,34 +263,43 @@ const ROLE_LABELS: Record<string, string> = {
 }
 
 const PARTNER_TYPE_LABELS: Record<string, string> = {
-  korporat: 'Korporat',
-  yayasan: 'Yayasan',
-  kerajaan: 'Kerajaan',
+  corporate: 'Korporat',
+  foundation: 'Yayasan',
+  government: 'Kerajaan',
   ngo: 'NGO',
   masjid: 'Masjid',
-  individu: 'Individu',
+  individual: 'Individu',
 }
 
 const VERIFICATION_CONFIG: Record<
   string,
   { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string }
 > = {
-  dakwaan: {
+  claimed: {
     label: 'Dakwaan',
     variant: 'secondary',
     className: 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-300 dark:border-blue-800',
   },
-  disahkan_rakan: {
+  partner_confirmed: {
     label: 'Disahkan Rakan',
     variant: 'secondary',
     className: 'bg-amber-100 text-amber-800 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 dark:border-amber-800',
   },
-  disahkan_awam: {
+  publicly_verified: {
     label: 'Disahkan Awam',
     variant: 'secondary',
     className: 'bg-emerald-100 text-emerald-800 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border-emerald-800',
   },
 }
+
+const mapPartnerFromApi = (partner: PartnerApiRecord): Partner => ({
+  id: partner.id,
+  name: partner.name,
+  type: partner.type,
+  relationship: partner.relationship || '',
+  verificationLevel: partner.verifiedStatus,
+  verified: partner.verifiedStatus !== 'claimed',
+})
 
 function getInitials(name: string): string {
   return name
@@ -371,7 +323,8 @@ export default function AdminPage() {
   // ── State ──
   const [orgProfile, setOrgProfile] = useState<OrgProfile>(initialOrgProfile)
   const [boardMembers, setBoardMembers] = useState<BoardMember[]>(initialBoardMembers)
-  const [partners, setPartners] = useState<Partner[]>(initialPartners)
+  const [partners, setPartners] = useState<Partner[]>([])
+  const [partnersLoading, setPartnersLoading] = useState(true)
   const [bankingInfo, setBankingInfo] = useState<BankingInfo>(initialBankingInfo)
 
   // Dialog states
@@ -402,7 +355,7 @@ export default function AdminPage() {
     name: '',
     type: '',
     relationship: '',
-    verificationLevel: 'dakwaan',
+    verificationLevel: 'claimed',
     verified: false,
   })
 
@@ -414,6 +367,23 @@ export default function AdminPage() {
     setSaveSuccess(section)
     setTimeout(() => setSaveSuccess(null), 2000)
   }, [])
+
+  const fetchPartners = useCallback(async () => {
+    try {
+      setPartnersLoading(true)
+      const data = await api.get<PartnerApiRecord[]>('/partners')
+      setPartners(data.map(mapPartnerFromApi))
+    } catch {
+      toast.error('Gagal memuatkan rakan kongsi')
+      setPartners([])
+    } finally {
+      setPartnersLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchPartners()
+  }, [fetchPartners])
 
   // Tab 1: Organization Profile
   const handleOrgChange = (field: keyof OrgProfile, value: string) => {
@@ -479,25 +449,43 @@ export default function AdminPage() {
         name: '',
         type: '',
         relationship: '',
-        verificationLevel: 'dakwaan',
+        verificationLevel: 'claimed',
         verified: false,
       })
     }
     setPartnerDialogOpen(true)
   }
 
-  const handleSavePartner = () => {
+  const handleSavePartner = async () => {
     if (!partnerForm.name || !partnerForm.type) return
-    if (editingPartner) {
-      setPartners((prev) =>
-        prev.map((p) => (p.id === editingPartner.id ? { ...partnerForm } : p))
-      )
-    } else {
-      setPartners((prev) => [...prev, { ...partnerForm }])
+
+    try {
+      const payload = {
+        name: partnerForm.name,
+        type: partnerForm.type,
+        relationship: partnerForm.relationship,
+        verifiedStatus: partnerForm.verificationLevel,
+      }
+
+      if (editingPartner) {
+        const updated = await api.put<PartnerApiRecord>('/partners', {
+          id: editingPartner.id,
+          ...payload,
+        })
+        setPartners((prev) =>
+          prev.map((p) => (p.id === editingPartner.id ? mapPartnerFromApi(updated) : p))
+        )
+      } else {
+        const created = await api.post<PartnerApiRecord>('/partners', payload)
+        setPartners((prev) => [mapPartnerFromApi(created), ...prev])
+      }
+
+      setPartnerDialogOpen(false)
+      setEditingPartner(null)
+      showSaveSuccess('partner')
+    } catch {
+      toast.error(editingPartner ? 'Gagal mengemas kini rakan kongsi' : 'Gagal menambah rakan kongsi')
     }
-    setPartnerDialogOpen(false)
-    setEditingPartner(null)
-    showSaveSuccess('partner')
   }
 
   const handleDeletePartner = (id: string) => {
@@ -505,12 +493,18 @@ export default function AdminPage() {
     setDeleteDialogOpen(true)
   }
 
-  const confirmDelete = () => {
+  const confirmDelete = async () => {
     if (!deletingTarget) return
     if (deletingTarget.type === 'board') {
       setBoardMembers((prev) => prev.filter((m) => m.id !== deletingTarget.id))
     } else {
-      setPartners((prev) => prev.filter((p) => p.id !== deletingTarget.id))
+      try {
+        await api.delete('/partners', { id: deletingTarget.id })
+        setPartners((prev) => prev.filter((p) => p.id !== deletingTarget.id))
+      } catch {
+        toast.error('Gagal memadam rakan kongsi')
+        return
+      }
     }
     setDeleteDialogOpen(false)
     setDeletingTarget(null)
@@ -1186,7 +1180,7 @@ export default function AdminPage() {
                   Rakan Kongsi PUSPA
                 </h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                  {partners.length} rakan kongsi berdaftar
+                  {partnersLoading ? 'Memuatkan...' : `${partners.length} rakan kongsi berdaftar`}
                 </p>
               </div>
               <Button
@@ -1275,13 +1269,13 @@ export default function AdminPage() {
                       </p>
 
                       <div className="flex items-center gap-2">
-                        {partner.verificationLevel === 'dakwaan' && (
+                        {partner.verificationLevel === 'claimed' && (
                           <ShieldAlert className="h-3.5 w-3.5 text-blue-500" />
                         )}
-                        {partner.verificationLevel === 'disahkan_rakan' && (
+                        {partner.verificationLevel === 'partner_confirmed' && (
                           <Shield className="h-3.5 w-3.5 text-amber-500" />
                         )}
-                        {partner.verificationLevel === 'disahkan_awam' && (
+                        {partner.verificationLevel === 'publicly_verified' && (
                           <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
                         )}
                         <Badge variant={vConfig.variant} className={vConfig.className}>
@@ -1371,19 +1365,19 @@ export default function AdminPage() {
                         <SelectValue placeholder="Pilih tahap pengesahan" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="dakwaan">
+                        <SelectItem value="claimed">
                           <div className="flex items-center gap-2">
                             <ShieldAlert className="h-3.5 w-3.5 text-blue-500" />
                             Dakwaan
                           </div>
                         </SelectItem>
-                        <SelectItem value="disahkan_rakan">
+                        <SelectItem value="partner_confirmed">
                           <div className="flex items-center gap-2">
                             <Shield className="h-3.5 w-3.5 text-amber-500" />
                             Disahkan Rakan
                           </div>
                         </SelectItem>
-                        <SelectItem value="disahkan_awam">
+                        <SelectItem value="publicly_verified">
                           <div className="flex items-center gap-2">
                             <ShieldCheck className="h-3.5 w-3.5 text-emerald-500" />
                             Disahkan Awam

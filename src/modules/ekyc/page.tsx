@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, type ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import {
@@ -24,6 +24,78 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { api } from '@/lib/api';
 
 type KycStatus = 'pending' | 'processing' | 'verified' | 'rejected' | 'expired';
+type RiskLabel = 'Rendah' | 'Sederhana' | 'Tinggi';
+
+type MemberOption = {
+  id: string;
+  num: string;
+  name: string;
+  ic: string;
+  phone: string;
+  addr: string;
+  status: string;
+};
+
+type MemberApiRecord = {
+  id: string;
+  memberNumber: string;
+  name: string;
+  ic: string;
+  phone: string;
+  address: string;
+  status: string;
+};
+
+type EkycRecord = {
+  id: string;
+  mName: string;
+  mIc: string;
+  status: KycStatus;
+  live: number;
+  face: number;
+  bnm: boolean;
+  amla: string;
+  risk: RiskLabel;
+  wallet: number;
+  prev: number;
+  bank: boolean;
+  reason?: string;
+  verAt?: string;
+  verBy?: string;
+  created: string;
+};
+
+type EkycApiRecord = {
+  id: string;
+  status: string;
+  livenessScore: number | null;
+  faceMatchScore: number | null;
+  bnmCompliant: boolean;
+  amlaScreening: string | null;
+  riskLevel: string | null;
+  walletLimit: number;
+  previousLimit: number;
+  bankTransferEnabled: boolean;
+  rejectionReason: string | null;
+  verifiedAt: string | null;
+  verifiedBy: string | null;
+  createdAt: string;
+  member: {
+    id: string;
+    name: string;
+    ic: string;
+    memberNumber: string;
+    phone?: string | null;
+  };
+};
+
+type UploadResponse = {
+  path: string;
+  url: string;
+  fileName: string;
+  size: number;
+  mimeType: string;
+};
 
 const CHALLENGES = [
   { key: 'blink', label: 'Kedipkan mata', icon: Eye, dur: 2500 },
@@ -39,22 +111,6 @@ const STATUS_MAP: Record<KycStatus, { label: string; cls: string }> = {
   expired: { label: 'Tamat Tempoh', cls: 'bg-gray-50 text-gray-600 border-gray-200 dark:bg-gray-900/40 dark:text-gray-400 dark:border-gray-700' },
 };
 
-const MEMBERS = [
-  { id: 'm1', num: 'ASN-2024-001', name: 'Ahmad bin Abdullah', ic: '850315-01-5123', phone: '013-7892341', addr: 'No. 12, Jalan Hulu Klang 4', status: 'active' },
-  { id: 'm2', num: 'ASN-2024-002', name: 'Siti binti Hassan', ic: '901231-14-5234', phone: '019-3456782', addr: 'No. 8, Jalan Gombak 7/2', status: 'active' },
-  { id: 'm3', num: 'ASN-2024-003', name: 'Muhammad Amin bin Ismail', ic: '780422-01-5456', phone: '012-9876543', addr: 'No. 25, Jalan Ampang Hilir', status: 'active' },
-  { id: 'm4', num: 'ASN-2024-004', name: 'Nur Aisyah binti Muhammad', ic: '950817-02-5789', phone: '017-2345678', addr: 'Blok C, Pangsapuri Sri Gombak', status: 'active' },
-  { id: 'm5', num: 'ASN-2024-005', name: 'Fatimah binti Zahari', ic: '820725-03-5345', phone: '016-8901234', addr: 'No. 3, Jalan Ampang Utama', status: 'active' },
-];
-
-const RECORDS: { id: string; mName: string; mIc: string; status: KycStatus; live: number; face: number; bnm: boolean; amla: string; risk: string; wallet: number; prev: number; bank: boolean; reason?: string; verAt?: string; verBy?: string; created: string }[] = [
-  { id: 'e1', mName: 'Ahmad bin Abdullah', mIc: '850315-01-5123', status: 'verified', live: 96.5, face: 94.2, bnm: true, amla: 'Lulus', risk: 'Rendah', wallet: 5000, prev: 200, bank: true, verAt: '2024-12-15T10:30:00Z', verBy: 'admin@puspa.org', created: '2024-12-15T09:00:00Z' },
-  { id: 'e2', mName: 'Siti binti Hassan', mIc: '901231-14-5234', status: 'pending', live: 91.3, face: 89.7, bnm: false, amla: 'Dalam Semakan', risk: 'Sederhana', wallet: 200, prev: 200, bank: false, created: '2024-12-20T14:00:00Z' },
-  { id: 'e3', mName: 'Muhammad Amin bin Ismail', mIc: '780422-01-5456', status: 'processing', live: 88.1, face: 92.4, bnm: false, amla: 'Dalam Semakan', risk: 'Rendah', wallet: 200, prev: 200, bank: false, created: '2024-12-22T08:30:00Z' },
-  { id: 'e4', mName: 'Nur Aisyah binti Muhammad', mIc: '950817-02-5789', status: 'rejected', live: 45.2, face: 38.9, bnm: false, amla: 'Gagal', risk: 'Tinggi', wallet: 200, prev: 200, bank: false, reason: 'Gambar tidak jelas dan pengesahan muka gagal', created: '2024-12-18T11:00:00Z' },
-  { id: 'e5', mName: 'Fatimah binti Zahari', mIc: '820725-03-5345', status: 'verified', live: 97.8, face: 96.1, bnm: true, amla: 'Lulus', risk: 'Rendah', wallet: 5000, prev: 200, bank: true, verAt: '2024-12-10T14:20:00Z', verBy: 'admin@puspa.org', created: '2024-12-10T13:00:00Z' },
-];
-
 const STEPS = [
   { label: 'Pilih Ahli', icon: User },
   { label: 'Upload IC', icon: CreditCard },
@@ -64,10 +120,62 @@ const STEPS = [
 
 const fmt = (n: number) => `RM${n.toLocaleString('ms-MY')}`;
 const fmtDate = (d: string) => new Date(d).toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
-const b64 = (f: File) => new Promise<string>((res, rej) => { const r = new FileReader(); r.readAsDataURL(f); r.onload = () => res(r.result as string); r.onerror = rej; });
 const rndScore = (lo: number, hi: number) => Math.round((Math.random() * (hi - lo) + lo) * 10) / 10;
 const scoreCls = (s: number) => s >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : s >= 60 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-red-50 text-red-700 border-red-200';
 const riskCls = (r: string) => r === 'Rendah' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : r === 'Sederhana' ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-red-50 text-red-700 border-red-200';
+const normalizeStatus = (value?: string | null): KycStatus => {
+  if (value === 'processing' || value === 'verified' || value === 'rejected' || value === 'expired') {
+    return value;
+  }
+  return 'pending';
+};
+const getRiskLabel = (value?: string | null): RiskLabel => {
+  if (value === 'high') return 'Tinggi';
+  if (value === 'medium') return 'Sederhana';
+  return 'Rendah';
+};
+const getAmlaLabel = (record: EkycApiRecord): string => {
+  if (record.amlaScreening === 'pass' || record.status === 'verified') return 'Lulus';
+  if (record.status === 'rejected' || record.amlaScreening === 'fail') return 'Gagal';
+  return 'Dalam Semakan';
+};
+const mapMemberFromApi = (member: MemberApiRecord): MemberOption => ({
+  id: member.id,
+  num: member.memberNumber,
+  name: member.name,
+  ic: member.ic,
+  phone: member.phone,
+  addr: member.address,
+  status: member.status,
+});
+const mapEkycFromApi = (record: EkycApiRecord): EkycRecord => ({
+  id: record.id,
+  mName: record.member.name,
+  mIc: record.member.ic,
+  status: normalizeStatus(record.status),
+  live: record.livenessScore ?? 0,
+  face: record.faceMatchScore ?? 0,
+  bnm: record.bnmCompliant,
+  amla: getAmlaLabel(record),
+  risk: getRiskLabel(record.riskLevel),
+  wallet: record.walletLimit,
+  prev: record.previousLimit,
+  bank: record.bankTransferEnabled,
+  reason: record.rejectionReason || undefined,
+  verAt: record.verifiedAt || undefined,
+  verBy: record.verifiedBy || undefined,
+  created: record.createdAt,
+});
+
+async function uploadEkycImage(file: File, scopeId?: string) {
+  const formData = new FormData();
+  formData.append('bucket', 'ekyc');
+  formData.append('file', file);
+  if (scopeId) {
+    formData.append('scopeId', scopeId);
+  }
+  return api.postForm<UploadResponse>('/upload', formData);
+}
 
 function StepBar({ step }: { step: number }) {
   return (
@@ -91,23 +199,42 @@ function StepBar({ step }: { step: number }) {
   );
 }
 
-function FileUpload({ label, desc, val, onSet, hint }: { label: string; desc: string; val: string | null; onSet: (v: string | null) => void; hint: string }) {
+function FileUpload({ label, desc, val, onSet, hint, scopeId }: { label: string; desc: string; val: string | null; onSet: (v: string | null) => void; hint: string; scopeId?: string }) {
   const ref = useRef<HTMLInputElement>(null);
-  const pick = async (f: File) => { if (!f.type.startsWith('image/')) { toast.error('Sila pilih fail gambar'); return; } try { const d = await b64(f); onSet(d); toast.success('Gambar berjaya dimuat naik'); } catch { toast.error('Gagal memuat naik'); } };
+  const [uploading, setUploading] = useState(false);
+  const pick = async (f: File) => {
+    if (!f.type.startsWith('image/')) {
+      toast.error('Sila pilih fail gambar');
+      return;
+    }
+    try {
+      setUploading(true);
+      const uploaded = await uploadEkycImage(f, scopeId);
+      onSet(uploaded.url);
+      toast.success('Gambar berjaya dimuat naik');
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Gagal memuat naik');
+    } finally {
+      setUploading(false);
+      if (ref.current) {
+        ref.current.value = '';
+      }
+    }
+  };
   return (
     <div className="space-y-3">
       <div><h3 className="text-lg font-semibold text-gray-900 dark:text-white">{label}</h3><p className="text-sm text-muted-foreground mt-0.5">{desc}</p></div>
       {val ? (
         <div className="space-y-2">
           <div className="rounded-xl overflow-hidden border-2 border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20"><img src={val} alt={label} className="w-full max-h-64 object-contain mx-auto" /></div>
-          <div className="flex items-center gap-2"><Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100"><CheckCircle2 className="w-3 h-3 mr-1" /> Diterima</Badge><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-red-600" onClick={() => onSet(null)}><X className="w-3 h-3 mr-1" /> Alih Keluar</Button></div>
+          <div className="flex items-center gap-2"><Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 hover:bg-emerald-100"><CheckCircle2 className="w-3 h-3 mr-1" /> Diterima</Badge><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-red-600" disabled={uploading} onClick={() => onSet(null)}><X className="w-3 h-3 mr-1" /> Alih Keluar</Button></div>
         </div>
       ) : (
-        <div onClick={() => ref.current?.click()} className="cursor-pointer rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 hover:border-purple-300 hover:bg-purple-50/50 dark:hover:bg-purple-950/10 transition-all">
+        <div onClick={() => { if (!uploading) ref.current?.click(); }} className={`cursor-pointer rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 hover:border-purple-300 hover:bg-purple-50/50 dark:hover:bg-purple-950/10 transition-all ${uploading ? 'pointer-events-none opacity-70' : ''}`}>
           <div className="flex flex-col items-center justify-center py-12 px-6">
-            <div className="flex items-center justify-center w-14 h-14 rounded-2xl mb-3 bg-gray-100 dark:bg-gray-800"><ImageIcon className="w-7 h-7 text-gray-400" /></div>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Klik untuk memilih gambar</p>
-            <p className="text-xs text-muted-foreground mt-1">JPG, PNG — Maks 10MB</p>
+            <div className="flex items-center justify-center w-14 h-14 rounded-2xl mb-3 bg-gray-100 dark:bg-gray-800">{uploading ? <Loader2 className="w-7 h-7 animate-spin text-purple-500" /> : <ImageIcon className="w-7 h-7 text-gray-400" />}</div>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{uploading ? 'Memuat naik gambar...' : 'Klik untuk memilih gambar'}</p>
+            <p className="text-xs text-muted-foreground mt-1">JPG, PNG, WEBP — Maks 10MB</p>
           </div>
           <input ref={ref} type="file" accept="image/*" capture="environment" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) pick(f); }} />
         </div>
@@ -119,29 +246,72 @@ function FileUpload({ label, desc, val, onSet, hint }: { label: string; desc: st
 
 export default function EKYCPage() {
   const [step, setStep] = useState(0);
-  const [member, setMember] = useState<typeof MEMBERS[number] | null>(null);
+  const [members, setMembers] = useState<MemberOption[]>([]);
+  const [member, setMember] = useState<MemberOption | null>(null);
   const [icFront, setIcFront] = useState<string | null>(null);
   const [icBack, setIcBack] = useState<string | null>(null);
   const [selfie, setSelfie] = useState<string | null>(null);
+  
+  // VLM Extracted Data
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedData, setExtractedData] = useState<{name: string, ic: string, address: string, dateOfBirth: string, gender: string} | null>(null);
+  const [icName, setIcName] = useState<string>('');
+  const [icNumber, setIcNumber] = useState<string>('');
+  const [icAddress, setIcAddress] = useState<string>('');
+
   const [liveScore, setLiveScore] = useState<number | null>(null);
   const [faceScore, setFaceScore] = useState<number | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [records, setRecords] = useState(RECORDS);
+  const [records, setRecords] = useState<EkycRecord[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+  const [loadingRecords, setLoadingRecords] = useState(true);
   const [filter, setFilter] = useState('semua');
   const [search, setSearch] = useState('');
-  const [detail, setDetail] = useState<typeof RECORDS[number] | null>(null);
+  const [detail, setDetail] = useState<EkycRecord | null>(null);
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
-  const [rejectTarget, setRejectTarget] = useState<typeof RECORDS[number] | null>(null);
+  const [rejectTarget, setRejectTarget] = useState<EkycRecord | null>(null);
   const [busy, setBusy] = useState(false);
   const [mSearch, setMSearch] = useState('');
+  const [selfieUploading, setSelfieUploading] = useState(false);
   const [liveState, setLiveState] = useState({ ch: 0, done: [false, false, false] as boolean[], running: false, started: false, img: null as string | null, score: null as number | null });
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => { api.get('/members').catch(() => {}); api.get('/ekyc').catch(() => {}); }, []);
+  const loadMembers = async () => {
+    try {
+      setLoadingMembers(true);
+      const data = await api.get<MemberApiRecord[]>('/members', { pageSize: 100 });
+      setMembers(data.map(mapMemberFromApi));
+    } catch {
+      setMembers([]);
+      toast.error('Gagal memuatkan senarai ahli');
+    } finally {
+      setLoadingMembers(false);
+    }
+  };
+
+  const loadRecords = async () => {
+    try {
+      setLoadingRecords(true);
+      const data = await api.get<EkycApiRecord[]>('/ekyc', { pageSize: 100 });
+      setRecords(data.map(mapEkycFromApi));
+    } catch {
+      setRecords([]);
+      toast.error('Gagal memuatkan rekod eKYC');
+    } finally {
+      setLoadingRecords(false);
+    }
+  };
+
+  useEffect(() => { loadMembers(); loadRecords(); }, []);
   useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
 
-  const filteredM = MEMBERS.filter(m => { const q = mSearch.toLowerCase(); return m.name.toLowerCase().includes(q) || m.ic.includes(q) || m.num.toLowerCase().includes(q); });
+  const filteredM = members.filter(m => {
+    const q = mSearch.toLowerCase();
+    const matchesQuery =
+      m.name.toLowerCase().includes(q) || m.ic.includes(q) || m.num.toLowerCase().includes(q);
+    return matchesQuery && m.status === 'active';
+  });
   const filteredR = records.filter(r => (filter === 'semua' || r.status === filter) && (!search.trim() || r.mName.toLowerCase().includes(search.toLowerCase()) || r.mIc.includes(search)));
   const stats = { total: records.length, verified: records.filter(r => r.status === 'verified').length, pending: records.filter(r => r.status === 'pending').length, rejected: records.filter(r => r.status === 'rejected').length };
   const canNext = [!!member, !!icFront && !!icBack, selfie !== null && liveScore !== null, true][step] ?? false;
@@ -151,7 +321,18 @@ export default function EKYCPage() {
     setStep(s => Math.min(s + 1, 3));
   };
   const back = () => setStep(s => Math.max(s - 1, 0));
-  const reset = () => { setStep(0); setMember(null); setIcFront(null); setIcBack(null); setSelfie(null); setLiveScore(null); setFaceScore(null); setSubmitting(false); };
+  const reset = () => {
+    setStep(0);
+    setMember(null);
+    setIcFront(null);
+    setIcBack(null);
+    setSelfie(null);
+    setLiveScore(null);
+    setFaceScore(null);
+    setSubmitting(false);
+    setSelfieUploading(false);
+    setLiveState({ ch: 0, done: [false, false, false], running: false, started: false, img: null, score: null });
+  };
 
   // Liveness challenge runner
   const { ch: lCh, done: lDone, running: lRunning, started: lStarted, img: lImg, score: lScore } = liveState;
@@ -183,25 +364,66 @@ export default function EKYCPage() {
     if (!lImg) { toast.error('Sila tangkap gambar selfie terlebih dahulu'); return; }
     setLiveState({ ch: 0, done: [false, false, false], running: true, started: true, img: lImg, score: null });
   };
-  const resetLive = () => { if (timerRef.current) clearTimeout(timerRef.current); setLiveState({ ch: 0, done: [false, false, false], running: false, started: false, img: null, score: null }); };
+  const resetLive = () => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setSelfie(null);
+    setLiveScore(null);
+    setLiveState({ ch: 0, done: [false, false, false], running: false, started: false, img: null, score: null });
+  };
 
   const submit = async () => {
     if (!member) return;
     setSubmitting(true);
-    try { await api.post('/ekyc/verify', { memberId: member.id, icFrontUrl: icFront, icBackUrl: icBack, selfieUrl: selfie, livenessScore: liveScore, faceMatchScore: faceScore }); toast.success('Pengesahan eKYC berjaya dihantar!'); reset(); }
+    try {
+      const created = await api.post<EkycApiRecord>('/ekyc', {
+        memberId: member.id,
+        icFrontUrl: icFront,
+        icBackUrl: icBack,
+        selfieUrl: selfie,
+        icName: icName || undefined,
+        icNumber: icNumber || undefined,
+        icAddress: icAddress || undefined,
+        livenessScore: liveScore ?? undefined,
+        faceMatchScore: faceScore ?? undefined,
+      });
+      const mapped = mapEkycFromApi(created);
+      setRecords((prev) => [mapped, ...prev.filter((record) => record.id !== mapped.id)]);
+      toast.success('Pengesahan eKYC berjaya dihantar!');
+      reset();
+    }
     catch { toast.error('Gagal menghantar pengesahan'); } finally { setSubmitting(false); }
   };
 
-  const approve = async (r: typeof RECORDS[number]) => {
+  const approve = async (r: EkycRecord) => {
     setBusy(true);
-    try { await api.post('/ekyc/verify', { id: r.id, action: 'approve' }); setRecords(p => p.map(x => x.id === r.id ? { ...x, status: 'verified' as KycStatus, bnm: true, wallet: 5000, bank: true, verAt: new Date().toISOString(), verBy: 'admin@puspa.org' } : x)); toast.success(`Pengesahan untuk ${r.mName} diluluskan`); setDetail(null); }
+    try {
+      const updated = await api.post<EkycApiRecord>('/ekyc/verify', {
+        id: r.id,
+        riskLevel: r.live >= 90 && r.face >= 90 ? 'low' : 'medium',
+      });
+      const mapped = mapEkycFromApi(updated);
+      setRecords((prev) => prev.map((record) => (record.id === r.id ? mapped : record)));
+      setDetail(mapped);
+      toast.success(`Pengesahan untuk ${r.mName} diluluskan`);
+    }
     catch { toast.error('Gagal meluluskan'); } finally { setBusy(false); }
   };
-  const openReject = (r: typeof RECORDS[number]) => { setRejectTarget(r); setRejectReason(''); setRejectOpen(true); };
+  const openReject = (r: EkycRecord) => { setRejectTarget(r); setRejectReason(''); setRejectOpen(true); };
   const doReject = async () => {
     if (!rejectTarget || !rejectReason.trim()) { toast.error('Sila nyatakan sebab penolakan'); return; }
     setBusy(true);
-    try { await api.post('/ekyc/reject', { id: rejectTarget.id, reason: rejectReason }); setRecords(p => p.map(x => x.id === rejectTarget.id ? { ...x, status: 'rejected' as KycStatus, reason: rejectReason } : x)); toast.success(`Pengesahan untuk ${rejectTarget.mName} ditolak`); setRejectOpen(false); setDetail(null); }
+    try {
+      const updated = await api.post<EkycApiRecord>('/ekyc/reject', {
+        id: rejectTarget.id,
+        reason: rejectReason,
+      });
+      const mapped = mapEkycFromApi(updated);
+      setRecords((prev) => prev.map((record) => (record.id === rejectTarget.id ? mapped : record)));
+      setDetail(mapped);
+      setRejectOpen(false);
+      setRejectTarget(null);
+      toast.success(`Pengesahan untuk ${rejectTarget.mName} ditolak`);
+    }
     catch { toast.error('Gagal menolak'); } finally { setBusy(false); }
   };
 
@@ -245,7 +467,19 @@ export default function EKYCPage() {
                         <div><h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pilih Ahli</h3><p className="text-sm text-muted-foreground mt-0.5">Cari dan pilih ahli untuk memulakan pengesahan eKYC</p></div>
                         <div className="relative"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" /><Input placeholder="Cari nama, No. IC atau No. Ahli..." value={mSearch} onChange={e => setMSearch(e.target.value)} className="pl-9 border-gray-200 bg-gray-50 dark:border-gray-600 dark:bg-gray-900/50" /></div>
                         <div className="max-h-72 overflow-y-auto space-y-2">
-                          {filteredM.length === 0 ? <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground"><User className="w-10 h-10" /><p className="font-medium">Tiada ahli ditemui</p></div> : filteredM.map(m => {
+                          {loadingMembers ? (
+                            Array.from({ length: 4 }).map((_, index) => (
+                              <div key={index} className="rounded-xl border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-800/50">
+                                <div className="flex items-center gap-3">
+                                  <Skeleton className="h-9 w-9 rounded-full" />
+                                  <div className="flex-1 space-y-2">
+                                    <Skeleton className="h-4 w-40" />
+                                    <Skeleton className="h-3 w-28" />
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : filteredM.length === 0 ? <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground"><User className="w-10 h-10" /><p className="font-medium">Tiada ahli ditemui</p></div> : filteredM.map(m => {
                             const sel = member?.id === m.id;
                             return (
                               <button key={m.id} onClick={() => setMember(m)} className={`w-full text-left p-3 rounded-xl border-2 transition-all ${sel ? 'border-purple-400 bg-purple-50 dark:bg-purple-950/20' : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 hover:border-purple-200'}`}>
@@ -264,9 +498,9 @@ export default function EKYCPage() {
                     {/* Step 1: Upload IC */}
                     {step === 1 && (
                       <div className="space-y-6">
-                        <FileUpload label="Tangkap IC Depan" desc={`Muat naik gambar bahagian hadapan kad pengenalan ${member?.name || ''}`} val={icFront} onSet={setIcFront} hint="Pastikan gambar IC depan jelas. Semua maklumat perlu boleh dibaca." />
+                        <FileUpload label="Tangkap IC Depan" desc={`Muat naik gambar bahagian hadapan kad pengenalan ${member?.name || ''}`} val={icFront} onSet={setIcFront} hint="Pastikan gambar IC depan jelas. Semua maklumat perlu boleh dibaca." scopeId={member?.id} />
                         <Separator />
-                        <FileUpload label="Tangkap IC Belakang" desc="Muat naik gambar bahagian belakang kad pengenalan" val={icBack} onSet={setIcBack} hint="Pastikan gambar IC belakang jelas termasuk bahagian warna." />
+                        <FileUpload label="Tangkap IC Belakang" desc="Muat naik gambar bahagian belakang kad pengenalan" val={icBack} onSet={setIcBack} hint="Pastikan gambar IC belakang jelas termasuk bahagian warna." scopeId={member?.id} />
                       </div>
                     )}
 
@@ -275,16 +509,37 @@ export default function EKYCPage() {
                       <div className="space-y-4">
                         <div><h3 className="text-lg font-semibold text-gray-900 dark:text-white">Pengesanan Muka Hidup</h3><p className="text-sm text-muted-foreground mt-0.5">Pengesahan muka secara langsung untuk memastikan identiti sebenar</p></div>
                         {!lImg ? (
-                          <div onClick={() => (document.getElementById('selfie-input') as HTMLInputElement)?.click()} className="cursor-pointer rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 hover:border-purple-300 transition-all">
+                          <div onClick={() => { if (!selfieUploading) (document.getElementById('selfie-input') as HTMLInputElement)?.click(); }} className={`cursor-pointer rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-900/40 hover:border-purple-300 transition-all ${selfieUploading ? 'pointer-events-none opacity-70' : ''}`}>
                             <div className="flex flex-col items-center justify-center py-14 px-6">
                               <div className="flex items-center justify-center w-18 h-18 rounded-full bg-purple-100 dark:bg-purple-900/40 mb-3 relative p-4">
-                                <ScanFace className="w-10 h-10 text-purple-600" />
+                                {selfieUploading ? <Loader2 className="w-10 h-10 animate-spin text-purple-600" /> : <ScanFace className="w-10 h-10 text-purple-600" />}
                                 <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.5, 1, 0.5] }} transition={{ duration: 2, repeat: Infinity }} className="absolute inset-0 rounded-full border-2 border-purple-400" />
                               </div>
-                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Tangkap Gambar Selfie</p>
-                              <Button variant="outline" className="mt-3 gap-2 border-purple-200 text-purple-700 hover:bg-purple-50"><Camera className="w-4 h-4" /> Buka Kamera</Button>
+                              <p className="text-sm font-medium text-gray-700 dark:text-gray-300">{selfieUploading ? 'Memuat naik selfie...' : 'Tangkap Gambar Selfie'}</p>
+                              <Button variant="outline" className="mt-3 gap-2 border-purple-200 text-purple-700 hover:bg-purple-50" disabled={selfieUploading}><Camera className="w-4 h-4" /> Buka Kamera</Button>
                             </div>
-                            <input id="selfie-input" type="file" accept="image/*" capture="user" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) { if (!f.type.startsWith('image/')) return; b64(f).then(d => { setLiveState(p => ({ ...p, img: d })); toast.success('Selfie berjaya ditangkap'); }).catch(() => toast.error('Gagal')); } }} />
+                            <input id="selfie-input" type="file" accept="image/*" capture="user" className="hidden" onChange={async e => {
+                              const f = e.target.files?.[0];
+                              if (!f) return;
+                              if (!f.type.startsWith('image/')) {
+                                toast.error('Sila pilih fail gambar');
+                                e.target.value = '';
+                                return;
+                              }
+                              try {
+                                setSelfieUploading(true);
+                                const uploaded = await uploadEkycImage(f, member?.id);
+                                setSelfie(null);
+                                setLiveScore(null);
+                                setLiveState({ ch: 0, done: [false, false, false], running: false, started: false, img: uploaded.url, score: null });
+                                toast.success('Selfie berjaya ditangkap');
+                              } catch (error) {
+                                toast.error(error instanceof Error ? error.message : 'Gagal memuat naik selfie');
+                              } finally {
+                                setSelfieUploading(false);
+                                e.target.value = '';
+                              }
+                            }} />
                           </div>
                         ) : (
                           <div className="space-y-3">
@@ -386,7 +641,7 @@ export default function EKYCPage() {
             <Card className="hidden md:block border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50"><CardContent className="p-0"><div className="overflow-x-auto"><Table><TableHeader><TableRow className="border-gray-100 bg-gray-50/80 hover:bg-gray-50/80 dark:border-gray-700">
               <TableHead className="font-semibold">Ahli</TableHead><TableHead className="font-semibold">No. IC</TableHead><TableHead className="font-semibold">Status</TableHead><TableHead className="font-semibold text-center">Skor Muka</TableHead><TableHead className="font-semibold text-center">Liveness</TableHead><TableHead className="font-semibold text-center">AMLA</TableHead><TableHead className="font-semibold text-center">Wallet</TableHead><TableHead className="font-semibold">Tarikh</TableHead><TableHead className="w-[70px]"></TableHead>
             </TableRow></TableHeader><TableBody>
-              {filteredR.length === 0 ? <TableRow><TableCell colSpan={9} className="h-32 text-center text-muted-foreground"><FileCheck className="w-8 h-8 mx-auto mb-2" /><p>Tiada rekod ditemui</p></TableCell></TableRow> : filteredR.map(r => {
+              {loadingRecords ? <TableRow><TableCell colSpan={9} className="space-y-3 p-4">{Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-10 w-full" />)}</TableCell></TableRow> : filteredR.length === 0 ? <TableRow><TableCell colSpan={9} className="h-32 text-center text-muted-foreground"><FileCheck className="w-8 h-8 mx-auto mb-2" /><p>Tiada rekod ditemui</p></TableCell></TableRow> : filteredR.map(r => {
                 const sc = STATUS_MAP[r.status];
                 return <TableRow key={r.id} className="cursor-pointer hover:bg-gray-50/50 dark:hover:bg-gray-800/50" onClick={() => setDetail(r)}>
                   <TableCell className="font-medium">{r.mName}</TableCell>
@@ -404,7 +659,7 @@ export default function EKYCPage() {
 
             {/* Mobile Cards */}
             <div className="space-y-3 md:hidden">
-              {filteredR.length === 0 ? <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50"><CardContent className="flex flex-col items-center gap-2 py-10 text-muted-foreground"><FileCheck className="w-8 h-8" /><p>Tiada rekod ditemui</p></CardContent></Card> : filteredR.map(r => {
+              {loadingRecords ? Array.from({ length: 3 }).map((_, index) => <Card key={index} className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50"><CardContent className="space-y-3 p-4"><Skeleton className="h-4 w-40" /><Skeleton className="h-3 w-28" /><div className="grid grid-cols-3 gap-2"><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /><Skeleton className="h-12 w-full" /></div></CardContent></Card>) : filteredR.length === 0 ? <Card className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50"><CardContent className="flex flex-col items-center gap-2 py-10 text-muted-foreground"><FileCheck className="w-8 h-8" /><p>Tiada rekod ditemui</p></CardContent></Card> : filteredR.map(r => {
                 const sc = STATUS_MAP[r.status];
                 return <Card key={r.id} className="border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800/50 cursor-pointer hover:shadow-md" onClick={() => setDetail(r)}><CardContent className="p-4">
                   <div className="flex items-start justify-between gap-2"><div className="min-w-0 flex-1"><div className="flex items-center gap-2 mb-1"><h3 className="truncate font-semibold text-sm">{r.mName}</h3><Badge variant="outline" className={`shrink-0 text-[10px] ${sc.cls}`}>{sc.label}</Badge></div><p className="font-mono text-xs text-muted-foreground">{r.mIc}</p></div><Eye className="w-4 h-4 text-muted-foreground shrink-0 mt-1" /></div>
@@ -431,7 +686,7 @@ export default function EKYCPage() {
               </div>
               <Separator />
               <Card className="border-gray-200 dark:border-gray-700"><CardContent className="p-4 space-y-2.5"><div className="flex items-center gap-2"><Wallet className="w-4 h-4 text-purple-600" /><span className="text-sm font-semibold">Maklumat Wallet</span></div>
-                {([['Status Wallet', detail.bank ? <Badge className="bg-emerald-600 hover:bg-emerald-700 text-[10px]">Dibenarkan</Badge> : <Badge variant="outline" className="text-[10px]">Tidak Dibenarkan</Badge>], ['Had Semasa', fmt(detail.wallet)], ['Had Sebelum', fmt(detail.prev)], ['Pindahan Bank', detail.bank ? 'Ya' : 'Tidak']] as [string, React.ReactNode][]).map(([l, v], idx) => (
+                {([['Status Wallet', detail.bank ? <Badge className="bg-emerald-600 hover:bg-emerald-700 text-[10px]">Dibenarkan</Badge> : <Badge variant="outline" className="text-[10px]">Tidak Dibenarkan</Badge>], ['Had Semasa', fmt(detail.wallet)], ['Had Sebelum', fmt(detail.prev)], ['Pindahan Bank', detail.bank ? 'Ya' : 'Tidak']] as [string, ReactNode][]).map(([l, v], idx) => (
                   <div key={idx} className="flex justify-between items-center"><span className="text-xs text-muted-foreground">{l}</span><span className="text-sm font-medium">{v}</span></div>
                 ))}
               </CardContent></Card>

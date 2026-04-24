@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
+import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,37 +15,142 @@ import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, A
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import { ShieldCheck, Smartphone, Laptop, Tablet, Monitor, Fingerprint, Plus, Trash2, Star, CheckCircle2, XCircle, AlertTriangle, Clock, MapPin, Globe, Activity, Lock, ShieldAlert, ShieldX, Download, Search, Filter, Wifi, Info, ChevronRight, Loader2, CircleCheck, Zap, KeyRound, MessageSquare } from 'lucide-react';
+import { ShieldCheck, Smartphone, Laptop, Tablet, Monitor, Fingerprint, Plus, Trash2, Star, CheckCircle2, XCircle, AlertTriangle, Activity, Lock, ShieldAlert, ShieldX, Download, Search, Filter, Wifi, Info, ChevronRight, Loader2, CircleCheck, Zap, KeyRound, MessageSquare } from 'lucide-react';
 
 type Dev = { id: string; name: string; type: string; ua: string; ip: string; loc: string; primary: boolean; trusted: boolean; active: boolean; lastUsed: string };
 type Log = { id: string; action: string; method: string; device: string; ip: string; status: string; details: string; time: string };
 type BStep = 'idle' | 'otp' | 'success';
 type BioStep = 'idle' | 'preparing' | 'scanning' | 'done';
 
-const DEVICES: Dev[] = [
-  { id: 'd1', name: 'iPhone 15 Pro Max', type: 'mobile', ua: 'Safari 17.4 / iOS 17.4', ip: '192.168.1.105', loc: 'Kuala Lumpur', primary: true, trusted: true, active: true, lastUsed: '2026-06-15T10:32:00Z' },
-  { id: 'd2', name: 'MacBook Pro M3', type: 'desktop', ua: 'Chrome 125 / macOS 14.5', ip: '192.168.1.42', loc: 'Kuala Lumpur', primary: false, trusted: true, active: true, lastUsed: '2026-06-15T09:15:00Z' },
-  { id: 'd3', name: 'Samsung Galaxy S24', type: 'mobile', ua: 'Chrome 125 / Android 14', ip: '103.45.67.89', loc: 'Johor Bahru', primary: false, trusted: false, active: true, lastUsed: '2026-06-14T18:45:00Z' },
-  { id: 'd4', name: 'iPad Air M2', type: 'tablet', ua: 'Safari 17.4 / iPadOS 17.4', ip: '192.168.1.88', loc: 'Petaling Jaya', primary: false, trusted: true, active: false, lastUsed: '2026-06-10T15:00:00Z' },
-];
+type DeviceApiRecord = {
+  id: string;
+  deviceName: string | null;
+  deviceType: string | null;
+  deviceFingerprint: string | null;
+  userAgent: string | null;
+  ipAddress: string | null;
+  location: string | null;
+  isPrimary: boolean;
+  isTrusted: boolean;
+  isActive: boolean;
+  lastUsedAt: string | null;
+};
 
-const LOGS: Log[] = [
-  { id: 'l1', action: 'login', method: 'password', device: 'iPhone 15 Pro Max', ip: '192.168.1.105', status: 'success', details: 'Login berjaya melalui kata laluan', time: '2026-06-15T10:32:00Z' },
-  { id: 'l2', action: 'device_bind', method: 'device_bind', device: 'Samsung Galaxy S24', ip: '103.45.67.89', status: 'success', details: 'Peranti baru berjaya diikat', time: '2026-06-14T18:45:00Z' },
-  { id: 'l3', action: 'login', method: 'password', device: 'Peranti Tidak Dikenali', ip: '45.33.128.9', status: 'failed', details: 'Kata laluan salah — 3 percubaan gagal', time: '2026-06-14T12:20:00Z' },
-  { id: 'l4', action: 'login', method: 'password', device: 'Peranti Tidak Dikenali', ip: '45.33.128.9', status: 'blocked', details: 'Akaun dikunci selepas 5 percubaan gagal', time: '2026-06-14T12:25:00Z' },
-  { id: 'l5', action: 'biometric_setup', method: 'fingerprint', device: 'iPhone 15 Pro Max', ip: '192.168.1.105', status: 'success', details: 'Cap jari berjaya didaftarkan', time: '2026-06-13T09:00:00Z' },
-  { id: 'l6', action: 'transaction_verify', method: 'webauthn', device: 'iPhone 15 Pro Max', ip: '192.168.1.105', status: 'success', details: 'Transaksi disahkan dengan biometrik', time: '2026-06-12T16:30:00Z' },
-  { id: 'l7', action: 'device_unbind', method: 'device_bind', device: 'iPhone 12', ip: '192.168.1.50', status: 'success', details: 'Peranti berjaya dikeluarkan oleh pengguna', time: '2026-06-11T14:00:00Z' },
-  { id: 'l8', action: 'login', method: 'webauthn', device: 'MacBook Pro M3', ip: '192.168.1.42', status: 'success', details: 'Login berjaya melalui biometrik', time: '2026-06-10T08:45:00Z' },
-  { id: 'l9', action: 'login', method: 'otp', device: 'Peranti Tidak Dikenali', ip: '203.106.88.12', status: 'failed', details: 'OTP tamat tempoh — tidak disahkan dalam 5 minit', time: '2026-06-09T20:10:00Z' },
-  { id: 'l10', action: 'device_bind', method: 'device_bind', device: 'Peranti Mencurigakan', ip: '185.220.101.34', status: 'blocked', details: 'Pengikatan disekat — IP mencurigakan', time: '2026-06-02T03:15:00Z' },
-];
+type LogApiRecord = {
+  id: string;
+  action: string;
+  method: string;
+  deviceFingerprint: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  status: string;
+  details: string | null;
+  createdAt: string;
+};
+
+type SettingsApiRecord = {
+  biometricTransactions: boolean;
+  boundDeviceOnly: boolean;
+  sessionTimeout: number;
+};
 
 const AL: Record<string, string> = { login: 'Log Masuk', device_bind: 'Ikatan Peranti', device_unbind: 'Nyahikat Peranti', biometric_setup: 'Biometrik', transaction_verify: 'Pengesahan Transaksi' };
 const ML: Record<string, string> = { password: 'Kata Laluan', webauthn: 'WebAuthn', device_bind: 'Pengikatan', fingerprint: 'Cap Jari', face: 'Pengesahan Muka', otp: 'SMS OTP' };
 const fade = { initial: { opacity: 0, y: 20 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.3 } };
 const stagger = { animate: { transition: { staggerChildren: 0.08 } } };
+const SESSION_TIMEOUT_OPTIONS = [5, 15, 30, 60, 240];
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function parseDetails(details: string | null) {
+  if (!details) return {};
+  try {
+    return JSON.parse(details) as Record<string, unknown>;
+  } catch {
+    return {};
+  }
+}
+
+function detectDeviceType(): Dev['type'] {
+  if (typeof navigator === 'undefined') return 'desktop';
+  const ua = navigator.userAgent.toLowerCase();
+  if (/ipad|tablet/.test(ua)) return 'tablet';
+  if (/mobile|android|iphone/.test(ua)) return 'mobile';
+  return 'desktop';
+}
+
+function buildDeviceFingerprint() {
+  if (typeof window === 'undefined' || typeof navigator === 'undefined') {
+    return 'server-device';
+  }
+
+  const seed = [
+    navigator.userAgent,
+    navigator.language,
+    Intl.DateTimeFormat().resolvedOptions().timeZone,
+    window.screen.width,
+    window.screen.height,
+  ].join('|');
+
+  return btoa(seed).replace(/=+$/g, '').slice(0, 64);
+}
+
+function buildDeviceName(type: Dev['type']) {
+  if (typeof navigator === 'undefined') {
+    return 'Peranti Semasa';
+  }
+
+  const platform = navigator.userAgent.includes('Windows')
+    ? 'Windows'
+    : navigator.userAgent.includes('Mac')
+      ? 'Mac'
+      : navigator.userAgent.includes('Android')
+        ? 'Android'
+        : navigator.userAgent.includes('iPhone') || navigator.userAgent.includes('iPad')
+          ? 'iOS'
+          : 'Browser';
+
+  return `${platform} ${type === 'desktop' ? 'Desktop' : type === 'tablet' ? 'Tablet' : 'Mobile'}`;
+}
+
+function mapDeviceFromApi(device: DeviceApiRecord): Dev {
+  return {
+    id: device.id,
+    name: device.deviceName || 'Peranti Tidak Dikenali',
+    type: (device.deviceType as Dev['type']) || 'mobile',
+    ua: device.userAgent || 'Maklumat pelayar tidak tersedia',
+    ip: device.ipAddress || '-',
+    loc: device.location || 'Tidak diketahui',
+    primary: device.isPrimary,
+    trusted: device.isTrusted,
+    active: device.isActive,
+    lastUsed: device.lastUsedAt || new Date(0).toISOString(),
+  };
+}
+
+function mapLogFromApi(log: LogApiRecord): Log {
+  const details = parseDetails(log.details);
+  const deviceName =
+    typeof details.deviceName === 'string'
+      ? details.deviceName
+      : log.userAgent || 'Peranti Tidak Dikenali';
+  const detailMessage =
+    typeof details.message === 'string'
+      ? details.message
+      : log.status === 'success'
+        ? 'Tindakan keselamatan berjaya direkodkan'
+        : 'Tindakan keselamatan memerlukan perhatian';
+
+  return {
+    id: log.id,
+    action: log.action,
+    method: log.method,
+    device: deviceName,
+    ip: log.ipAddress || '-',
+    status: log.status,
+    details: detailMessage,
+    time: log.createdAt,
+  };
+}
 
 const DevIcon = ({ type, className }: { type: string; className?: string }) => {
   const M = type === 'mobile' ? Smartphone : type === 'desktop' ? Laptop : Tablet;
@@ -121,26 +227,62 @@ function StatCard({ label, value, icon: Icon, bg, color }: { label: string; valu
 export default function TapSecurePage() {
   const [tab, setTab] = useState('devices');
   const [devices, setDevices] = useState<Dev[]>([]);
-  const [logs] = useState<Log[]>(LOGS);
+  const [logs, setLogs] = useState<Log[]>([]);
   const [loading, setLoading] = useState(true);
   const [bindOpen, setBindOpen] = useState(false);
   const [bindStep, setBindStep] = useState<BStep>('idle');
   const [bindCode, setBindCode] = useState('');
   const [otp, setOtp] = useState('');
+  const [bindingDevice, setBindingDevice] = useState(false);
   const [removeDev, setRemoveDev] = useState<Dev | null>(null);
   const [primDev, setPrimDev] = useState<Dev | null>(null);
   const [bioStep, setBioStep] = useState<BioStep>('idle');
-  const [bioActive] = useState(true);
+  const [bioRequestInFlight, setBioRequestInFlight] = useState(false);
   const [bioTx, setBioTx] = useState(true);
   const [devOnly, setDevOnly] = useState(true);
   const [timeout, setTimeout_] = useState(30);
+  const [savingSettings, setSavingSettings] = useState(false);
   const [logSearch, setLogSearch] = useState('');
   const [logStatus, setLogStatus] = useState('all');
   const [logAction, setLogAction] = useState('all');
 
-  useEffect(() => { const t = setTimeout(() => { setDevices(DEVICES); setLoading(false); }, 600); return () => clearTimeout(t); }, []);
+  const loadTapSecureData = async () => {
+    try {
+      setLoading(true);
+      const [deviceData, logData, settings] = await Promise.all([
+        api.get<DeviceApiRecord[]>('/tapsecure/devices'),
+        api.get<LogApiRecord[]>('/tapsecure/logs', { pageSize: 100 }),
+        api.get<SettingsApiRecord>('/tapsecure/settings'),
+      ]);
 
-  const otherDevices = useMemo(() => devices.filter(d => d.id !== 'd1'), [devices]);
+      setDevices(deviceData.map(mapDeviceFromApi));
+      setLogs(logData.map(mapLogFromApi));
+      setBioTx(settings.biometricTransactions);
+      setDevOnly(settings.boundDeviceOnly);
+      setTimeout_(settings.sessionTimeout);
+    } catch {
+      toast.error('Gagal memuatkan data TapSecure');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadTapSecureData();
+  }, []);
+
+  const currentDevice = useMemo(
+    () => devices.find((device) => device.primary) || devices.find((device) => device.active) || devices[0] || null,
+    [devices]
+  );
+  const otherDevices = useMemo(
+    () => devices.filter((device) => device.id !== currentDevice?.id),
+    [devices, currentDevice]
+  );
+  const bioActive = useMemo(
+    () => bioStep === 'done' || logs.some((log) => log.action === 'biometric_setup' && log.status === 'success'),
+    [bioStep, logs]
+  );
   const filteredLogs = useMemo(() => logs.filter(l => {
     if (logStatus !== 'all' && l.status !== logStatus) return false;
     if (logAction !== 'all' && l.action !== logAction) return false;
@@ -152,15 +294,91 @@ export default function TapSecurePage() {
   const devStats = useMemo(() => ({ total: devices.length, primary: devices.filter(d => d.primary).length, trusted: devices.filter(d => d.trusted).length, active: devices.filter(d => d.active).length }), [devices]);
 
   const handleAdd = () => { setBindStep('idle'); setOtp(''); setBindCode(Math.floor(100000 + Math.random() * 900000).toString()); setBindOpen(true); };
-  const handleOtpSubmit = () => {
+  const handleOtpSubmit = async () => {
     if (otp.length !== 6) return;
-    setBindStep('success');
-    const nd: Dev = { id: `d_${Date.now()}`, name: 'Peranti Baru', type: 'mobile', ua: 'Chrome 125 / Android 14', ip: '110.159.22.33', loc: 'Shah Alam', primary: false, trusted: false, active: true, lastUsed: new Date().toISOString() };
-    setTimeout(() => { setDevices(p => [...p, nd]); toast.success('Peranti berjaya diikat!'); }, 800);
+    try {
+      setBindingDevice(true);
+      const deviceType = detectDeviceType();
+      const created = await api.post<DeviceApiRecord>('/tapsecure/devices', {
+        deviceName: buildDeviceName(deviceType),
+        deviceType,
+        deviceFingerprint: buildDeviceFingerprint(),
+        userAgent: typeof navigator === 'undefined' ? undefined : navigator.userAgent,
+      });
+      setDevices((prev) => [...prev, mapDeviceFromApi(created)]);
+      await loadTapSecureData();
+      setBindStep('success');
+      toast.success('Peranti berjaya diikat!');
+    } catch {
+      toast.error('Gagal mengikat peranti baharu');
+    } finally {
+      setBindingDevice(false);
+    }
   };
-  const confirmRemove = () => { if (!removeDev) return; setDevices(p => p.filter(d => d.id !== removeDev.id)); toast.success(`${removeDev.name} dikeluarkan`); setRemoveDev(null); };
-  const confirmPrimary = () => { if (!primDev) return; setDevices(p => p.map(d => ({ ...d, primary: d.id === primDev.id }))); toast.success(`${primDev.name} ditetapkan utama`); setPrimDev(null); };
-  const handleBio = () => { setBioStep('preparing'); setTimeout(() => setBioStep('scanning'), 1500); setTimeout(() => setBioStep('done'), 4000); };
+  const confirmRemove = async () => {
+    if (!removeDev) return;
+    try {
+      await api.delete('/tapsecure/devices', { id: removeDev.id });
+      setDevices((prev) => prev.filter((device) => device.id !== removeDev.id));
+      toast.success(`${removeDev.name} dikeluarkan`);
+      setRemoveDev(null);
+      await loadTapSecureData();
+    } catch {
+      toast.error('Gagal mengalih keluar peranti');
+    }
+  };
+  const confirmPrimary = async () => {
+    if (!primDev) return;
+    try {
+      await api.put('/tapsecure/devices/primary', { id: primDev.id });
+      setDevices((prev) => prev.map((device) => ({ ...device, primary: device.id === primDev.id })));
+      toast.success(`${primDev.name} ditetapkan utama`);
+      setPrimDev(null);
+      await loadTapSecureData();
+    } catch {
+      toast.error('Gagal menetapkan peranti utama');
+    }
+  };
+  const handleBio = async () => {
+    try {
+      setBioRequestInFlight(true);
+      setBioStep('preparing');
+      await sleep(1200);
+      setBioStep('scanning');
+      await sleep(1800);
+      await api.post('/tapsecure/biometric', {
+        type: 'setup',
+        deviceFingerprint: buildDeviceFingerprint(),
+        userAgent: typeof navigator === 'undefined' ? undefined : navigator.userAgent,
+      });
+      setBioStep('done');
+      toast.success('Pengesahan biometrik berjaya diaktifkan');
+      await loadTapSecureData();
+    } catch {
+      setBioStep('idle');
+      toast.error('Gagal mengaktifkan pengesahan biometrik');
+    } finally {
+      setBioRequestInFlight(false);
+    }
+  };
+  const saveSettings = async () => {
+    try {
+      setSavingSettings(true);
+      const updated = await api.put<SettingsApiRecord>('/tapsecure/settings', {
+        biometricTransactions: bioTx,
+        boundDeviceOnly: devOnly,
+        sessionTimeout: timeout,
+      });
+      setBioTx(updated.biometricTransactions);
+      setDevOnly(updated.boundDeviceOnly);
+      setTimeout_(updated.sessionTimeout);
+      toast.success('Tetapan keselamatan berjaya disimpan');
+    } catch {
+      toast.error('Gagal menyimpan tetapan keselamatan');
+    } finally {
+      setSavingSettings(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-emerald-50/40 to-gray-50 flex flex-col">
@@ -224,9 +442,14 @@ export default function TapSecurePage() {
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
-                    {!loading && devices.filter(d => d.id === 'd1').map(d => (
-                      <DevCard key={d.id} d={d} isCurrent onRemove={() => setRemoveDev(d)} onSetPrimary={() => setPrimDev(d)} />
-                    ))}
+                    {!loading && currentDevice && (
+                      <DevCard d={currentDevice} isCurrent onRemove={() => setRemoveDev(currentDevice)} onSetPrimary={() => setPrimDev(currentDevice)} />
+                    )}
+                    {!loading && !currentDevice && (
+                      <div className="rounded-xl border border-dashed border-gray-200 px-4 py-8 text-center text-sm text-muted-foreground">
+                        Tiada peranti aktif direkodkan untuk akaun ini.
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
@@ -263,7 +486,10 @@ export default function TapSecurePage() {
                           <PulseFingerprint />
                           <div><h3 className="text-lg font-bold text-gray-900">Pengesahan Biometrik</h3>
                             <p className="text-sm text-muted-foreground mt-1 max-w-md">Daftarkan cap jari atau pengesahan muka untuk akses lebih selamat.</p></div>
-                          <Button onClick={handleBio} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"><Fingerprint className="w-4 h-4" />Aktifkan Pengesahan Biometrik</Button>
+                          <Button onClick={handleBio} disabled={bioRequestInFlight} className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2">
+                            <Fingerprint className="w-4 h-4" />
+                            {bioRequestInFlight ? 'Mengaktifkan...' : 'Aktifkan Pengesahan Biometrik'}
+                          </Button>
                         </motion.div>
                       )}
                       {bioStep === 'preparing' && (
@@ -336,13 +562,18 @@ export default function TapSecurePage() {
                     <Switch checked={devOnly} onCheckedChange={setDevOnly} />
                   </div>
                   <Separator />
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div><p className="text-sm font-medium">Had masa tamat sesi</p><p className="text-xs text-muted-foreground mt-0.5">Sesi tamat selepas tempoh tidak aktif</p></div>
-                      <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">{timeout >= 60 ? `${timeout / 60} jam` : `${timeout} minit`}</Badge>
-                    </div>
-                    <Slider value={[timeout]} min={0} max={4} step={1} onValueChange={v => setTimeout_([5, 15, 30, 60, 240][v[0]])} />
+                    <div className="space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div><p className="text-sm font-medium">Had masa tamat sesi</p><p className="text-xs text-muted-foreground mt-0.5">Sesi tamat selepas tempoh tidak aktif</p></div>
+                        <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200">{timeout >= 60 ? `${timeout / 60} jam` : `${timeout} minit`}</Badge>
+                      </div>
+                    <Slider value={[SESSION_TIMEOUT_OPTIONS.indexOf(timeout)]} min={0} max={SESSION_TIMEOUT_OPTIONS.length - 1} step={1} onValueChange={v => setTimeout_(SESSION_TIMEOUT_OPTIONS[v[0]] ?? 30)} />
                     <div className="flex justify-between text-[10px] text-muted-foreground"><span>5 min</span><span>15 min</span><span>30 min</span><span>1 jam</span><span>4 jam</span></div>
+                  </div>
+                  <div className="flex justify-end">
+                    <Button onClick={saveSettings} disabled={savingSettings} className="bg-emerald-600 hover:bg-emerald-700 text-white">
+                      {savingSettings ? 'Menyimpan...' : 'Simpan Tetapan'}
+                    </Button>
                   </div>
                 </CardContent></Card>
               </motion.div>
@@ -377,7 +608,7 @@ export default function TapSecurePage() {
                   </div>
                   <div className="flex items-center justify-between mt-3">
                     <p className="text-xs text-muted-foreground">Menunjukkan {filteredLogs.length} daripada {logs.length} rekod</p>
-                    <Button variant="outline" size="sm" onClick={() => toast.success(`${filteredLogs.length} rekod dieksport`)} className="text-xs gap-1 h-7"><Download className="w-3 h-3" />Eksport</Button>
+                    <Button variant="outline" size="sm" onClick={() => toast.success(`${filteredLogs.length} rekod sedia untuk dieksport`)} className="text-xs gap-1 h-7"><Download className="w-3 h-3" />Eksport</Button>
                   </div>
                 </CardContent></Card>
               </motion.div>
@@ -444,7 +675,7 @@ export default function TapSecurePage() {
                 <div className="flex justify-center"><Input value={otp} onChange={e => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" maxLength={6} className="w-40 text-center text-2xl font-mono tracking-[0.3em] h-12" /></div>
               </div>
               <DialogFooter><Button variant="outline" onClick={() => { setBindStep('idle'); setOtp(''); }} className="text-xs">Kembali</Button>
-                <Button onClick={handleOtpSubmit} disabled={otp.length !== 6} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1"><CheckCircle2 className="w-3 h-3" />Sahkan</Button>
+                <Button onClick={handleOtpSubmit} disabled={otp.length !== 6 || bindingDevice} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs gap-1">{bindingDevice ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}{bindingDevice ? 'Mengikat...' : 'Sahkan'}</Button>
               </DialogFooter>
             </motion.div>
           )}

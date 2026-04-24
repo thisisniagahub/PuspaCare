@@ -1,12 +1,14 @@
 import { NextResponse } from 'next/server'
+import { AuthorizationError, requireRole } from '@/lib/auth'
 import { DEFAULT_OPENCLAW_BRIDGE_URL } from '@/lib/openclaw'
 
 const DEFAULT_GATEWAY_URL = 'https://operator.gangniaga.my'
 
-export async function GET() {
+export async function GET(request: Request) {
   const bridgeBaseUrl = (process.env.OPENCLAW_BRIDGE_URL || DEFAULT_OPENCLAW_BRIDGE_URL).replace(/\/$/, '')
 
   try {
+    await requireRole(request, ['developer'])
     const response = await fetch(`${bridgeBaseUrl}/snapshot`, {
       method: 'GET',
       cache: 'no-store',
@@ -48,6 +50,12 @@ export async function GET() {
       },
     })
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json({
+        success: false,
+        error: error.message,
+      }, { status: error.status })
+    }
     return NextResponse.json({
       success: true,
       data: {

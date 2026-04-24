@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { z } from 'zod';
 
@@ -22,13 +23,25 @@ const securityLogQuerySchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
+    const session = await requireAuth()
     const searchParams = Object.fromEntries(request.nextUrl.searchParams);
     const query = securityLogQuerySchema.parse(searchParams);
 
     // Build where clause
     const where: Record<string, unknown> = {};
 
-    if (query.userId) where.userId = query.userId;
+    if (query.userId && query.userId !== session.user.id) {
+      if (session.user.role !== 'admin' && session.user.role !== 'developer') {
+        throw new AuthorizationError('Anda tidak boleh melihat log keselamatan pengguna lain', 403)
+      }
+    }
+
+    if (query.userId) {
+      where.userId = query.userId;
+    } else if (session.user.role !== 'admin' && session.user.role !== 'developer') {
+      where.userId = session.user.id;
+    }
+
     if (query.action) where.action = query.action;
     if (query.method) where.method = query.method;
     if (query.status) where.status = query.status;
@@ -67,6 +80,12 @@ export async function GET(request: NextRequest) {
       totalPages: Math.ceil(total / pageSize),
     });
   } catch (error) {
+    if (error instanceof AuthorizationError) {
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: error.status }
+      );
+    }
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { success: false, error: 'Pengesahan gagal', details: error.issues },
