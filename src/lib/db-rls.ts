@@ -28,7 +28,7 @@ export function getScopedDb(branchId?: string): PrismaClient {
             BRANCH_AWARE_MODELS.includes(model) &&
             supportedOperations.includes(operation as string)
           ) {
-            args.where = { ...(args as any).where, branchId };
+            (args as any).where = { ...(args as any).where, branchId };
           }
 
           return query(args);

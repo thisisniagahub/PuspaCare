@@ -3,7 +3,7 @@ import { AuthorizationError, requireRole } from '@/lib/auth'
 
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(request, ['admin', 'developer', 'volunteer', 'ops'])
+    await requireRole(request, ['staff', 'admin', 'developer'])
     const body = await request.json()
     const { imageUrl } = body
 
