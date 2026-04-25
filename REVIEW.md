@@ -168,7 +168,7 @@ Capture, EKYCVerification, DeviceBinding, SecurityLog
 
 #### 2.4 ✅ Bual AI (Real AI Integration)
 **Masalah**: AI module ada tapi guna placeholder
-- [ ] Connect AI chat ke z-ai-web-dev-sdk (LLM skill)
+- [ ] Connect AI chat ke OpenClaw Gateway (LLM skill)
 - [ ] Context-aware: AI boleh baca data ahli, kes, derma untuk jawab soalan
 - [ ] Auto-generate reports from natural language
 - [ ] Smart recommendations: "Ahli X layak untuk Programme Y"

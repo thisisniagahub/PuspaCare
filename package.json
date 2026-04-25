@@ -3,8 +3,8 @@
   "version": "0.2.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 3000 2>&1 | tee dev.log",
-    "dev:watch": "while true; do next dev -p 3000 2>&1 | tee dev.log; echo 'Server exited. Restarting in 2s...'; sleep 2; done",
+    "dev": "next dev -p 3000",
+    "dev:watch": "next dev -p 3000",
     "build": "next build && bun run scripts/prepare-standalone.ts",
     "start": "bun run scripts/start-standalone.ts",
     "lint": "eslint .",
@@ -66,6 +66,7 @@
     "next": "^16.1.1",
     "next-auth": "^4.24.11",
     "next-themes": "^0.4.6",
+    "ogl": "^1.0.11",
     "pg": "^8.20.0",
     "prisma": "^6.11.1",
     "react": "^19.0.0",
@@ -83,7 +84,6 @@
     "tailwindcss-animate": "^1.0.7",
     "uuid": "^11.1.0",
     "vaul": "^1.1.2",
-    "z-ai-web-dev-sdk": "^0.0.17",
     "zod": "^4.3.6",
     "zustand": "^5.0.6"
   },

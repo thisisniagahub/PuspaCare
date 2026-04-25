@@ -16,6 +16,8 @@ import Image from 'next/image'
 import { Menu, Moon, Sun, Command } from 'lucide-react'
 import { useTheme } from 'next-themes'
 import { CommandPalette } from '@/components/command-palette'
+import { motion, AnimatePresence } from 'framer-motion'
+import Aurora from '@/components/Aurora'
 
 // Loading placeholder for modules
 const ModuleLoader = () => (
@@ -113,37 +115,50 @@ const viewLabels: Record<string, string> = {
 }
 
 function ViewRenderer({ view }: { view: string }) {
-  switch (view) {
-    case 'dashboard': return <Dashboard />
-    case 'members': return <Members />
-    case 'cases': return <Cases />
-    case 'programmes': return <Programmes />
-    case 'donations': return <Donations />
-    case 'disbursements': return <Disbursements />
-    case 'compliance': return <Compliance />
-    case 'admin': return <Admin />
-    case 'reports': return <Reports />
-    case 'activities': return <Activities />
-    case 'ai': return <AITools />
-    case 'volunteers': return <Volunteers />
-    case 'donors': return <Donors />
-    case 'documents': return <Documents />
-    case 'openclaw-mcp': return <MCPServers />
-    case 'openclaw-plugins': return <Plugins />
-    case 'openclaw-integrations': return <Integrations />
-    case 'openclaw-terminal': return <TerminalPage />
-    case 'openclaw-agents': return <Agents />
-    case 'openclaw-models': return <Models />
-    case 'openclaw-automation': return <Automation />
-    case 'ekyc': return <EKYC />
-    case 'tapsecure': return <TapSecure />
-    case 'sedekah-jumaat': return <SedekahJumaat />
-    case 'docs': return <Docs />
-    case 'agihan-bulan': return <AgihanBulan />
-    case 'ops-conductor': return <OpsConductor />
-    case 'asnafpreneur': return <Asnafpreneur />
-    default: return <Dashboard />
-  }
+  return (
+    <motion.div
+      key={view}
+      initial={{ opacity: 0, y: 10, filter: 'blur(8px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, y: -10, filter: 'blur(8px)' }}
+      transition={{ duration: 0.3, ease: 'easeOut' }}
+      className="h-full w-full"
+    >
+      {(() => {
+        switch (view) {
+          case 'dashboard': return <Dashboard />
+          case 'members': return <Members />
+          case 'cases': return <Cases />
+          case 'programmes': return <Programmes />
+          case 'donations': return <Donations />
+          case 'disbursements': return <Disbursements />
+          case 'compliance': return <Compliance />
+          case 'admin': return <Admin />
+          case 'reports': return <Reports />
+          case 'activities': return <Activities />
+          case 'ai': return <AITools />
+          case 'volunteers': return <Volunteers />
+          case 'donors': return <Donors />
+          case 'documents': return <Documents />
+          case 'openclaw-mcp': return <MCPServers />
+          case 'openclaw-plugins': return <Plugins />
+          case 'openclaw-integrations': return <Integrations />
+          case 'openclaw-terminal': return <TerminalPage />
+          case 'openclaw-agents': return <Agents />
+          case 'openclaw-models': return <Models />
+          case 'openclaw-automation': return <Automation />
+          case 'ekyc': return <EKYC />
+          case 'tapsecure': return <TapSecure />
+          case 'sedekah-jumaat': return <SedekahJumaat />
+          case 'docs': return <Docs />
+          case 'agihan-bulan': return <AgihanBulan />
+          case 'ops-conductor': return <OpsConductor />
+          case 'asnafpreneur': return <Asnafpreneur />
+          default: return <Dashboard />
+        }
+      })()}
+    </motion.div>
+  )
 }
 
 export default function Home() {
@@ -188,7 +203,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-background flex overflow-hidden">
+    <div className="min-h-screen bg-transparent flex overflow-hidden">
       <AppSidebar />
       <div 
         className={cn(
@@ -196,23 +211,30 @@ export default function Home() {
           "lg:ml-[72px]", 
         )}
       >
-        <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <header className="sticky top-0 z-40 border-b border-white/10 bg-black/20 backdrop-blur-xl transition-all duration-300">
           <div className="flex items-center justify-between h-14 px-4 sm:px-6">
             <div className="flex items-center gap-2.5 min-w-0">
               <Button variant="ghost" size="icon" className="lg:hidden shrink-0" onClick={toggleSidebar} aria-label="Toggle menu">
                 <Menu className="h-5 w-5" />
               </Button>
               <div className="flex items-center gap-2 min-w-0">
-                <Image
-                  src="/puspa-logo-official.png"
-                  alt="PUSPA"
-                  width={28}
-                  height={28}
-                  className="hidden sm:block shrink-0 object-contain"
-                />
-                <span className="font-semibold truncate" style={{ color: '#4B0082' }}>
-                  {viewLabels[currentView] || 'Dashboard'}
-                </span>
+                <motion.div
+                  key={currentView}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="flex items-center gap-2"
+                >
+                  <Image
+                    src="/puspa-logo-official.png"
+                    alt="PUSPA"
+                    width={28}
+                    height={28}
+                    className="hidden sm:block shrink-0 object-contain"
+                  />
+                  <span className="font-bold truncate text-white tracking-tight">
+                    {viewLabels[currentView] || 'Dashboard'}
+                  </span>
+                </motion.div>
               </div>
             </div>
             <div className="flex items-center gap-1.5 shrink-0">
@@ -226,13 +248,13 @@ export default function Home() {
                 <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
               </Button>
               <NotificationBell />
-              <div className="flex items-center gap-2 ml-0.5 pl-2.5 border-l border-border">
-                <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: '#4B0082' }}>
+              <div className="flex items-center gap-2 ml-0.5 pl-2.5 border-l border-white/10">
+                <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-[0_0_15px_rgba(75,0,130,0.5)]" style={{ backgroundColor: '#4B0082' }}>
                   {avatarLabel}
                 </div>
                 <div className="hidden sm:flex sm:flex-col">
-                  <p className="text-sm font-medium leading-tight">{displayName}</p>
-                  <p className="text-[10px] leading-tight font-medium px-1.5 py-0 w-fit rounded" style={{ color: '#4B0082', backgroundColor: '#4B008214' }}>
+                  <p className="text-sm font-medium leading-tight text-white">{displayName}</p>
+                  <p className="text-[10px] leading-tight font-bold px-1.5 py-0 w-fit rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                     {effectiveRole === 'developer' ? 'Developer' : effectiveRole === 'admin' ? 'Pentadbir' : 'Staf'}
                   </p>
                 </div>
@@ -240,12 +262,20 @@ export default function Home() {
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-auto">
-          <Suspense fallback={<PageLoader />} key={currentView}>
-            <ViewRenderer view={currentView} />
-          </Suspense>
+        <main className="flex-1 relative overflow-hidden">
+          <div className="absolute inset-0 z-0 opacity-30 pointer-events-none">
+            <Aurora 
+              colorStops={['#4B0082', '#1e1b4b', '#3b82f6']} 
+              amplitude={1.2}
+            />
+          </div>
+          <div className="relative z-10 h-full overflow-auto">
+            <AnimatePresence mode="wait">
+              <ViewRenderer view={currentView} key={currentView} />
+            </AnimatePresence>
+          </div>
         </main>
-        <footer className="border-t bg-background px-4 lg:px-6 py-3">
+        <footer className="border-t border-white/10 bg-black/20 backdrop-blur-xl px-4 lg:px-6 py-3">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <Image
@@ -255,8 +285,8 @@ export default function Home() {
                 height={20}
                 className="object-contain opacity-80"
               />
-              <span className="font-medium" style={{ color: '#4B0082' }}>© 2026 PUSPA</span>
-              <span className="text-muted-foreground">— Pertubuhan Urus Peduli Asnaf KL & Selangor</span>
+              <span className="font-medium text-emerald-400">© 2026 PUSPA</span>
+              <span className="text-white/40">— Pertubuhan Urus Peduli Asnaf KL & Selangor</span>
             </div>
             <div className="flex items-center gap-3">
               <span>v2.1.0</span>

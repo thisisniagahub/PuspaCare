@@ -105,33 +105,33 @@ const COLUMNS: ColumnDef[] = [
     id: "dirancang",
     label: "Dirancang",
     icon: "\u{1F4CB}",
-    headerClass: "bg-blue-600 text-white",
-    bgClass: "bg-blue-50 dark:bg-blue-950/30",
-    borderClass: "border-blue-200 dark:border-blue-800",
+    headerClass: "bg-gradient-to-r from-blue-600 to-indigo-600 text-white",
+    bgClass: "bg-white/5 backdrop-blur-md",
+    borderClass: "border-blue-500/20",
   },
   {
     id: "dalam_proses",
     label: "Dalam Proses",
     icon: "\u{1F504}",
-    headerClass: "bg-amber-500 text-white",
-    bgClass: "bg-amber-50 dark:bg-amber-950/30",
-    borderClass: "border-amber-200 dark:border-amber-800",
+    headerClass: "bg-gradient-to-r from-amber-500 to-orange-500 text-white",
+    bgClass: "bg-white/5 backdrop-blur-md",
+    borderClass: "border-amber-500/20",
   },
   {
     id: "selesai",
     label: "Selesai",
     icon: "\u2705",
-    headerClass: "bg-green-600 text-white",
-    bgClass: "bg-green-50 dark:bg-green-950/30",
-    borderClass: "border-green-200 dark:border-green-800",
+    headerClass: "bg-gradient-to-r from-emerald-600 to-teal-600 text-white",
+    bgClass: "bg-white/5 backdrop-blur-md",
+    borderClass: "border-emerald-500/20",
   },
   {
     id: "dibatalkan",
     label: "Dibatalkan",
     icon: "\u274C",
-    headerClass: "bg-red-500 text-white",
-    bgClass: "bg-red-50 dark:bg-red-950/30",
-    borderClass: "border-red-200 dark:border-red-800",
+    headerClass: "bg-gradient-to-r from-rose-500 to-red-600 text-white",
+    bgClass: "bg-white/5 backdrop-blur-md",
+    borderClass: "border-rose-500/20",
   },
 ];
 
@@ -399,10 +399,10 @@ function SortableActivityCard({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group rounded-lg border bg-card p-3 shadow-sm transition-all ${
+      className={`group rounded-xl border border-white/10 bg-white/5 backdrop-blur-xl p-3.5 shadow-xl transition-all duration-300 ${
         isDragging
-          ? "scale-105 opacity-70 shadow-lg ring-2 ring-primary/30 z-50"
-          : "hover:shadow-md hover:border-primary/20"
+          ? "scale-105 opacity-70 shadow-2xl ring-2 ring-primary/50 z-50"
+          : "hover:shadow-[0_0_20px_rgba(236,178,255,0.1)] hover:border-primary/30 hover:-translate-y-0.5"
       }`}
     >
       {/* Drag Handle + Title */}

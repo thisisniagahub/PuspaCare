@@ -182,11 +182,11 @@ interface DonationFormData {
 // ─── Constants ───────────────────────────────────────────────────────
 
 const FUND_TYPE_CONFIG: Record<FundType, { label: string; color: string; bgClass: string }> = {
-  zakat: { label: 'Zakat', color: '#7c3aed', bgClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' },
-  sadaqah: { label: 'Sadaqah', color: '#059669', bgClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
-  waqf: { label: 'Waqf', color: '#d97706', bgClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
-  infaq: { label: 'Infaq', color: '#2563eb', bgClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
-  am: { label: 'Sumbangan Am', color: '#6b7280', bgClass: 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300' },
+  zakat: { label: 'Zakat', color: '#ecb2ff', bgClass: 'bg-primary/20 text-primary border-primary/30' },
+  sadaqah: { label: 'Sadaqah', color: '#00fbfb', bgClass: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
+  waqf: { label: 'Waqf', color: '#3b82f6', bgClass: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  infaq: { label: 'Infaq', color: '#f472b6', bgClass: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
+  am: { label: 'Sumbangan Am', color: '#94a3b8', bgClass: 'bg-slate-500/20 text-slate-400 border-slate-500/30' },
 }
 
 const STATUS_CONFIG: Record<DonationStatus, { label: string; color: string; bgClass: string; icon: React.ElementType }> = {
@@ -680,7 +680,7 @@ export default function DonationsPage() {
   // ─── Render ────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-transparent">
       <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
         {/* Page Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -692,7 +692,7 @@ export default function DonationsPage() {
               Pengurusan donasi dengan pemisahan ISF (Islamic Social Finance)
             </p>
           </div>
-          <Button onClick={handleCreate} size="lg" className="gap-2 shrink-0" disabled={loading}>
+          <Button onClick={handleCreate} size="lg" className="gap-2 shrink-0 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all active:scale-95" disabled={loading}>
             <Plus className="h-4 w-4" />
             Donasi Baharu
           </Button>
@@ -701,7 +701,7 @@ export default function DonationsPage() {
         {/* ─── Summary Cards ──────────────────────────────────────── */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {/* Total Donations */}
-          <Card className="relative overflow-hidden">
+          <Card className="relative overflow-hidden bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -709,16 +709,16 @@ export default function DonationsPage() {
                   <p className="text-2xl font-bold">{formatCurrency(grandTotal)}</p>
                   <p className="text-xs text-muted-foreground">{donations.length} rekod</p>
                 </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/40">
-                  <CircleDollarSign className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-primary/20">
+                  <CircleDollarSign className="h-6 w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
-            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-emerald-400 to-emerald-600" />
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-primary to-purple-600" />
           </Card>
 
           {/* This Month */}
-          <Card className="relative overflow-hidden">
+          <Card className="relative overflow-hidden bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -730,16 +730,16 @@ export default function DonationsPage() {
                     }).length} rekod bulan ini
                   </p>
                 </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
-                  <CalendarDays className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-cyan-500/20">
+                  <CalendarDays className="h-6 w-6 text-cyan-400" />
                 </div>
               </div>
             </CardContent>
-            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-amber-400 to-amber-600" />
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-cyan-400 to-cyan-600" />
           </Card>
 
           {/* Total Donors */}
-          <Card className="relative overflow-hidden">
+          <Card className="relative overflow-hidden bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
             <CardContent className="p-4 sm:p-6">
               <div className="flex items-center justify-between">
                 <div className="space-y-1">
@@ -749,21 +749,21 @@ export default function DonationsPage() {
                     {donations.filter(d => d.anonymous).length} penderma tanpa nama
                   </p>
                 </div>
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-100 dark:bg-blue-900/40">
-                  <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-indigo-500/20">
+                  <Users className="h-6 w-6 text-indigo-400" />
                 </div>
               </div>
             </CardContent>
-            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-blue-400 to-blue-600" />
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-indigo-400 to-indigo-600" />
           </Card>
 
           {/* ISF Breakdown */}
-          <Card className="relative overflow-hidden">
+          <Card className="relative overflow-hidden bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
             <CardContent className="p-4 sm:p-6">
               <div className="space-y-3">
                 <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/40">
-                    <ShieldCheck className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-pink-500/20">
+                    <ShieldCheck className="h-4 w-4 text-pink-400" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Pecahan ISF</p>
@@ -779,7 +779,7 @@ export default function DonationsPage() {
                       <Badge
                         key={ft}
                         variant="outline"
-                        className={cn('text-xs gap-1 border-0', FUND_TYPE_CONFIG[ft].bgClass)}
+                        className={cn('text-xs gap-1 border-white/10', FUND_TYPE_CONFIG[ft].bgClass)}
                       >
                         <div
                           className="h-1.5 w-1.5 rounded-full"
@@ -792,7 +792,7 @@ export default function DonationsPage() {
                 </div>
               </div>
             </CardContent>
-            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-purple-400 to-purple-600" />
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-pink-400 to-pink-600" />
           </Card>
         </div>
 

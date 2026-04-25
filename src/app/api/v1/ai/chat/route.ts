@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthorizationError, requireRole } from '@/lib/auth';
+import { createOpenClawChatCompletion, isOpenClawGatewayConfigured, type OpenClawChatMessage } from '@/lib/openclaw';
 import { z } from 'zod';
 
 const chatSchema = z.object({
@@ -28,15 +29,21 @@ Jika tidak pasti, katakan dengan jujur dan cadangkan rujukan kepada pentadbir PU
 export async function POST(request: NextRequest) {
   try {
     await requireRole(request, ['developer']);
+
+    if (!isOpenClawGatewayConfigured()) {
+      return NextResponse.json(
+        { success: false, error: 'OpenClaw Gateway belum dikonfigurasi' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     const { message, context } = chatSchema.parse(body);
 
-    // Build messages for the AI
-    const messages: Array<{ role: string; content: string }> = [
+    const messages: OpenClawChatMessage[] = [
       { role: 'system', content: SYSTEM_PROMPT },
     ];
 
-    // Add context if provided
     if (context) {
       messages.push({
         role: 'system',
@@ -46,29 +53,21 @@ export async function POST(request: NextRequest) {
 
     messages.push({ role: 'user', content: message });
 
-    // Use z-ai-web-dev-sdk
-    const ZAI = (await import('z-ai-web-dev-sdk')).default;
-    const zai = await ZAI.create();
-    const result = await zai.chat.completions.create({
-      messages: messages as Array<{ role: 'user' | 'assistant' | 'system'; content: string }>,
-      thinking: { type: 'disabled' },
-    });
-
-    const responseText = result?.choices?.[0]?.message?.content || 'Maaf, saya tidak dapat menjana respons pada masa ini. Sila cuba lagi.';
-
-    // Estimate token usage
-    const inputTokens = message.length + (context?.length || 0);
-    const outputTokens = responseText.length;
-    const totalTokens = inputTokens + outputTokens;
+    const openClawResult = await createOpenClawChatCompletion(messages);
+    const responseText = openClawResult.content;
+    const estimatedInputTokens = Math.ceil((message.length + (context?.length || 0)) / 4);
+    const estimatedOutputTokens = Math.ceil(responseText.length / 4);
 
     return NextResponse.json({
       success: true,
       data: {
         response: responseText,
+        provider: 'openclaw',
+        model: openClawResult.model,
         tokens: {
-          input: Math.ceil(inputTokens / 4),
-          output: Math.ceil(outputTokens / 4),
-          total: Math.ceil(totalTokens / 4),
+          input: openClawResult.usage?.prompt_tokens ?? estimatedInputTokens,
+          output: openClawResult.usage?.completion_tokens ?? estimatedOutputTokens,
+          total: openClawResult.usage?.total_tokens ?? estimatedInputTokens + estimatedOutputTokens,
         },
         timestamp: new Date().toISOString(),
       },
@@ -86,10 +85,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.error('Error in AI chat:', error);
+    console.error('Error in OpenClaw AI chat:', error);
     return NextResponse.json(
-      { success: false, error: 'Gagal memproses mesej AI' },
-      { status: 500 }
+      { success: false, error: 'Gagal memproses mesej melalui OpenClaw' },
+      { status: 502 }
     );
   }
 }

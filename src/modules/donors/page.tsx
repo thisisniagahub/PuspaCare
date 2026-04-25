@@ -194,15 +194,15 @@ interface DonorDetailPayload {
 // ─── Segment / Status Maps ──────────────────────────────────────────────────
 
 const segmentMap: Record<string, { label: string; color: string }> = {
-  major: { label: 'Major', color: 'bg-purple-100 text-purple-700' },
-  regular: { label: 'Tetap', color: 'bg-emerald-100 text-emerald-700' },
-  occasional: { label: 'Sekali-sekala', color: 'bg-amber-100 text-amber-700' },
-  lapsed: { label: 'Tidak Aktif', color: 'bg-gray-100 text-gray-600' },
+  major: { label: 'Major', color: 'bg-primary/20 text-primary border-primary/30' },
+  regular: { label: 'Tetap', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
+  occasional: { label: 'Sekali-sekala', color: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  lapsed: { label: 'Tidak Aktif', color: 'bg-slate-500/20 text-slate-400 border-slate-500/30' },
 }
 
 const statusMap: Record<string, { label: string; color: string }> = {
-  active: { label: 'Aktif', color: 'bg-emerald-100 text-emerald-700' },
-  inactive: { label: 'Tidak Aktif', color: 'bg-gray-100 text-gray-600' },
+  active: { label: 'Aktif', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
+  inactive: { label: 'Tidak Aktif', color: 'bg-slate-500/20 text-slate-400 border-slate-500/30' },
 }
 
 const commTypeMap: Record<string, { label: string; icon: typeof Mail; color: string }> = {
@@ -682,7 +682,7 @@ export default function DonorsPage() {
   // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-transparent">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* ── Header ─────────────────────────────────────────────────────── */}
         <header className="mb-8">
@@ -704,19 +704,19 @@ export default function DonorsPage() {
         {/* ── Stats Cards ────────────────────────────────────────────────── */}
         <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
           {[
-            { label: 'Jumlah Penderma', value: stats?.totalDonors ?? '—', icon: Users, color: 'text-purple-600', bg: 'bg-purple-50' },
-            { label: 'Jumlah Derma', value: stats?.totalAmount ? formatCurrency(stats.totalAmount) : '—', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50' },
-            { label: 'Penderma Tetap', value: stats?.regularDonors ?? '—', icon: Heart, color: 'text-rose-500', bg: 'bg-rose-50' },
-            { label: 'Resit Cukai', value: stats?.totalReceipts ?? '—', icon: Receipt, color: 'text-amber-600', bg: 'bg-amber-50' },
+            { label: 'Jumlah Penderma', value: stats?.totalDonors ?? '—', icon: Users, color: 'text-primary', bg: 'bg-primary/20', border: 'from-primary to-purple-600' },
+            { label: 'Jumlah Derma', value: stats?.totalAmount ? formatCurrency(stats.totalAmount) : '—', icon: TrendingUp, color: 'text-cyan-400', bg: 'bg-cyan-500/20', border: 'from-cyan-400 to-cyan-600' },
+            { label: 'Penderma Tetap', value: stats?.regularDonors ?? '—', icon: Heart, color: 'text-pink-400', bg: 'bg-pink-500/20', border: 'from-pink-400 to-pink-600' },
+            { label: 'Resit Cukai', value: stats?.totalReceipts ?? '—', icon: Receipt, color: 'text-blue-400', bg: 'bg-blue-500/20', border: 'from-blue-400 to-blue-600' },
           ].map((stat) => (
-            <Card key={stat.label} className="border-0 shadow-sm">
+            <Card key={stat.label} className="relative overflow-hidden bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
               <CardContent className="p-4 sm:p-5">
                 <div className="flex items-center justify-between">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wide truncate">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide truncate">
                       {stat.label}
                     </p>
-                    <p className="mt-1 text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                    <p className="mt-1 text-xl sm:text-2xl font-bold text-foreground truncate">
                       {typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}
                     </p>
                   </div>
@@ -725,22 +725,23 @@ export default function DonorsPage() {
                   </div>
                 </div>
               </CardContent>
+              <div className={`absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r ${stat.border}`} />
             </Card>
           ))}
         </div>
 
         {/* ── Tabs ───────────────────────────────────────────────────────── */}
         <Tabs defaultValue="donors" className="space-y-6">
-          <TabsList className="bg-purple-50/50">
-            <TabsTrigger value="donors" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white gap-1.5">
+          <TabsList className="bg-white/5 border border-white/10 p-1">
+            <TabsTrigger value="donors" className="data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5 transition-all">
               <Users className="h-4 w-4" />
               Senarai Penderma
             </TabsTrigger>
-            <TabsTrigger value="receipts" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white gap-1.5">
+            <TabsTrigger value="receipts" className="data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5 transition-all">
               <Receipt className="h-4 w-4" />
               Resit Cukai LHDN
             </TabsTrigger>
-            <TabsTrigger value="communications" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white gap-1.5">
+            <TabsTrigger value="communications" className="data-[state=active]:bg-primary data-[state=active]:text-white gap-1.5 transition-all">
               <Mail className="h-4 w-4" />
               Komunikasi
             </TabsTrigger>
@@ -754,7 +755,7 @@ export default function DonorsPage() {
                   <CardTitle className="text-lg font-semibold text-gray-900">
                     Senarai Penderma
                   </CardTitle>
-                  <Button onClick={openCreateDonor} className="bg-purple-600 hover:bg-purple-700 gap-2 w-full sm:w-auto">
+                  <Button onClick={openCreateDonor} className="bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all active:scale-95 gap-2 w-full sm:w-auto">
                     <Plus className="h-4 w-4" />
                     Daftar Penderma
                   </Button>

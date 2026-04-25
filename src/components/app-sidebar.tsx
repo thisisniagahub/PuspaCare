@@ -183,7 +183,8 @@ function getVisibleGroups(role: UserRole): NavGroup[] {
 // Constants
 // ═══════════════════════════════════════════════════════════════════════════════
 
-const BRAND_COLOR = '#4B0082';
+const BRAND_COLOR = '#ecb2ff';
+const ACCENT_COLOR = '#00fbfb';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // SidebarBrand — Logo + org name
@@ -197,7 +198,7 @@ function SidebarBrand({ collapsed }: { collapsed: boolean }) {
     )}>
       <div className={cn(
         'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-sm transition-all duration-300',
-        'bg-white ring-1 ring-purple-100 dark:bg-purple-950/50 dark:ring-purple-800/50',
+        'bg-white ring-1 ring-cyan-100 dark:bg-cyan-950/50 dark:ring-cyan-800/50',
       )}>
         <Image
           src="/puspa-logo-official.png"
@@ -249,12 +250,12 @@ function NavItemButton({
       className={cn(
         'group relative flex w-full items-center gap-3 rounded-lg text-sm font-medium cursor-pointer transition-all duration-200 ease-in-out',
         collapsed ? 'justify-center px-2 py-2.5' : 'px-3 py-2 pl-3.5',
-        'outline-none focus-visible:ring-2 focus-visible:ring-purple-500 focus-visible:ring-offset-2',
-        isActive ? 'text-white shadow-sm' : 'text-muted-foreground hover:bg-muted hover:text-foreground active:scale-95',
+        'outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 focus-visible:ring-offset-2',
+        isActive ? 'text-white shadow-md' : 'text-muted-foreground hover:bg-cyan-50 hover:text-cyan-700 dark:hover:bg-cyan-950/30 dark:hover:text-cyan-300 active:scale-95',
       )}
       style={
         isActive
-          ? { background: `linear-gradient(135deg, ${BRAND_COLOR}, #6B21A8)`, boxShadow: `0 2px 8px ${BRAND_COLOR}30` }
+          ? { background: `linear-gradient(135deg, ${BRAND_COLOR}, ${ACCENT_COLOR})`, boxShadow: `0 4px 12px ${BRAND_COLOR}40` }
           : undefined
       }
     >
@@ -352,7 +353,7 @@ function SidebarFooter({
       >
         <div
           className={cn(
-            'flex shrink-0 items-center justify-center rounded-full bg-purple-50 text-xs font-bold dark:bg-purple-950/40',
+            'flex shrink-0 items-center justify-center rounded-full bg-cyan-50 text-xs font-bold dark:bg-cyan-950/40',
             collapsed ? 'h-8 w-8' : 'h-9 w-9',
           )}
           style={{ color: BRAND_COLOR }}
@@ -390,7 +391,7 @@ function SidebarFooter({
         collapsed ? 'justify-center' : '',
       )}>
         <div className={cn(
-          'flex shrink-0 items-center justify-center rounded-lg bg-purple-50 dark:bg-purple-950/40',
+          'flex shrink-0 items-center justify-center rounded-lg bg-cyan-50 dark:bg-cyan-950/40',
           collapsed ? 'h-7 w-7' : 'h-8 w-8',
         )}>
           <Image src="/puspa-logo-official.png" alt="PUSPA" width={collapsed ? 16 : 20} height={collapsed ? 16 : 20} className="object-contain" />
@@ -483,7 +484,7 @@ function SidebarContent({
 
   return (
     <TooltipProvider delayDuration={300}>
-      <div className="relative flex h-full flex-col bg-card overflow-hidden">
+      <div className="relative flex h-full flex-col bg-card backdrop-blur-xl border-r border-white/10 overflow-hidden">
         <SidebarBrand collapsed={isCollapsed} />
 
         {/* Mobile close button */}

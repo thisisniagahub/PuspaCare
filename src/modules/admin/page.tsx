@@ -525,9 +525,9 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-emerald-50/30 dark:from-slate-950 dark:via-slate-900 dark:to-emerald-950/20">
+    <div className="min-h-screen bg-[#0a0c10] text-white">
       {/* Header */}
-      <div className="border-b bg-white/80 backdrop-blur-sm dark:bg-slate-900/80 sticky top-0 z-40">
+      <div className="border-b border-white/10 bg-white/5 backdrop-blur-xl sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
@@ -558,10 +558,10 @@ export default function AdminPage() {
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <Tabs defaultValue="profil" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto p-1.5 bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl">
             <TabsTrigger
               value="profil"
-              className="flex items-center justify-center gap-2 py-2.5 px-3 rounded-lg text-xs sm:text-sm data-[state=active]:bg-white data-[state=active]:shadow-sm dark:data-[state=active]:bg-slate-700"
+              className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-xs sm:text-sm data-[state=active]:bg-primary data-[state=active]:text-white data-[state=active]:shadow-lg transition-all"
             >
               <Building2 className="h-4 w-4 hidden sm:block" />
               Profil Organisasi
@@ -593,7 +593,7 @@ export default function AdminPage() {
               TAB 1: PROFIL ORGANISASI
           ════════════════════════════════════════════════ */}
           <TabsContent value="profil" className="space-y-6">
-            <Card className="shadow-sm border-slate-200/80 dark:border-slate-700/80">
+            <Card className="shadow-2xl border-white/10 bg-white/5 backdrop-blur-2xl rounded-3xl">
               <CardHeader>
                 <div className="flex items-center gap-3">
                   <div className="p-2 bg-emerald-50 rounded-lg dark:bg-emerald-900/30">

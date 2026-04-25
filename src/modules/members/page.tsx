@@ -512,13 +512,13 @@ function formatDate(dateStr: string): string {
 function getStatusColor(status: MemberStatus): string {
   switch (status) {
     case 'Aktif':
-      return 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800';
+      return 'bg-primary/20 text-primary border-primary/30';
     case 'Tidak Aktif':
-      return 'bg-gray-100 text-gray-700 dark:bg-gray-800/40 dark:text-gray-400 border-gray-200 dark:border-gray-700';
+      return 'bg-white/10 text-white/50 border-white/20';
     case 'Senarai Hitam':
-      return 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300 border-red-200 dark:border-red-800';
+      return 'bg-destructive/20 text-destructive border-destructive/30';
     default:
-      return 'bg-gray-100 text-gray-700';
+      return 'bg-white/10 text-white/50';
   }
 }
 
@@ -817,15 +817,15 @@ export default function MembersPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-stone-100 dark:from-slate-950 dark:to-slate-900">
+      <div className="min-h-screen bg-transparent">
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="mb-6 space-y-2">
-            <div className="h-8 w-56 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
-            <div className="h-4 w-80 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
+            <div className="h-8 w-56 animate-pulse rounded bg-white/10" />
+            <div className="h-4 w-80 animate-pulse rounded bg-white/10" />
           </div>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
             {Array.from({ length: 4 }).map((_, index) => (
-              <Card key={index} className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50">
+              <Card key={index} className="bg-card backdrop-blur-xl border-white/10">
                 <CardContent className="p-4">
                   <div className="h-12 animate-pulse rounded bg-slate-200 dark:bg-slate-800" />
                 </CardContent>
@@ -838,7 +838,7 @@ export default function MembersPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-stone-100 dark:from-slate-950 dark:to-slate-900">
+    <div className="min-h-screen bg-transparent">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -850,7 +850,7 @@ export default function MembersPage() {
               Urus dan selenggara maklumat ahli penerima zakat dan bantuan
             </p>
           </div>
-          <Button onClick={handleAddMember} className="shrink-0 gap-2 bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={handleAddMember} className="shrink-0 gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
             <Plus className="h-4 w-4" />
             Tambah Ahli
           </Button>
@@ -858,7 +858,7 @@ export default function MembersPage() {
 
         {/* Stats Row */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50">
+          <Card className="bg-card backdrop-blur-xl border-white/10">
             <CardContent className="flex items-center gap-3 p-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/40">
                 <Users className="h-5 w-5 text-blue-600 dark:text-blue-400" />
@@ -870,7 +870,7 @@ export default function MembersPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50">
+          <Card className="bg-card backdrop-blur-xl border-white/10">
             <CardContent className="flex items-center gap-3 p-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
                 <UserCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
@@ -882,7 +882,7 @@ export default function MembersPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50">
+          <Card className="bg-card backdrop-blur-xl border-white/10">
             <CardContent className="flex items-center gap-3 p-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gray-100 dark:bg-gray-800/60">
                 <UserX className="h-5 w-5 text-gray-500 dark:text-gray-400" />
@@ -894,7 +894,7 @@ export default function MembersPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50">
+          <Card className="bg-card backdrop-blur-xl border-white/10">
             <CardContent className="flex items-center gap-3 p-4">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-900/40">
                 <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
@@ -908,7 +908,7 @@ export default function MembersPage() {
         </div>
 
         {/* Search & Filter Bar */}
-        <Card className="mb-6 border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50">
+        <Card className="mb-6 bg-card backdrop-blur-xl border-white/10">
           <CardContent className="p-4">
             <div className="flex flex-col gap-3">
               {/* Search */}
@@ -918,7 +918,7 @@ export default function MembersPage() {
                   placeholder="Cari nama, No. IC atau No. Ahli..."
                   value={searchQuery}
                   onChange={(e) => handleSearchChange(e.target.value)}
-                  className="pl-9 border-slate-200 bg-slate-50 dark:border-slate-600 dark:bg-slate-900/50"
+                  className="pl-9 border-white/10 bg-white/5 focus:bg-white/10 transition-colors"
                 />
               </div>
 
@@ -980,7 +980,7 @@ export default function MembersPage() {
         </Card>
 
         {/* Data Table - Desktop */}
-        <Card className="hidden border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-800/50 md:block">
+        <Card className="hidden bg-card backdrop-blur-xl border-white/10 md:block">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>

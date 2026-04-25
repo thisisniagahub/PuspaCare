@@ -27,8 +27,18 @@ import {
   Building2,
   StickyNote,
   AlertTriangle,
+  Info,
   Filter,
 } from 'lucide-react';
+
+import {
+  computeEligibility,
+  computeRecommendation,
+  computeRiskFlags,
+  computeBeneficiary360,
+  computeNextAction,
+  computeDisbursementReconciliation,
+} from '@/lib/case-intelligence';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -203,18 +213,18 @@ const NEXT_STATUS: Partial<Record<Status, Status[]>> = {
 };
 
 const STATUS_COLORS: Record<Status, string> = {
-  draft: 'bg-gray-100 text-gray-700 border-gray-300',
-  submitted: 'bg-blue-100 text-blue-700 border-blue-300',
-  verifying: 'bg-amber-100 text-amber-700 border-amber-300',
-  verified: 'bg-teal-100 text-teal-700 border-teal-300',
-  scoring: 'bg-indigo-100 text-indigo-700 border-indigo-300',
-  scored: 'bg-purple-100 text-purple-700 border-purple-300',
-  approved: 'bg-green-100 text-green-700 border-green-300',
-  disbursing: 'bg-cyan-100 text-cyan-700 border-cyan-300',
-  disbursed: 'bg-emerald-100 text-emerald-700 border-emerald-300',
-  follow_up: 'bg-orange-100 text-orange-700 border-orange-300',
-  closed: 'bg-slate-100 text-slate-700 border-slate-300',
-  rejected: 'bg-red-100 text-red-700 border-red-300',
+  draft: 'bg-white/10 text-white/50 border-white/20',
+  submitted: 'bg-primary/20 text-primary border-primary/30',
+  verifying: 'bg-amber-500/20 text-amber-500 border-amber-500/30',
+  verified: 'bg-emerald-500/20 text-emerald-500 border-emerald-500/30',
+  scoring: 'bg-indigo-500/20 text-indigo-500 border-indigo-500/30',
+  scored: 'bg-purple-500/20 text-purple-500 border-purple-500/30',
+  approved: 'bg-primary/20 text-primary border-primary/30',
+  disbursing: 'bg-cyan-500/20 text-cyan-500 border-cyan-500/30',
+  disbursed: 'bg-cyan-500/20 text-cyan-500 border-cyan-500/30',
+  follow_up: 'bg-orange-500/20 text-orange-500 border-orange-500/30',
+  closed: 'bg-white/10 text-white/50 border-white/20',
+  rejected: 'bg-destructive/20 text-destructive border-destructive/30',
 };
 
 const STATUS_DOT_COLORS: Record<Status, string> = {
@@ -233,10 +243,10 @@ const STATUS_DOT_COLORS: Record<Status, string> = {
 };
 
 const PRIORITY_CONFIG: Record<Priority, { label: string; color: string }> = {
-  urgent: { label: 'Urgent', color: 'bg-red-100 text-red-700 border-red-300' },
-  high: { label: 'Tinggi', color: 'bg-orange-100 text-orange-700 border-orange-300' },
-  normal: { label: 'Normal', color: 'bg-blue-100 text-blue-700 border-blue-300' },
-  low: { label: 'Rendah', color: 'bg-gray-100 text-gray-600 border-gray-300' },
+  urgent: { label: 'Urgent', color: 'bg-destructive/20 text-destructive border-destructive/30' },
+  high: { label: 'Tinggi', color: 'bg-orange-500/20 text-orange-500 border-orange-500/30' },
+  normal: { label: 'Normal', color: 'bg-primary/20 text-primary border-primary/30' },
+  low: { label: 'Rendah', color: 'bg-white/10 text-white/50 border-white/20' },
 };
 
 const CATEGORIES: { value: Category; label: string }[] = [
@@ -254,54 +264,54 @@ const STAT_CATEGORIES = [
     key: 'draft',
     label: 'Draf',
     icon: FileText,
-    color: 'text-gray-600',
-    bg: 'bg-gray-50',
-    border: 'border-gray-200',
+    color: 'text-white/50',
+    bg: 'bg-card',
+    border: 'border-white/10',
     statuses: ['draft' as Status],
   },
   {
     key: 'semakan',
     label: 'Semakan',
     icon: ClipboardCheck,
-    color: 'text-amber-600',
-    bg: 'bg-amber-50',
-    border: 'border-amber-200',
+    color: 'text-amber-500',
+    bg: 'bg-card',
+    border: 'border-white/10',
     statuses: ['submitted', 'verifying', 'verified', 'scoring', 'scored'] as Status[],
   },
   {
     key: 'diluluskan',
     label: 'Dilulusk',
     icon: CheckCircle2,
-    color: 'text-green-600',
-    bg: 'bg-green-50',
-    border: 'border-green-200',
+    color: 'text-primary',
+    bg: 'bg-card',
+    border: 'border-white/10',
     statuses: ['approved'] as Status[],
   },
   {
     key: 'pembayaran',
     label: 'Pembayaran',
     icon: DollarSign,
-    color: 'text-cyan-600',
-    bg: 'bg-cyan-50',
-    border: 'border-cyan-200',
+    color: 'text-cyan-500',
+    bg: 'bg-card',
+    border: 'border-white/10',
     statuses: ['disbursing', 'disbursed'] as Status[],
   },
   {
     key: 'selesai',
     label: 'Selesai',
     icon: UserCheck,
-    color: 'text-slate-600',
-    bg: 'bg-slate-50',
-    border: 'border-slate-200',
+    color: 'text-white/70',
+    bg: 'bg-card',
+    border: 'border-white/10',
     statuses: ['closed', 'follow_up'] as Status[],
   },
   {
     key: 'ditolak',
     label: 'Ditolak',
     icon: XCircle,
-    color: 'text-red-600',
-    bg: 'bg-red-50',
-    border: 'border-red-200',
+    color: 'text-destructive',
+    bg: 'bg-card',
+    border: 'border-white/10',
     statuses: ['rejected'] as Status[],
   },
 ];
@@ -493,7 +503,7 @@ function FilterBar({
   onCategoryChange: (val: string) => void;
 }) {
   return (
-    <Card>
+    <Card className="bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
       <CardContent className="p-4">
         <div className="flex flex-col gap-3">
           <div className="relative flex-1">
@@ -502,7 +512,7 @@ function FilterBar({
               placeholder="Cari no. kes atau nama pemohon..."
               value={searchTerm}
               onChange={(e) => onSearchChange(e.target.value)}
-              className="pl-9"
+              className="pl-9 border-white/10 bg-white/5 focus:bg-white/10 transition-colors"
             />
           </div>
           <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
@@ -565,12 +575,12 @@ function CaseTableDesktop({
 }) {
   return (
     <div className="hidden md:block">
-      <Card>
+      <Card className="bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow className="bg-muted/50">
+                <TableRow className="border-white/10 bg-white/5 hover:bg-white/5 transition-colors">
                   <TableHead className="w-[110px]">No. Kes</TableHead>
                   <TableHead className="min-w-[180px]">Tajuk</TableHead>
                   <TableHead className="min-w-[150px]">Pemohon</TableHead>
@@ -660,14 +670,14 @@ function CaseCardsMobile({
   return (
     <div className="flex flex-col gap-3 md:hidden">
       {cases.length === 0 ? (
-        <Card>
+        <Card className="bg-card backdrop-blur-xl border-white/10">
           <CardContent className="flex h-32 items-center justify-center p-4 text-muted-foreground">
             Tiada rekod kes dijumpai.
           </CardContent>
         </Card>
       ) : (
         cases.map((c) => (
-          <Card key={c.id} className="overflow-hidden">
+          <Card key={c.id} className="overflow-hidden bg-card backdrop-blur-xl border-white/10">
             <CardContent className="p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0 flex-1">
@@ -1201,6 +1211,18 @@ function CaseDetailSheet({
   const programme = PROGRAMMES.find((p) => p.id === caseData.programmeId);
   const member = MEMBERS.find((m) => m.id === caseData.memberId);
 
+  // Compute intelligence outputs
+  const eligibility = useMemo(() => computeEligibility(caseData, member, programme), [caseData, member, programme]);
+  const recommendation = useMemo(() => computeRecommendation(caseData, member, programme), [caseData, member, programme]);
+  const riskFlags = useMemo(() => computeRiskFlags(caseData, member, MEMBERS), [caseData, member]);
+  const beneficiary360 = useMemo(() => computeBeneficiary360(member, caseData.statusHistory.map(h => ({ 
+    ...caseData, 
+    status: h.status as any, 
+    createdAt: h.date 
+  } as CaseData)), caseData.disbursements), [member, caseData]);
+  const nextAction = useMemo(() => computeNextAction(caseData), [caseData]);
+  const disbursementReconciliation = useMemo(() => computeDisbursementReconciliation(caseData.disbursements), [caseData.disbursements]);
+
   return (
     <>
       <Sheet open={open} onOpenChange={onOpenChange}>
@@ -1217,10 +1239,11 @@ function CaseDetailSheet({
 
           <div className="mt-6 space-y-6">
             <Tabs defaultValue="details" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+              <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="details">Butiran</TabsTrigger>
                 <TabsTrigger value="timeline">Status</TabsTrigger>
                 <TabsTrigger value="notes">Catatan</TabsTrigger>
+                <TabsTrigger value="intelligence">Zeka</TabsTrigger>
               </TabsList>
 
               {/* ============ Details Tab ============ */}
@@ -1807,7 +1830,7 @@ export default function CasesPage() {
             Urus dan jejak kes bantuan PUSPA dengan sistematik
           </p>
         </div>
-        <Button onClick={handleOpenNewCase} className="shrink-0">
+        <Button onClick={handleOpenNewCase} className="shrink-0 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all active:scale-95">
           <Plus className="mr-2 h-4 w-4" />
           Daftar Kes Baru
         </Button>

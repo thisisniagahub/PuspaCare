@@ -21,9 +21,13 @@ import {
   LayoutDashboard, 
   Info, 
   Star,
-  ExternalLink
+  ExternalLink,
+  Calculator,
+  TrendingUp,
+  DollarSign
 } from 'lucide-react'
 import './asnafpreneur.css'
+import Aurora from '@/components/Aurora'
 
 // ─── Animations ─────────────────────────────────────────────────────────────
 
@@ -123,6 +127,61 @@ const IdeaCard = ({ emoji, title, description, price }: { emoji: string; title: 
   </motion.div>
 )
 
+const IncomeCalculator = () => {
+  const [users, setUsers] = useState(50)
+  const [price, setPrice] = useState(49)
+  
+  const revenue = users * price
+  
+  return (
+    <div className="income-calculator backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 shadow-2xl">
+      <div className="flex items-center gap-2 mb-6">
+        <div className="p-2 bg-emerald-500/20 rounded-lg">
+          <Calculator className="text-emerald-400" size={20} />
+        </div>
+        <h3 className="text-lg font-bold text-white m-0">Kalkulator Income SaaS</h3>
+      </div>
+      
+      <div className="space-y-6">
+        <div className="space-y-3">
+          <div className="flex justify-between text-sm text-emerald-300">
+            <span>Jumlah Pelanggan (Subs)</span>
+            <span className="font-mono">{users} orang</span>
+          </div>
+          <input 
+            type="range" min="10" max="500" step="10" aria-label="Jumlah Pelanggan"
+            value={users} onChange={(e) => setUsers(parseInt(e.target.value))}
+            className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+          />
+        </div>
+
+        <div className="space-y-3">
+          <div className="flex justify-between text-sm text-emerald-300">
+            <span>Yuran Langganan / Bulan</span>
+            <span className="font-mono">RM {price}</span>
+          </div>
+          <input 
+            type="range" min="10" max="200" step="5" aria-label="Yuran Langganan"
+            value={price} onChange={(e) => setPrice(parseInt(e.target.value))}
+            className="w-full h-1.5 bg-white/10 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+          />
+        </div>
+
+        <div className="pt-4 border-t border-white/10 mt-6">
+          <div className="text-xs text-white/50 uppercase tracking-widest mb-1">Potensi Recurring Revenue</div>
+          <div className="flex items-baseline gap-1">
+            <span className="text-4xl font-black text-emerald-400">RM {revenue.toLocaleString()}</span>
+            <span className="text-emerald-400/60 font-medium">/ bulan</span>
+          </div>
+          <p className="text-[10px] text-white/40 mt-3 leading-relaxed">
+            *Ini adalah anggaran pendapatan kasar berdasarkan model langganan bulanan.
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function AsnafpreneurLanding() {
@@ -165,7 +224,13 @@ export default function AsnafpreneurLanding() {
 
       {/* Hero Section */}
       <section id="hero" className="hero">
-        <div className="hero-bg" />
+        <div className="absolute inset-0 z-0">
+          <Aurora 
+            colorStops={['#101415', '#ecb2ff', '#00fbfb']} 
+            speed={0.5}
+            amplitude={1.5}
+          />
+        </div>
         <div className="hero-grid" />
         
         <div className="hero-content">
@@ -191,10 +256,10 @@ export default function AsnafpreneurLanding() {
 
           <FadeInView delay={0.3}>
             <div className="cta-group">
-              <a href="#daftar" className="btn-primary">
+              <a href="#daftar" className="btn-primary bg-[var(--primary)] shadow-[0_0_20px_rgba(236,178,255,0.3)]">
                 Daftar Sekarang <ArrowRight size={18} />
               </a>
-              <a href="#program" className="btn-secondary">
+              <a href="#program" className="btn-secondary border-[var(--secondary-fixed-dim)] text-[var(--secondary-fixed-dim)]">
                 Bagaimana ia Berfungsi
               </a>
             </div>
@@ -234,43 +299,55 @@ export default function AsnafpreneurLanding() {
           <p>Kami tidak mengajar cara manual. Kami mengajar cara membina empayar digital menggunakan kuasa AI.</p>
         </div>
 
-        <div className="cards-grid">
-          <SpotlightCard 
-            icon={Brain} 
-            title="AI Proficiency" 
-            description="Belajar menggunakan ChatGPT, Claude, dan Midjourney untuk menggantikan 80% kerja manual dalam bisnes."
-            color="emerald"
-          />
-          <SpotlightCard 
-            icon={Code} 
-            title="Vibe Coding" 
-            description="Bina apps tanpa perlu hafal sintaks. Fokus pada logic dan prompt engineering untuk hasilkan software."
-            color="cyan"
-          />
-          <SpotlightCard 
-            icon={Zap} 
-            title="SaaS Ecosystem" 
-            description="Lancar perisian SaaS sendiri (Monthly Subscription) untuk dapatkan income berterusan (Recurring Revenue)."
-            color="violet"
-          />
-          <SpotlightCard 
-            icon={Target} 
-            title="Market Validation" 
-            description="Kami bantu validate idea SaaS anda supaya ia betul-betul ada pembeli sebelum anda mula bina."
-            color="amber"
-          />
-          <SpotlightCard 
-            icon={Shield} 
-            title="Funding Support" 
-            description="Tajaan penuh token AI dan server selama 1 tahun pertama untuk anda fokus pada growth."
-            color="rose"
-          />
-          <SpotlightCard 
-            icon={Users} 
-            title="Mentor Network" 
-            description="Akses terus kepada founder SaaS dan pakar AI yang sudah berjaya menjana RM100k+ sebulan."
-            color="emerald"
-          />
+        <div className="bento-grid">
+          <div className="bento-item-large">
+            <SpotlightCard 
+              icon={Brain} 
+              title="AI Proficiency Mastery" 
+              description="Belajar menggunakan ChatGPT, Claude, dan Midjourney untuk menggantikan 80% kerja manual dalam bisnes. Kami ajar advance prompt engineering yang tidak diajar di tempat lain."
+              color="emerald"
+            />
+          </div>
+          <div className="bento-item">
+            <SpotlightCard 
+              icon={Code} 
+              title="Vibe Coding" 
+              description="Bina apps tanpa perlu hafal sintaks. Fokus pada logic."
+              color="cyan"
+            />
+          </div>
+          <div className="bento-item">
+            <SpotlightCard 
+              icon={Zap} 
+              title="SaaS Ecosystem" 
+              description="Lancar perisian SaaS sendiri untuk recurring revenue."
+              color="violet"
+            />
+          </div>
+          <div className="bento-item-wide">
+            <SpotlightCard 
+              icon={Target} 
+              title="Market Validation & Growth" 
+              description="Kami bantu validate idea SaaS anda supaya ia betul-betul ada pembeli sebelum anda mula bina. Akses kepada database asnaf untuk market testing."
+              color="amber"
+            />
+          </div>
+          <div className="bento-item">
+            <SpotlightCard 
+              icon={Shield} 
+              title="Funding 2026" 
+              description="Tajaan penuh token AI dan server."
+              color="rose"
+            />
+          </div>
+          <div className="bento-item">
+            <SpotlightCard 
+              icon={Users} 
+              title="Mentor Network" 
+              description="Akses terus kepada founder SaaS."
+              color="emerald"
+            />
+          </div>
         </div>
       </section>
 
@@ -328,38 +405,45 @@ export default function AsnafpreneurLanding() {
           <p>Potensi SaaS yang asnaf boleh bina menggunakan AI dengan kos yang sangat rendah.</p>
         </div>
 
-        <div className="ideas-grid">
-          <IdeaCard 
-            emoji="🏪" 
-            title="KedaiAI" 
-            description="SaaS untuk bantu kedai runcit auto-generate caption & poster marketing harian."
-            price="RM49/bulan"
-          />
-          <IdeaCard 
-            emoji="📝" 
-            title="TutorBot" 
-            description="Platform AI untuk bantu pelajar sekolah buat latihan subjek mengikut silibus KPM."
-            price="RM29/bulan"
-          />
-          <IdeaCard 
-            emoji="📋" 
-            title="HR-Simple" 
-            description="Sistem pengurusan staf & payroll untuk SME yang tak nak guna software mahal."
-            price="RM99/bulan"
-          />
-          <IdeaCard 
-            emoji="⚖️" 
-            title="Shariah-Check" 
-            description="AI tool untuk check status pelaburan atau kontrak mengikut hukum Shariah secara pantas."
-            price="RM59/bulan"
-          />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start mt-12">
+          <div className="lg:col-span-7 ideas-grid">
+            <IdeaCard 
+              emoji="🏪" 
+              title="KedaiAI" 
+              description="SaaS untuk bantu kedai runcit auto-generate caption & poster marketing harian."
+              price="RM49/bulan"
+            />
+            <IdeaCard 
+              emoji="📝" 
+              title="TutorBot" 
+              description="Platform AI untuk bantu pelajar sekolah buat latihan subjek mengikut silibus KPM."
+              price="RM29/bulan"
+            />
+            <IdeaCard 
+              emoji="📋" 
+              title="HR-Simple" 
+              description="Sistem pengurusan staf & payroll untuk SME yang tak nak guna software mahal."
+              price="RM99/bulan"
+            />
+            <IdeaCard 
+              emoji="⚖️" 
+              title="Shariah-Check" 
+              description="AI tool untuk check status pelaburan atau kontrak mengikut hukum Shariah secara pantas."
+              price="RM59/bulan"
+            />
+          </div>
+          <div className="lg:col-span-5">
+            <FadeInView delay={0.4}>
+              <IncomeCalculator />
+            </FadeInView>
+          </div>
         </div>
       </section>
 
       {/* Sponsors */}
       <section id="sponsor" className="logo-section">
-        <div className="section-header" style={{ marginBottom: '2rem' }}>
-          <p style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '2px' }}>Dibiayai & Disokong Oleh</p>
+        <div className="section-header mb-8">
+          <p className="text-xs uppercase tracking-[2px]">Dibiayai & Disokong Oleh</p>
         </div>
         <div className="logo-track">
           {[
@@ -410,10 +494,10 @@ export default function AsnafpreneurLanding() {
       {/* Mobile Dock */}
       <div className="dock-wrapper">
         <div className="dock">
-          <a href="#hero" className="dock-item"><Home size={20} /></a>
-          <a href="#program" className="dock-item"><LayoutDashboard size={20} /></a>
-          <a href="#saas" className="dock-item"><Bot size={20} /></a>
-          <a href="#daftar" className="dock-item"><Users size={20} /></a>
+          <a href="#hero" className="dock-item" aria-label="Mula"><Home size={20} /></a>
+          <a href="#program" className="dock-item" aria-label="Program"><LayoutDashboard size={20} /></a>
+          <a href="#saas" className="dock-item" aria-label="SaaS"><Bot size={20} /></a>
+          <a href="#daftar" className="dock-item" aria-label="Daftar"><Users size={20} /></a>
         </div>
       </div>
     </div>

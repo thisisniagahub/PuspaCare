@@ -1135,19 +1135,19 @@ export default function AIToolsPage() {
 
   // ── Render ──
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-purple-50/30">
+    <div className="min-h-screen bg-transparent">
       {/* Header */}
-      <div className="border-b bg-white/80 backdrop-blur-sm sticky top-0 z-10">
+      <div className="border-b border-white/10 bg-white/5 backdrop-blur-md sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center gap-3 mb-1">
-            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[#4B0082] to-[#6B21A8] flex items-center justify-center shadow-lg shadow-purple-200">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center shadow-lg shadow-primary/20">
               <Sparkles className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold" style={{ color: '#4B0082' }}>
+              <h1 className="text-2xl sm:text-3xl font-bold text-foreground">
                 AI Tools PUSPA
               </h1>
-              <p className="text-sm text-slate-500">
+              <p className="text-sm text-muted-foreground">
                 Alat pintar untuk pengurusan NGO yang lebih cekap
               </p>
             </div>
@@ -1163,31 +1163,31 @@ export default function AIToolsPage() {
           className="w-full"
         >
           {/* Sub-navigation Tabs — 4 tabs now */}
-          <TabsList className="w-full grid grid-cols-4 mb-6 h-auto p-1 bg-slate-100 rounded-xl">
+          <TabsList className="w-full grid grid-cols-4 mb-6 h-auto p-1 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl">
             <TabsTrigger
               value="laporan"
-              className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 transition-all"
+              className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <FileText className="h-4 w-4 mr-1.5 hidden sm:inline-block" />
               <span className="text-xs sm:text-sm">Laporan</span>
             </TabsTrigger>
             <TabsTrigger
               value="sembang"
-              className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 transition-all"
+              className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <MessageSquare className="h-4 w-4 mr-1.5 hidden sm:inline-block" />
               <span className="text-xs sm:text-sm">Sembang</span>
             </TabsTrigger>
             <TabsTrigger
               value="analitik"
-              className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 transition-all"
+              className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <BrainCircuit className="h-4 w-4 mr-1.5 hidden sm:inline-block" />
               <span className="text-xs sm:text-sm">Analitik AI</span>
             </TabsTrigger>
             <TabsTrigger
               value="alat"
-              className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm data-[state=active]:text-violet-700 transition-all"
+              className="py-3 text-sm font-medium rounded-lg data-[state=active]:bg-primary data-[state=active]:text-primary-foreground transition-all"
             >
               <Search className="h-4 w-4 mr-1.5 hidden sm:inline-block" />
               <span className="text-xs sm:text-sm">Alat Ahli</span>
@@ -1202,11 +1202,11 @@ export default function AIToolsPage() {
               {reportTypes.map((report) => (
                 <Card
                   key={report.id}
-                  className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 bg-white overflow-hidden"
+                  className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-white/10 bg-white/5 backdrop-blur-md overflow-hidden"
                   onClick={() => handleGenerateReport(report)}
                 >
                   <div
-                    className={`h-2 bg-gradient-to-r ${report.color} opacity-80 group-hover:opacity-100 transition-opacity`}
+                    className={`h-2 bg-gradient-to-r ${report.color} opacity-40 group-hover:opacity-100 transition-opacity`}
                   />
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
@@ -1216,23 +1216,23 @@ export default function AIToolsPage() {
                         {report.icon}
                       </div>
                       <Badge
-                        variant="secondary"
-                        className="bg-emerald-50 text-emerald-700 border-0"
+                        variant="outline"
+                        className="bg-cyan-500/10 text-cyan-400 border-cyan-400/30"
                       >
                         Sedia Ada
                       </Badge>
                     </div>
-                    <CardTitle className="text-lg mt-3 text-slate-900">
+                    <CardTitle className="text-lg mt-3 text-foreground">
                       {report.title}
                     </CardTitle>
-                    <CardDescription className="text-slate-500">
+                    <CardDescription className="text-muted-foreground">
                       {report.description}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="pt-0">
                     <Button
                       variant="outline"
-                      className="w-full border-violet-200 text-violet-700 hover:bg-violet-50 hover:border-violet-300 group-hover:bg-violet-50 transition-colors"
+                      className="w-full border-white/10 text-foreground hover:bg-white/10 transition-colors"
                     >
                       <Sparkles className="h-4 w-4 mr-2" />
                       Jana Laporan
@@ -1242,10 +1242,10 @@ export default function AIToolsPage() {
               ))}
             </div>
 
-            <Card className="border-0 bg-white shadow-sm">
+            <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2">
-                  <Sparkles className="h-5 w-5 text-violet-600" />
+                  <Sparkles className="h-5 w-5 text-primary" />
                   Prompt Tersuai
                 </CardTitle>
                 <CardDescription>
@@ -1255,18 +1255,18 @@ export default function AIToolsPage() {
               <CardContent className="space-y-4">
                 <Textarea
                   placeholder="Contoh: Jana laporan perbandingan prestasi program Q1 2025 vs Q1 2026..."
-                  className="min-h-[100px] resize-none border-slate-200 focus:border-violet-400 focus:ring-violet-200"
+                  className="min-h-[100px] resize-none border-white/10 bg-black/20 focus:border-primary/50 focus:ring-primary/20 text-foreground"
                   value={customPrompt}
                   onChange={(e) => setCustomPrompt(e.target.value)}
                 />
                 <div className="flex items-center justify-between">
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-muted-foreground">
                     AI akan menganalisis data PUSPA berdasarkan pertanyaan anda
                   </p>
                   <Button
                     onClick={handleCustomGenerate}
                     disabled={!customPrompt.trim() || isGeneratingCustom}
-                    className="bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-700 hover:to-purple-800 text-white shadow-md shadow-purple-200"
+                    className="bg-gradient-to-r from-primary to-violet-600 hover:from-primary/80 hover:to-violet-600/80 text-white shadow-md shadow-primary/20"
                   >
                     {isGeneratingCustom ? (
                       <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Menjana...</>
@@ -1278,18 +1278,18 @@ export default function AIToolsPage() {
 
                 {isGeneratingCustom && (
                   <div className="flex items-center justify-center py-12 space-x-3">
-                    <div className="h-3 w-3 rounded-full bg-violet-500 animate-bounce [animation-delay:0ms]" />
-                    <div className="h-3 w-3 rounded-full bg-purple-500 animate-bounce [animation-delay:150ms]" />
-                    <div className="h-3 w-3 rounded-full bg-fuchsia-500 animate-bounce [animation-delay:300ms]" />
-                    <span className="text-sm text-slate-500 ml-2">AI sedang menganalisis data...</span>
+                    <div className="h-3 w-3 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
+                    <div className="h-3 w-3 rounded-full bg-violet-500 animate-bounce [animation-delay:150ms]" />
+                    <div className="h-3 w-3 rounded-full bg-cyan-400 animate-bounce [animation-delay:300ms]" />
+                    <span className="text-sm text-muted-foreground ml-2">AI sedang menganalisis data...</span>
                   </div>
                 )}
 
                 {customResponse && !isGeneratingCustom && (
-                  <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-6">
+                  <div className="mt-4 rounded-xl border border-white/10 bg-black/20 p-6">
                     <MarkdownContent content={customResponse} />
-                    <div className="flex gap-2 mt-4 pt-4 border-t border-slate-200">
-                      <Button variant="outline" size="sm" onClick={async () => { await navigator.clipboard.writeText(customResponse) }} className="text-xs">
+                    <div className="flex gap-2 mt-4 pt-4 border-t border-white/10">
+                      <Button variant="outline" size="sm" onClick={async () => { await navigator.clipboard.writeText(customResponse) }} className="text-xs border-white/10 hover:bg-white/5">
                         <Copy className="h-3 w-3 mr-1" />Salin
                       </Button>
                       <Button variant="outline" size="sm" onClick={() => {
@@ -1300,7 +1300,7 @@ export default function AIToolsPage() {
                         a.download = 'laporan-tersuai-puspa.md'
                         a.click()
                         URL.revokeObjectURL(url)
-                      }} className="text-xs">
+                      }} className="text-xs border-white/10 hover:bg-white/5">
                         <Download className="h-3 w-3 mr-1" />Muat Turun
                       </Button>
                     </div>
@@ -1314,8 +1314,8 @@ export default function AIToolsPage() {
           {/* TAB 2: SEMBANG AI (Connected to backend)                             */}
           {/* ════════════════════════════════════════════════════════════════════ */}
           <TabsContent value="sembang">
-            <Card className="border-0 bg-white shadow-sm overflow-hidden flex flex-col">
-              <CardHeader className="border-b bg-gradient-to-r from-violet-600 to-purple-700 text-white rounded-t-xl">
+           <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-sm overflow-hidden flex flex-col">
+              <CardHeader className="border-b border-white/10 bg-gradient-to-r from-primary to-violet-600 text-white rounded-t-xl">
                 <div className="flex items-center gap-3">
                   <div className="h-10 w-10 rounded-full bg-white/20 flex items-center justify-center">
                     <Bot className="h-5 w-5 text-white" />
@@ -1324,26 +1324,26 @@ export default function AIToolsPage() {
                     <CardTitle className="text-white">
                       Pembantu AI PUSPA
                     </CardTitle>
-                    <CardDescription className="text-violet-200">
+                    <CardDescription className="text-white/70">
                       Disambungkan ke AI — Sedia membantu anda 24/7
                     </CardDescription>
                   </div>
-                  <Badge className="bg-emerald-500/20 text-emerald-100 border-emerald-400/30">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 mr-1.5 inline-block animate-pulse" />
+                  <Badge className="bg-cyan-500/20 text-cyan-100 border-cyan-400/30">
+                    <span className="h-1.5 w-1.5 rounded-full bg-cyan-400 mr-1.5 inline-block animate-pulse" />
                     Dalam Talian
                   </Badge>
                 </div>
               </CardHeader>
 
               {/* Context selector */}
-              <div className="px-4 pt-3 pb-2 border-b bg-slate-50">
+              <div className="px-4 pt-3 pb-2 border-b border-white/10 bg-white/5">
                 <div className="flex items-center gap-2">
                   <Label className="text-xs text-muted-foreground whitespace-nowrap">Konteks:</Label>
                   <Select value={chatContext} onValueChange={setChatContext}>
-                    <SelectTrigger className="h-8 text-xs w-full">
+                    <SelectTrigger className="h-8 text-xs w-full bg-black/20 border-white/10 text-foreground">
                       <SelectValue placeholder="Pilih konteks..." />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-slate-900 border-white/10 text-white">
                       <SelectItem value="">Tiada konteks khas</SelectItem>
                       <SelectItem value="kewangan">Data Kewangan</SelectItem>
                       <SelectItem value="ahli">Data Ahli & Keahlian</SelectItem>
@@ -1355,8 +1355,8 @@ export default function AIToolsPage() {
               </div>
 
               {/* Quick Questions */}
-              <div className="px-4 pt-3 pb-2 border-b">
-                <p className="text-xs font-medium text-slate-400 mb-2 uppercase tracking-wider">
+              <div className="px-4 pt-3 pb-2 border-b border-white/10 bg-white/5">
+                <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wider opacity-60">
                   Soalan Pantas
                 </p>
                 <div className="flex flex-wrap gap-2">
@@ -1365,7 +1365,7 @@ export default function AIToolsPage() {
                       key={i}
                       variant="outline"
                       size="sm"
-                      className="text-xs border-violet-200 text-violet-700 hover:bg-violet-50 hover:border-violet-300"
+                      className="text-xs border-white/10 text-foreground hover:bg-white/10 transition-colors"
                       onClick={() => handleQuickQuestion(q)}
                       disabled={isChatSending}
                     >
@@ -1387,14 +1387,14 @@ export default function AIToolsPage() {
                         <Avatar
                           className={`h-8 w-8 shrink-0 ${
                             msg.role === 'user'
-                              ? 'bg-violet-100'
-                              : 'bg-gradient-to-br from-violet-600 to-purple-700'
+                              ? 'bg-primary/20'
+                              : 'bg-gradient-to-br from-primary to-violet-600'
                           }`}
                         >
                           <AvatarFallback
                             className={
                               msg.role === 'user'
-                                ? 'text-violet-700 text-xs'
+                                ? 'text-primary text-xs'
                                 : 'text-white text-xs'
                             }
                           >
@@ -1404,14 +1404,14 @@ export default function AIToolsPage() {
                         <div
                           className={`max-w-[75%] sm:max-w-[65%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
                             msg.role === 'user'
-                              ? 'bg-gradient-to-br from-violet-600 to-purple-700 text-white rounded-tr-sm'
-                              : 'bg-slate-100 text-slate-800 rounded-tl-sm'
+                              ? 'bg-gradient-to-br from-primary to-violet-600 text-white rounded-tr-sm shadow-lg shadow-primary/10'
+                              : 'bg-white/10 backdrop-blur-sm text-foreground rounded-tl-sm border border-white/10'
                           }`}
                         >
                           <MarkdownContent content={msg.content} />
                           <p
                             className={`text-[10px] mt-2 ${
-                              msg.role === 'user' ? 'text-violet-200' : 'text-slate-400'
+                              msg.role === 'user' ? 'text-white/60' : 'text-muted-foreground'
                             }`}
                           >
                             {msg.timestamp.toLocaleTimeString('ms-MY', {
@@ -1425,16 +1425,16 @@ export default function AIToolsPage() {
 
                     {isChatSending && (
                       <div className="flex gap-3">
-                        <Avatar className="h-8 w-8 shrink-0 bg-gradient-to-br from-violet-600 to-purple-700">
+                        <Avatar className="h-8 w-8 shrink-0 bg-gradient-to-br from-primary to-violet-600">
                           <AvatarFallback className="text-white text-xs">
                             <Sparkles className="h-4 w-4" />
                           </AvatarFallback>
                         </Avatar>
-                        <div className="bg-slate-100 rounded-2xl rounded-tl-sm px-4 py-3">
+                        <div className="bg-white/10 backdrop-blur-sm rounded-2xl rounded-tl-sm px-4 py-3 border border-white/10">
                           <div className="flex gap-1.5">
-                            <div className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:0ms]" />
-                            <div className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:150ms]" />
-                            <div className="h-2 w-2 rounded-full bg-violet-400 animate-bounce [animation-delay:300ms]" />
+                            <div className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
+                            <div className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:150ms]" />
+                            <div className="h-2 w-2 rounded-full bg-primary animate-bounce [animation-delay:300ms]" />
                           </div>
                         </div>
                       </div>
@@ -1446,19 +1446,19 @@ export default function AIToolsPage() {
               </div>
 
               {/* Chat Input */}
-              <div className="border-t p-4 bg-slate-50/50">
+              <div className="border-t border-white/10 p-4 bg-white/5 backdrop-blur-md">
                 <div className="flex gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
-                    className={`shrink-0 rounded-full ${isListening ? 'bg-red-100 text-red-600 animate-pulse' : 'text-slate-400 hover:text-violet-600 hover:bg-violet-50'}`}
+                    className={`shrink-0 rounded-full ${isListening ? 'bg-red-500/20 text-red-500 animate-pulse' : 'text-muted-foreground hover:text-primary hover:bg-white/10'}`}
                     onClick={handleMicToggle}
                   >
                     <Mic className="h-4 w-4" />
                   </Button>
                   <Input
                     placeholder="Taip mesej anda di sini..."
-                    className="flex-1 rounded-full border-slate-200 focus:border-violet-400 focus:ring-violet-200"
+                    className="flex-1 rounded-full border-white/10 bg-black/40 focus:border-primary/50 focus:ring-primary/20 text-foreground"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
                     onKeyDown={(e) => {
@@ -1471,7 +1471,7 @@ export default function AIToolsPage() {
                   />
                   <Button
                     size="icon"
-                    className="shrink-0 rounded-full bg-gradient-to-r from-violet-600 to-purple-700 hover:from-violet-700 hover:to-purple-800 text-white shadow-md shadow-purple-200"
+                    className="shrink-0 rounded-full bg-gradient-to-r from-primary to-violet-600 hover:from-primary/80 hover:to-violet-600/80 text-white shadow-md shadow-primary/20"
                     onClick={() => handleSendChat()}
                     disabled={!chatInput.trim() || isChatSending}
                   >
@@ -1479,7 +1479,7 @@ export default function AIToolsPage() {
                   </Button>
                 </div>
                 {isListening && (
-                  <p className="text-xs text-red-500 text-center mt-2 animate-pulse">
+                  <p className="text-xs text-red-500 text-center mt-2 animate-pulse font-medium">
                     Mendengar... sila bercakap sekarang
                   </p>
                 )}
@@ -1494,8 +1494,8 @@ export default function AIToolsPage() {
             {!selectedAnalytics ? (
               <>
                 <div className="text-center mb-6">
-                  <h2 className="text-xl font-bold" style={{ color: '#4B0082' }}>Analitik AI PUSPA</h2>
-                  <p className="text-sm text-slate-500 mt-1">
+                  <h2 className="text-xl font-bold text-foreground">Analitik AI PUSPA</h2>
+                  <p className="text-sm text-muted-foreground mt-1">
                     Dikuasakan oleh kecerdasan buatan untuk wawasan yang lebih mendalam
                   </p>
                 </div>
@@ -1504,11 +1504,11 @@ export default function AIToolsPage() {
                   {analyticsCards.map((card) => (
                     <Card
                       key={card.type}
-                      className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 bg-white overflow-hidden"
+                      className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-white/10 bg-white/5 backdrop-blur-md overflow-hidden"
                       onClick={() => fetchAnalytics(card.type)}
                     >
                       <div
-                        className={`h-2 bg-gradient-to-r ${card.gradient} opacity-80 group-hover:opacity-100 transition-opacity`}
+                        className={`h-2 bg-gradient-to-r ${card.gradient} opacity-40 group-hover:opacity-100 transition-opacity`}
                       />
                       <CardHeader className="pb-3">
                         <div className="flex items-start justify-between">
@@ -1517,21 +1517,21 @@ export default function AIToolsPage() {
                           >
                             {card.icon}
                           </div>
-                          <Badge variant="secondary" className="bg-violet-50 text-violet-700 border-0">
+                          <Badge variant="outline" className="bg-primary/20 text-primary border-primary/30">
                             AI
                           </Badge>
                         </div>
-                        <CardTitle className="text-lg mt-3 text-slate-900">
+                        <CardTitle className="text-lg mt-3 text-foreground">
                           {card.title}
                         </CardTitle>
-                        <CardDescription className="text-slate-500">
+                        <CardDescription className="text-muted-foreground">
                           {card.description}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="pt-0">
                         <Button
                           variant="outline"
-                          className="w-full border-violet-200 text-violet-700 hover:bg-violet-50 hover:border-violet-300 group-hover:bg-violet-50 transition-colors"
+                          className="w-full border-white/10 text-foreground hover:bg-white/10 transition-colors"
                         >
                           <BrainCircuit className="h-4 w-4 mr-2" />
                           Mula Analisis
@@ -1555,19 +1555,19 @@ export default function AIToolsPage() {
                   ← Kembali ke Senarai Analitik
                 </Button>
 
-                <Card className="border-0 bg-white shadow-sm">
-                  <CardHeader className="border-b">
+                <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-sm">
+                  <CardHeader className="border-b border-white/10">
                     <div className="flex items-center justify-between">
-                      <CardTitle className="text-lg flex items-center gap-2">
+                      <CardTitle className="text-lg flex items-center gap-2 text-foreground">
                         {analyticsCards.find((c) => c.type === selectedAnalytics)?.icon}
                         {analyticsCards.find((c) => c.type === selectedAnalytics)?.title}
                       </CardTitle>
-                      <Button variant="outline" size="sm" onClick={() => selectedAnalytics && fetchAnalytics(selectedAnalytics)} disabled={analyticsLoading}>
+                      <Button variant="outline" size="sm" onClick={() => selectedAnalytics && fetchAnalytics(selectedAnalytics)} disabled={analyticsLoading} className="border-white/10 hover:bg-white/10">
                         <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${analyticsLoading ? 'animate-spin' : ''}`} />
                         Muat Semula
                       </Button>
                     </div>
-                    <CardDescription>
+                    <CardDescription className="text-muted-foreground">
                       {analyticsCards.find((c) => c.type === selectedAnalytics)?.description}
                     </CardDescription>
                   </CardHeader>
@@ -1586,10 +1586,10 @@ export default function AIToolsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
               {/* ── Tool 1: Semakan Kelayakan Program ── */}
-              <Card className="border-0 bg-white shadow-sm">
+              <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center text-white shadow-lg shadow-cyan-200">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
                       <Search className="h-5 w-5" />
                     </div>
                     <div>
@@ -1637,11 +1637,11 @@ export default function AIToolsPage() {
                 </CardContent>
               </Card>
 
-              {/* ── Tool 2: Kalkulator Bantuan Kewangan ── */}
-              <Card className="border-0 bg-white shadow-sm">
+               {/* ── Tool 2: Kalkulator Bantuan Kewangan ── */}
+              <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center text-white shadow-lg shadow-green-200">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-emerald-500 to-cyan-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
                       <Calculator className="h-5 w-5" />
                     </div>
                     <div>
@@ -1686,10 +1686,10 @@ export default function AIToolsPage() {
               </Card>
 
               {/* ── Tool 3: Penilaian Kebajikan ── */}
-              <Card className="border-0 bg-white shadow-sm">
+              <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white shadow-lg shadow-orange-200">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center text-white shadow-lg shadow-primary/20">
                       <ClipboardList className="h-5 w-5" />
                     </div>
                     <div>
@@ -1736,10 +1736,10 @@ export default function AIToolsPage() {
               </Card>
 
               {/* ── Tool 4: Log Komunikasi ── */}
-              <Card className="border-0 bg-white shadow-sm">
+              <Card className="border-white/10 bg-white/5 backdrop-blur-md shadow-sm">
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white shadow-lg shadow-pink-200">
+                    <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-rose-500 to-pink-600 flex items-center justify-center text-white shadow-lg shadow-pink-500/20">
                       <FileText className="h-5 w-5" />
                     </div>
                     <div>
@@ -1792,13 +1792,13 @@ export default function AIToolsPage() {
 
       {/* Report Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[80vh]">
+        <DialogContent className="max-w-2xl max-h-[80vh] bg-slate-900/95 backdrop-blur-xl border-white/10 text-white">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-violet-600" />
+            <DialogTitle className="flex items-center gap-2 text-white">
+              <Sparkles className="h-5 w-5 text-primary" />
               {selectedReport?.title}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="text-white/60">
               Laporan dijana oleh AI pada {new Date().toLocaleDateString('ms-MY', { day: 'numeric', month: 'long', year: 'numeric' })}
             </DialogDescription>
           </DialogHeader>
@@ -1806,10 +1806,10 @@ export default function AIToolsPage() {
             <div className="p-2">
               {isGenerating ? (
                 <div className="flex items-center justify-center py-16 space-x-3">
-                  <div className="h-3 w-3 rounded-full bg-violet-500 animate-bounce [animation-delay:0ms]" />
-                  <div className="h-3 w-3 rounded-full bg-purple-500 animate-bounce [animation-delay:150ms]" />
-                  <div className="h-3 w-3 rounded-full bg-fuchsia-500 animate-bounce [animation-delay:300ms]" />
-                  <span className="text-sm text-slate-500 ml-2">Menjana laporan...</span>
+                  <div className="h-3 w-3 rounded-full bg-primary animate-bounce [animation-delay:0ms]" />
+                  <div className="h-3 w-3 rounded-full bg-violet-500 animate-bounce [animation-delay:150ms]" />
+                  <div className="h-3 w-3 rounded-full bg-cyan-400 animate-bounce [animation-delay:300ms]" />
+                  <span className="text-sm text-white/60 ml-2">Menjana laporan...</span>
                 </div>
               ) : (
                 <MarkdownContent content={generatedReport} />
@@ -1817,11 +1817,11 @@ export default function AIToolsPage() {
             </div>
           </ScrollArea>
           {generatedReport && !isGenerating && (
-            <div className="flex gap-2 pt-4 border-t">
-              <Button variant="outline" size="sm" onClick={handleCopyReport} className="text-xs">
+            <div className="flex gap-2 pt-4 border-t border-white/10">
+              <Button variant="outline" size="sm" onClick={handleCopyReport} className="text-xs border-white/10 hover:bg-white/10 text-white">
                 {copied ? <><Check className="h-3 w-3 mr-1" />Disalin</> : <><Copy className="h-3 w-3 mr-1" />Salin</>}
               </Button>
-              <Button variant="outline" size="sm" onClick={handleDownloadReport} className="text-xs">
+              <Button variant="outline" size="sm" onClick={handleDownloadReport} className="text-xs border-white/10 hover:bg-white/10 text-white">
                 <Download className="h-3 w-3 mr-1" />Muat Turun
               </Button>
             </div>

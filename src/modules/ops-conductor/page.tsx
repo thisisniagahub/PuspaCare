@@ -18,6 +18,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   MessageSquare, ListTodo, BarChart3, Zap, GitBranch, Send, Plus, Filter,
   CheckCircle2, XCircle, Loader2, Clock, AlertTriangle, Inbox, ChevronRight,
   Package, FileText, Gavel, Heart, Users, Bell, ArrowRight, Sparkles, Bot,
@@ -29,27 +36,27 @@ import {
 /* ─── Constants ──────────────────────────────────────────────────────────────── */
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; dot: string }> = {
-  queued:        { label: 'Menunggu', color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300', dot: 'bg-gray-400' },
-  in_progress:   { label: 'Aktif', color: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300', dot: 'bg-blue-500' },
-  waiting_user:  { label: 'Menunggu Anda', color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300', dot: 'bg-yellow-500' },
-  scheduled:     { label: 'Dijadualkan', color: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-300', dot: 'bg-indigo-500' },
-  blocked:       { label: 'Disekat', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500' },
-  completed:     { label: 'Selesai', color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900 dark:text-emerald-300', dot: 'bg-emerald-500' },
-  failed:        { label: 'Gagal', color: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300', dot: 'bg-red-500' },
-  archived:      { label: 'Diarkib', color: 'bg-gray-100 text-gray-500 dark:bg-gray-800 dark:text-gray-400', dot: 'bg-gray-400' },
+  queued:        { label: 'Menunggu', color: 'bg-white/5 text-muted-foreground border-white/10', dot: 'bg-slate-400' },
+  in_progress:   { label: 'Aktif', color: 'bg-primary/20 text-primary border-primary/30', dot: 'bg-primary' },
+  waiting_user:  { label: 'Menunggu Anda', color: 'bg-amber-500/20 text-amber-400 border-amber-400/30', dot: 'bg-amber-400' },
+  scheduled:     { label: 'Dijadualkan', color: 'bg-violet-500/20 text-violet-400 border-violet-400/30', dot: 'bg-violet-400' },
+  blocked:       { label: 'Disekat', color: 'bg-red-500/20 text-red-400 border-red-400/30', dot: 'bg-red-400' },
+  completed:     { label: 'Selesai', color: 'bg-cyan-500/20 text-cyan-400 border-cyan-400/30', dot: 'bg-cyan-400' },
+  failed:        { label: 'Gagal', color: 'bg-red-500/20 text-red-400 border-red-400/30', dot: 'bg-red-400' },
+  archived:      { label: 'Diarkib', color: 'bg-white/5 text-muted-foreground border-white/10', dot: 'bg-slate-500' },
 }
 
 const DOMAIN_CONFIG: Record<string, { label: string; icon: typeof Package; color: string }> = {
-  inventory:   { label: 'Inventori',    icon: Package,  color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' },
-  reports:     { label: 'Laporan',      icon: FileText, color: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/40 dark:text-cyan-400' },
-  cases:       { label: 'Kes',          icon: Gavel,    color: 'bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-400' },
-  donors:      { label: 'Penderma',     icon: Heart,    color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' },
-  volunteers:  { label: 'Sukarelawan',  icon: Users,    color: 'bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-400' },
-  reminders:   { label: 'Peringatan',   icon: Bell,     color: 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-400' },
-  general:     { label: 'Umum',         icon: Inbox,    color: 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300' },
-  dashboard:   { label: 'Dashboard',    icon: BarChart3, color: 'bg-violet-100 text-violet-700 dark:bg-violet-900/40 dark:text-violet-400' },
-  continuity:  { label: 'Sambungan',    icon: RotateCcw, color: 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400' },
-  messaging:   { label: 'Mesej',        icon: MessageSquare, color: 'bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-400' },
+  inventory:   { label: 'Inventori',    icon: Package,  color: 'bg-amber-500/20 text-amber-400 border-amber-400/30' },
+  reports:     { label: 'Laporan',      icon: FileText, color: 'bg-cyan-500/20 text-cyan-400 border-cyan-400/30' },
+  cases:       { label: 'Kes',          icon: Gavel,    color: 'bg-primary/20 text-primary border-primary/30' },
+  donors:      { label: 'Penderma',     icon: Heart,    color: 'bg-rose-500/20 text-rose-400 border-rose-400/30' },
+  volunteers:  { label: 'Sukarelawan',  icon: Users,    color: 'bg-orange-500/20 text-orange-400 border-orange-400/30' },
+  reminders:   { label: 'Peringatan',   icon: Bell,     color: 'bg-rose-500/20 text-rose-400 border-rose-400/30' },
+  general:     { label: 'Umum',         icon: Inbox,    color: 'bg-white/10 text-muted-foreground border-white/10' },
+  dashboard:   { label: 'Dashboard',    icon: BarChart3, color: 'bg-violet-500/20 text-violet-400 border-violet-400/30' },
+  continuity:  { label: 'Sambungan',    icon: RotateCcw, color: 'bg-teal-500/20 text-teal-400 border-teal-400/30' },
+  messaging:   { label: 'Mesej',        icon: MessageSquare, color: 'bg-sky-500/20 text-sky-400 border-sky-400/30' },
 }
 
 const PRIORITY_CONFIG: Record<string, { label: string; color: string }> = {
@@ -329,6 +336,21 @@ export default function OpsConductor() {
     try { store.setProjects(await api.get<any[]>('/ops/projects')) } catch { /* silent */ }
   }, [store])
 
+  /* ─── Init logic ───────────────────────────────────────────────────────────── */
+  useEffect(() => {
+    const initializeDashboard = async () => {
+      if (store.activeTab === 'dashboard') {
+        if (!store.dashboardSummary) {
+          await loadDashboard();
+        }
+        if (!liveStatus || !liveSnapshot) {
+          await loadLiveBridge();
+        }
+      }
+    };
+    initializeDashboard();
+  }, [store.activeTab, store.dashboardSummary, loadDashboard, liveStatus, liveSnapshot, loadLiveBridge]);
+
   useEffect(() => {
     let cancelled = false
     const init = async () => {
@@ -515,51 +537,55 @@ export default function OpsConductor() {
   /* ─── Left sidebar ──────────────────────────────────────────────────────── */
 
   const renderLeftSidebar = () => (
-    <aside className="hidden lg:flex flex-col w-[260px] border-r bg-muted/30 shrink-0">
-      <div className="p-3 space-y-3">
+    <aside className="hidden lg:flex flex-col w-[280px] border-r border-white/10 bg-white/5 backdrop-blur-md shrink-0">
+      <div className="p-4 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold" style={{ color: '#4B0082' }}>Tugasan</h3>
-          <Button size="sm" variant="ghost" className="h-7 px-2 text-xs" onClick={() => store.setActiveTab('chat')}>
+          <h3 className="text-sm font-semibold text-foreground uppercase tracking-wider opacity-70">Tugasan</h3>
+          <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-white/10 hover:bg-white/10" onClick={() => store.setActiveTab('chat')}>
             <Plus className="h-3 w-3 mr-1" /> Baru
           </Button>
         </div>
-        <div className="flex gap-1">
+        <div className="flex gap-1 bg-black/20 p-1 rounded-lg border border-white/5">
           {(['all', 'active', 'blocked', 'completed'] as const).map((f) => (
-            <Button key={f} size="sm" variant={leftFilter === f ? 'default' : 'ghost'}
-              className={cn('h-7 px-2 text-xs flex-1', leftFilter === f && 'text-white')}
-              style={leftFilter === f ? { background: BRAND_GRADIENT } : {}}
+            <Button key={f} size="sm" variant="ghost"
+              className={cn('h-7 px-1 text-[10px] flex-1 rounded-md transition-all', leftFilter === f ? 'bg-primary text-primary-foreground shadow-lg' : 'text-muted-foreground hover:bg-white/5')}
               onClick={() => setLeftFilter(f)}>
               {f === 'all' ? 'Semua' : f === 'active' ? 'Aktif' : f === 'blocked' ? 'Sekat' : 'Siap'}
             </Button>
           ))}
         </div>
       </div>
-      <ScrollArea className="flex-1 px-2">
-        <div className="space-y-1 pb-4">
+      <ScrollArea className="flex-1 px-3">
+        <div className="space-y-2 pb-6">
           {tasksLoading && leftFilteredItems.length === 0 ? (
-            Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-lg" />)
+            Array.from({ length: 8 }).map((_, i) => <Skeleton key={i} className="h-16 rounded-xl bg-white/5" />)
           ) : leftFilteredItems.length === 0 ? (
-            <div className="text-center text-xs text-muted-foreground py-8">Tiada tugasan</div>
+            <div className="text-center text-xs text-muted-foreground py-12 opacity-50 italic">Tiada tugasan ditemui</div>
           ) : leftFilteredItems.map((wi) => (
             <button key={wi.id}
-              className={cn('w-full text-left p-2.5 rounded-lg transition-colors hover:bg-accent/50 space-y-1',
-                store.selectedWorkItem?.id === wi.id && 'bg-accent ring-1 ring-ring')}
+              className={cn('w-full text-left p-3 rounded-xl transition-all duration-200 border border-transparent hover:bg-white/10 hover:border-white/10 space-y-1 group relative overflow-hidden',
+                store.selectedWorkItem?.id === wi.id && 'bg-white/10 border-primary/50 shadow-lg shadow-primary/5')}
               onClick={() => selectWorkItem(wi)}>
               <div className="flex items-center gap-2">
-                <span className={cn('inline-block h-2 w-2 rounded-full shrink-0', STATUS_CONFIG[wi.status]?.dot)} />
-                <span className="text-xs font-mono font-medium text-muted-foreground">{wi.workItemNumber}</span>
-                <Badge variant="outline" className={cn('text-[10px] px-1.5 py-0 h-4 ml-auto', DOMAIN_CONFIG[wi.domain]?.color)}>
+                <span className={cn('inline-block h-1.5 w-1.5 rounded-full shrink-0', STATUS_CONFIG[wi.status]?.dot)} />
+                <span className="text-[10px] font-mono font-medium text-muted-foreground/80 tracking-tighter">{wi.workItemNumber}</span>
+                <Badge variant="outline" className={cn('text-[9px] px-1.5 py-0 h-3.5 ml-auto border-0', DOMAIN_CONFIG[wi.domain]?.color)}>
                   {DOMAIN_CONFIG[wi.domain]?.label || wi.domain}
                 </Badge>
               </div>
-              <p className="text-xs font-medium truncate">{wi.title}</p>
-              <p className="text-[10px] text-muted-foreground">{formatRelative(wi.createdAt)}</p>
+              <p className="text-xs font-semibold text-foreground truncate group-hover:text-primary transition-colors">{wi.title}</p>
+              <p className="text-[10px] text-muted-foreground/60">{formatRelative(wi.createdAt)}</p>
+              {store.selectedWorkItem?.id === wi.id && (
+                <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-primary" />
+              )}
             </button>
           ))}
         </div>
       </ScrollArea>
     </aside>
   )
+
+  /* ─── Render functions ─── */
 
   /* ─── Right trace panel ──────────────────────────────────────────────────── */
 
@@ -860,6 +886,11 @@ export default function OpsConductor() {
                   <p className="text-[11px] text-muted-foreground mt-0.5">Snapshot runtime terus dari operator bridge</p>
                 </div>
                 <div className="flex items-center gap-1.5">
+                    <Input
+                      placeholder="Masukkan parameter (cth: domain=asnafpreneur.ai)..."
+                      className="bg-white/5 border-white/10 text-foreground"
+                      title="Parameter Tugasan"
+                    />
                   <Button
                     size="sm"
                     variant="outline"
@@ -1289,7 +1320,31 @@ export default function OpsConductor() {
       case 'tasks': return renderTasksTab()
       case 'dashboard': return renderDashboardTab()
       case 'automations': return renderAutomationsTab()
-      case 'projects': return renderProjectsTab()
+      case 'projects':
+        return (
+          <div className="p-4 space-y-4">
+            <div className="w-full">
+              {/* Note: This is inside the main render loop where ACTIONS and selectedAction must be in scope */}
+              <Select
+                value={selectedAction?.id || ''}
+                onValueChange={(val) => {
+                  const act = ACTIONS.find((a) => a.id === val);
+                  if (act) setSelectedAction(act);
+                }}
+              >
+                <SelectTrigger className="w-full bg-white/5 border-white/10 text-foreground" title="Tapis Projek">
+                  <SelectValue placeholder="Pilih tindakan projek..." />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-900 border-white/10 text-white">
+                   {ACTIONS.filter(a => a.category === 'project').map(a => (
+                     <SelectItem key={a.id} value={a.id}>{a.label}</SelectItem>
+                   ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {renderProjectsTab()}
+          </div>
+        )
       case 'agents': return renderAgentsTab()
       case 'trace': return renderTraceTabCenter()
       default: return renderChatTab()
@@ -1323,22 +1378,43 @@ export default function OpsConductor() {
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="flex flex-col h-full">
+      <div className="min-h-screen bg-transparent flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b bg-card/30">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-lg flex items-center justify-center text-white" style={{ background: BRAND_GRADIENT }}>
-              <Zap className="h-4 w-4" />
+        <div className="border-b border-white/10 bg-white/5 backdrop-blur-md sticky top-0 z-20">
+          <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-primary to-violet-600 flex items-center justify-center shadow-lg shadow-primary/20">
+                  <GitBranch className="h-5 w-5 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold text-foreground">
+                    Ops Conductor
+                  </h1>
+                  <p className="text-xs text-muted-foreground">
+                    Orkestrasi operasi NGO PUSPA dalam masa nyata
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {activeCount > 0 && (
+                  <Badge className="bg-primary/20 text-primary border-primary/30 text-[10px]">
+                    <Activity className="h-3 w-3 mr-1" />
+                    {activeCount} aktif
+                  </Badge>
+                )}
+                {blockedCount > 0 && (
+                  <Badge className="bg-red-500/20 text-red-400 border-red-400/30 text-[10px]">
+                    <AlertTriangle className="h-3 w-3 mr-1" />
+                    {blockedCount} sekat
+                  </Badge>
+                )}
+                <Badge className="bg-cyan-500/20 text-cyan-400 border-cyan-400/30 text-[10px]">
+                  <CheckCircle2 className="h-3 w-3 mr-1" />
+                  {completedCount} siap
+                </Badge>
+              </div>
             </div>
-            <div>
-              <h2 className="text-sm font-bold" style={{ color: '#4B0082' }}>Ops Conductor</h2>
-              <p className="text-[10px] text-muted-foreground">Pusat Kawal Operasi PUSPA</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            {activeCount > 0 && <Badge className="bg-blue-100 text-blue-700 text-[10px]"><Activity className="h-2.5 w-2.5 mr-1" />{activeCount} aktif</Badge>}
-            {blockedCount > 0 && <Badge className="bg-red-100 text-red-700 text-[10px]"><AlertTriangle className="h-2.5 w-2.5 mr-1" />{blockedCount} sekat</Badge>}
-            <Badge className="bg-emerald-100 text-emerald-700 text-[10px]"><CheckCircle2 className="h-2.5 w-2.5 mr-1" />{completedCount} siap</Badge>
           </div>
         </div>
 

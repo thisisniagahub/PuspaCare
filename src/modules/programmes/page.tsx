@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -55,6 +56,19 @@ import {
   X,
   CheckCircle2,
   Rocket,
+  LayoutGrid,
+  Utensils,
+  GraduationCap,
+  Hammer,
+  Stethoscope,
+  Coins,
+  Heart,
+  AlertTriangle,
+  BookOpen,
+  BrainCircuit,
+  Lightbulb,
+  TrendingUp,
+  Zap
 } from 'lucide-react';
 import { api } from '@/lib/api';
 import { getProgrammeStatusLabel } from '@/lib/domain';
@@ -138,79 +152,79 @@ interface ProgrammeApiRecord {
 
 const CATEGORY_CONFIG: Record<
   CategoryKey,
-  { label: string; color: string; badgeClass: string }
+  { label: string; color: string; badgeClass: string; icon: any }
 > = {
   food_aid: {
     label: 'Bantuan Makanan',
     color: 'orange',
-    badgeClass:
-      'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400 border-orange-200',
+    badgeClass: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
+    icon: Utensils
   },
   education: {
     label: 'Pendidikan',
     color: 'blue',
-    badgeClass:
-      'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 border-blue-200',
+    badgeClass: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
+    icon: GraduationCap
   },
   skills_training: {
     label: 'Latihan Kemahiran',
     color: 'purple',
-    badgeClass:
-      'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400 border-purple-200',
+    badgeClass: 'bg-primary/10 text-primary border-primary/20',
+    icon: Hammer
   },
   healthcare: {
     label: 'Kesihatan',
     color: 'rose',
-    badgeClass:
-      'bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-400 border-rose-200',
+    badgeClass: 'bg-rose-500/10 text-rose-400 border-rose-500/20',
+    icon: Stethoscope
   },
   financial_assistance: {
     label: 'Bantuan Kewangan',
     color: 'emerald',
-    badgeClass:
-      'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200',
+    badgeClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+    icon: Coins
   },
   community: {
     label: 'Komuniti',
     color: 'cyan',
-    badgeClass:
-      'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400 border-cyan-200',
+    badgeClass: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+    icon: Heart
   },
   emergency_relief: {
     label: 'Bantuan Kecemasan',
     color: 'red',
-    badgeClass:
-      'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400 border-red-200',
+    badgeClass: 'bg-red-500/10 text-red-400 border-red-500/20',
+    icon: AlertTriangle
   },
   dawah: {
     label: 'Dakwah',
     color: 'amber',
-    badgeClass:
-      'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200',
+    badgeClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    icon: BookOpen
   },
   inkubasi_ai: {
     label: 'Inkubasi AI & SaaS',
     color: 'indigo',
-    badgeClass:
-      'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-200',
+    badgeClass: 'bg-primary/20 text-primary border-primary/30 shadow-lg shadow-primary/10',
+    icon: BrainCircuit
   },
   mentoring_bisnes: {
     label: 'Mentoring Bisnes',
     color: 'violet',
-    badgeClass:
-      'bg-violet-100 text-violet-800 dark:bg-violet-900/30 dark:text-violet-400 border-violet-200',
+    badgeClass: 'bg-violet-500/10 text-violet-400 border-violet-500/20',
+    icon: Lightbulb
   },
   geran_modal: {
     label: 'Geran & Modal Pusingan',
     color: 'emerald',
-    badgeClass:
-      'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200',
+    badgeClass: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+    icon: TrendingUp
   },
   scale_up: {
     label: 'Scale-up & Marketing',
     color: 'pink',
-    badgeClass:
-      'bg-pink-100 text-pink-800 dark:bg-pink-900/30 dark:text-pink-400 border-pink-200',
+    badgeClass: 'bg-pink-500/10 text-pink-400 border-pink-500/20',
+    icon: Zap
   },
 };
 
@@ -221,22 +235,22 @@ const STATUS_CONFIG: Record<
   Aktif: {
     label: 'Aktif',
     badgeClass:
-      'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200',
+      'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
   },
   Siap: {
     label: 'Siap',
     badgeClass:
-      'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-400 border-slate-200',
+      'bg-white/10 text-white/50 border-white/20',
   },
   Ditangguh: {
     label: 'Ditangguh',
     badgeClass:
-      'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200',
+      'bg-amber-500/20 text-amber-400 border-amber-500/30',
   },
   Dirancang: {
     label: 'Dirancang',
     badgeClass:
-      'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-200',
+      'bg-primary/20 text-primary border-primary/30',
   },
 };
 
@@ -263,8 +277,19 @@ const STATUS_OPTIONS: { value: StatusKey; label: string }[] = [
 ];
 
 const FILTER_TABS = [
-  { value: 'Semua', label: 'Semua' },
-  ...CATEGORY_OPTIONS.map((c) => ({ value: c.value, label: c.label })),
+  { value: 'Semua', label: 'Semua', icon: LayoutGrid },
+  { value: 'food_aid', label: 'Bantuan Makanan', icon: Utensils },
+  { value: 'education', label: 'Pendidikan', icon: GraduationCap },
+  { value: 'skills_training', label: 'Latihan Kemahiran', icon: Hammer },
+  { value: 'healthcare', label: 'Kesihatan', icon: Stethoscope },
+  { value: 'financial_assistance', label: 'Bantuan Kewangan', icon: Coins },
+  { value: 'community', label: 'Komuniti', icon: Heart },
+  { value: 'emergency_relief', label: 'Bantuan Kecemasan', icon: AlertTriangle },
+  { value: 'dawah', label: 'Dakwah', icon: BookOpen },
+  { value: 'inkubasi_ai', label: 'Inkubasi AI & SaaS', icon: BrainCircuit },
+  { value: 'mentoring_bisnes', label: 'Mentoring Bisnes', icon: Lightbulb },
+  { value: 'geran_modal', label: 'Geran & Modal Pusingan', icon: TrendingUp },
+  { value: 'scale_up', label: 'Scale-up & Marketing', icon: Zap },
 ];
 
 // ─── Mock Data ───────────────────────────────────────────────────────────────
@@ -327,11 +352,11 @@ function truncateText(text: string, maxLength: number): string {
 }
 
 function getProgressColor(spent: number, budget: number): string {
-  if (budget === 0) return '[&>div]:bg-slate-400';
-  if (spent > budget) return '[&>div]:bg-red-500';
+  if (budget === 0) return '[&>div]:bg-white/20';
+  if (spent > budget) return '[&>div]:bg-destructive';
   const pct = (spent / budget) * 100;
-  if (pct >= 80) return '[&>div]:bg-yellow-500';
-  return '[&>div]:bg-green-500';
+  if (pct >= 80) return '[&>div]:bg-amber-400';
+  return '[&>div]:bg-primary';
 }
 
 function mapProgrammeFromApi(programme: ProgrammeApiRecord): Programme {
@@ -550,7 +575,7 @@ export default function ProgrammesPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50/50">
+      <div className="min-h-screen bg-transparent">
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="mb-6 space-y-2">
             <div className="h-8 w-56 animate-pulse rounded bg-gray-200" />
@@ -571,16 +596,16 @@ export default function ProgrammesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-transparent">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b bg-white/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-black/20 backdrop-blur-xl">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              <h1 className="text-2xl font-bold tracking-tight text-white">
                 Pengurusan Program
               </h1>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-white/60">
                 Urus dan pantau semua program PUSPA NGO
               </p>
             </div>
@@ -595,40 +620,40 @@ export default function ProgrammesPage() {
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Stats Cards */}
         <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          <Card className="border-0 bg-white shadow-sm">
+          <Card className="border border-white/10 bg-card backdrop-blur-xl">
             <CardContent className="p-4">
               <p className="text-xs font-medium text-gray-500">
                 Jumlah Program
               </p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-white">
                 {programmes.length}
               </p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white shadow-sm">
+          <Card className="border border-white/10 bg-card backdrop-blur-xl">
             <CardContent className="p-4">
-              <p className="text-xs font-medium text-gray-500">Program Aktif</p>
-              <p className="text-2xl font-bold text-green-600">
+              <p className="text-xs font-medium text-gray-400">Program Aktif</p>
+              <p className="text-2xl font-bold text-primary">
                 {stats.activeCount}
               </p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white shadow-sm">
+          <Card className="border border-white/10 bg-card backdrop-blur-xl">
             <CardContent className="p-4">
-              <p className="text-xs font-medium text-gray-500">
+              <p className="text-xs font-medium text-gray-400">
                 Jumlah Bajet
               </p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-white">
                 {formatCurrency(stats.totalBudget)}
               </p>
             </CardContent>
           </Card>
-          <Card className="border-0 bg-white shadow-sm">
+          <Card className="border border-white/10 bg-card backdrop-blur-xl">
             <CardContent className="p-4">
-              <p className="text-xs font-medium text-gray-500">
+              <p className="text-xs font-medium text-gray-400">
                 Jumlah Peserta
               </p>
-              <p className="text-2xl font-bold text-gray-900">
+              <p className="text-2xl font-bold text-white">
                 {stats.totalBeneficiaries.toLocaleString('ms-MY')}
               </p>
             </CardContent>
@@ -638,53 +663,81 @@ export default function ProgrammesPage() {
         {/* Search and Filter */}
         <div className="mb-6 space-y-4">
           {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <div className="group relative">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-white/40 transition-colors group-focus-within:text-emerald-400" />
             <Input
               placeholder="Cari program, lokasi, atau keterangan..."
-              className="pl-10"
+              className="h-12 pl-12 pr-4 bg-white/5 border-white/10 rounded-2xl shadow-xl focus-visible:ring-emerald-500/20 focus-visible:border-emerald-500 transition-all text-base text-white placeholder:text-white/30"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
+              <kbd className="hidden sm:inline-flex h-6 select-none items-center gap-1 rounded border border-white/10 bg-white/5 px-1.5 font-mono text-[10px] font-medium text-white/40 opacity-100">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </div>
           </div>
 
           {/* Category Filter Tabs */}
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <div className="w-full overflow-x-auto">
-              <TabsList className="inline-flex w-max min-w-full gap-1">
-                {FILTER_TABS.map((tab) => (
-                  <TabsTrigger key={tab.value} value={tab.value} className="text-xs sm:text-sm">
-                    {tab.label}
-                    {tab.value !== 'Semua' && (
-                      <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200/60 px-1.5 text-[10px] font-medium text-gray-600">
-                        {
-                          programmes.filter(
-                            (p) =>
-                              tab.value === 'Semua' || p.category === tab.value
-                          ).length
-                        }
-                      </span>
-                    )}
-                    {tab.value === 'Semua' && (
-                      <span className="ml-1.5 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-gray-200/60 px-1.5 text-[10px] font-medium text-gray-600">
-                        {programmes.length}
-                      </span>
-                    )}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <div className="relative w-full overflow-hidden">
+              <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-gray-50/50 to-transparent z-10 pointer-events-none md:hidden" />
+              <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-50/50 to-transparent z-10 pointer-events-none md:hidden" />
+              
+              <div className="overflow-x-auto no-scrollbar pb-1">
+                <TabsList className="inline-flex w-max p-1 bg-white/5 backdrop-blur-md border border-white/10 rounded-xl gap-1 h-auto shadow-xl">
+                  {FILTER_TABS.map((tab) => {
+                    const Icon = tab.icon;
+                    const isActive = activeTab === tab.value;
+                    const count = programmes.filter(
+                      (p) => tab.value === 'Semua' || p.category === tab.value
+                    ).length;
+
+                    return (
+                      <TabsTrigger 
+                        key={tab.value} 
+                        value={tab.value} 
+                        className={cn(
+                          "relative px-4 py-2.5 rounded-lg text-xs font-medium transition-all duration-300",
+                          "flex items-center gap-2 border border-transparent whitespace-nowrap",
+                          "data-[state=active]:bg-white/10 data-[state=active]:text-emerald-400 data-[state=active]:shadow-sm data-[state=active]:border-white/20",
+                          "text-white/50 hover:text-white hover:bg-white/5"
+                        )}
+                      >
+                        <Icon className={cn("h-4 w-4 shrink-0", isActive ? "text-emerald-400" : "text-white/30")} />
+                        <span>{tab.label}</span>
+                        <span className={cn(
+                          "ml-1 flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-[10px] font-bold transition-colors",
+                          isActive 
+                            ? "bg-emerald-500/20 text-emerald-400" 
+                            : "bg-white/10 text-white/40 group-hover:bg-white/20"
+                        )}>
+                          {count}
+                        </span>
+                        {isActive && (
+                          <motion.div 
+                            layoutId="activeTab"
+                            className="absolute -bottom-[1px] left-2 right-2 h-[2px] bg-emerald-400 rounded-full"
+                            transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                          />
+                        )}
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
+              </div>
             </div>
           </Tabs>
         </div>
 
         {/* Programme Cards Grid */}
         {filteredProgrammes.length === 0 ? (
-          <Card className="border-0 bg-white shadow-sm">
+          <Card className="border border-white/10 bg-card backdrop-blur-xl">
             <CardContent className="flex flex-col items-center justify-center py-16">
               <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-gray-100">
                 <FileText className="h-8 w-8 text-gray-400" />
               </div>
-              <h3 className="text-lg font-medium text-gray-900">
+              <h3 className="text-lg font-medium text-white">
                 Tiada Program Dijumpai
               </h3>
               <p className="mt-1 text-sm text-gray-500">
@@ -694,7 +747,7 @@ export default function ProgrammesPage() {
           </Card>
         ) : (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {filteredProgrammes.map((programme) => {
+            {filteredProgrammes.map((programme, idx) => {
               const catConfig = CATEGORY_CONFIG[programme.category];
               const statusConfig = STATUS_CONFIG[programme.status];
               const budgetPercent =
@@ -702,130 +755,139 @@ export default function ProgrammesPage() {
                   ? Math.min((programme.spent / programme.budget) * 100, 100)
                   : 0;
               const isOverBudget = programme.spent > programme.budget;
+              const CatIcon = catConfig.icon;
 
               return (
-                <Card
+                <motion.div
                   key={programme.id}
-                  className="group flex h-full flex-col border-0 bg-white shadow-sm transition-shadow hover:shadow-md"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: idx * 0.05 }}
+                  layout
                 >
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <CardTitle className="line-clamp-2 text-base font-semibold leading-snug">
-                        {programme.name}
-                      </CardTitle>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 pt-1">
-                      <Badge
-                        variant="outline"
-                        className={catConfig.badgeClass}
-                      >
-                        {catConfig.label}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className={statusConfig.badgeClass}
-                      >
-                        {statusConfig.label}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-
-                  <CardContent className="flex-1 space-y-4 pb-4">
-                    {/* Description */}
-                    <p className="text-sm leading-relaxed text-gray-600">
-                      {truncateText(programme.description, 100)}
-                    </p>
-
-                    {/* Budget Progress */}
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="font-medium text-gray-700">
-                          <Banknote className="mr-1 inline h-3.5 w-3.5" />
-                          {formatCurrency(programme.spent)} /{' '}
-                          {formatCurrency(programme.budget)}
-                        </span>
-                        <span
-                          className={`font-semibold ${
-                            isOverBudget ? 'text-red-600' : 'text-gray-500'
-                          }`}
+                  <Card className="group relative flex h-full flex-col border-white/10 bg-card backdrop-blur-xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 hover:border-primary/30">
+                    <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500/0 via-emerald-500/40 to-emerald-500/0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-4">
+                        <CardTitle className="line-clamp-2 text-lg font-bold leading-tight text-white group-hover:text-emerald-400 transition-colors">
+                          {programme.name}
+                        </CardTitle>
+                        <div className={cn(
+                          "p-2 rounded-xl shrink-0 transition-colors border border-white/10",
+                          catConfig.badgeClass
+                        )}>
+                          <CatIcon size={20} />
+                        </div>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 pt-2">
+                        <Badge
+                          variant="secondary"
+                          className={cn("rounded-lg border font-medium px-2 py-0.5", statusConfig.badgeClass)}
                         >
-                          {programme.budget > 0
-                            ? `${Math.round((programme.spent / programme.budget) * 100)}%`
-                            : '0%'}
-                        </span>
+                          {statusConfig.label}
+                        </Badge>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-gray-100">
-                        <div
-                          className={`h-full rounded-full transition-all ${
-                            isOverBudget
-                              ? 'bg-red-500'
-                              : budgetPercent >= 80
-                                ? 'bg-yellow-500'
-                                : 'bg-green-500'
-                          }`}
-                          style={{ width: `${Math.min(budgetPercent, 100)}%` }}
-                        />
+                    </CardHeader>
+  
+                    <CardContent className="flex-1 space-y-5 pb-4">
+                      {/* Description */}
+                      <p className="text-sm leading-relaxed text-white/50 line-clamp-3">
+                        {programme.description}
+                      </p>
+  
+                      {/* Stats Grid */}
+                      <div className="grid grid-cols-2 gap-3 py-2 border-y border-white/5">
+                        <div className="space-y-1">
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-white/30">Budget</p>
+                          <p className="text-sm font-bold text-white">{formatCurrency(programme.budget)}</p>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[10px] uppercase tracking-wider font-bold text-white/30">Peserta</p>
+                          <p className="text-sm font-bold text-white">{programme.currentBeneficiaries} <span className="text-white/30 font-normal">/ {programme.targetBeneficiaries}</span></p>
+                        </div>
                       </div>
-                    </div>
-
-                    {/* Beneficiaries */}
-                    <div className="flex items-center text-xs text-gray-600">
-                      <Users className="mr-1.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
-                      Peserta:{' '}
-                      <span className="mx-1 font-semibold text-gray-900">
-                        {programme.currentBeneficiaries}
-                      </span>{' '}
-                      / {programme.targetBeneficiaries} sasaran
-                    </div>
-
-                    {/* Date Range */}
-                    <div className="flex items-center text-xs text-gray-600">
-                      <CalendarDays className="mr-1.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
-                      Tarikh: {formatDate(programme.startDate)} -{' '}
-                      {formatDate(programme.endDate)}
-                    </div>
-
-                    {/* Location */}
-                    {programme.location && (
-                      <div className="flex items-center text-xs text-gray-600">
-                        <MapPin className="mr-1.5 h-3.5 w-3.5 shrink-0 text-gray-400" />
-                        {programme.location}
+  
+                      {/* Budget Progress */}
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="flex items-center gap-1.5 font-semibold text-white/60">
+                            <Banknote className="h-4 w-4 text-emerald-400" />
+                            Dibelanjakan
+                          </span>
+                          <span className={cn(
+                            "font-bold px-2 py-0.5 rounded-md",
+                            isOverBudget ? 'bg-red-500/20 text-red-400' : 'bg-emerald-500/20 text-emerald-400'
+                          )}>
+                            {programme.budget > 0
+                              ? `${Math.round((programme.spent / programme.budget) * 100)}%`
+                              : '0%'}
+                          </span>
+                        </div>
+                        <div className="h-2.5 overflow-hidden rounded-full bg-white/5 p-0.5">
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${Math.min(budgetPercent, 100)}%` }}
+                            transition={{ duration: 1, ease: "easeOut", delay: 0.2 }}
+                            className={cn(
+                              "h-full rounded-full transition-all shadow-[0_0_12px_rgba(16,185,129,0.4)]",
+                              isOverBudget ? 'bg-red-500' : budgetPercent >= 80 ? 'bg-yellow-500' : 'bg-emerald-400'
+                            )}
+                          />
+                        </div>
                       </div>
-                    )}
-                  </CardContent>
-
-                  <CardFooter className="border-t bg-gray-50/50 px-4 py-3">
-                    <div className="flex w-full items-center gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 text-xs"
-                        onClick={() => setViewingProgramme(programme)}
-                      >
-                        <Eye className="mr-1.5 h-3.5 w-3.5" />
-                        Lihat
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 text-xs"
-                        onClick={() => openEditDialog(programme)}
-                      >
-                        <Pencil className="mr-1.5 h-3.5 w-3.5" />
-                        Edit
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1 text-xs text-red-600 hover:bg-red-50 hover:text-red-700"
-                        onClick={() => setDeleteConfirmId(programme.id)}
-                      >
-                        <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                        Padam
-                      </Button>
-                    </div>
-                  </CardFooter>
-                </Card>
+  
+                      {/* Meta Info */}
+                      <div className="space-y-2 pt-2">
+                        <div className="flex items-center text-xs text-white/40 group/item">
+                          <CalendarDays className="mr-2 h-4 w-4 shrink-0 text-white/30 group-hover/item:text-emerald-400 transition-colors" />
+                          <span className="font-medium text-white/60">{formatDate(programme.startDate)}</span>
+                          <span className="mx-1 text-white/20">-</span>
+                          <span className="font-medium text-white/60">{formatDate(programme.endDate)}</span>
+                        </div>
+    
+                        {programme.location && (
+                          <div className="flex items-center text-xs text-white/40 group/item">
+                            <MapPin className="mr-2 h-4 w-4 shrink-0 text-white/30 group-hover/item:text-emerald-400 transition-colors" />
+                            <span className="truncate text-white/60">{programme.location}</span>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+  
+                    <CardFooter className="border-t border-white/5 bg-white/5 px-4 py-3 group-hover:bg-white/10 transition-colors">
+                      <div className="flex w-full items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 text-xs bg-white/5 border-white/10 text-white hover:bg-white/10"
+                          onClick={() => setViewingProgramme(programme)}
+                        >
+                          <Eye className="mr-1.5 h-3.5 w-3.5" />
+                          Lihat
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 text-xs bg-white/5 border-white/10 text-white hover:bg-white/10"
+                          onClick={() => openEditDialog(programme)}
+                        >
+                          <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1 text-xs bg-red-500/10 border-red-500/20 text-red-400 hover:bg-red-500/20 hover:text-red-300"
+                          onClick={() => setDeleteConfirmId(programme.id)}
+                        >
+                          <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                          Padam
+                        </Button>
+                      </div>
+                    </CardFooter>
+                  </Card>
+                </motion.div>
               );
             })}
           </div>

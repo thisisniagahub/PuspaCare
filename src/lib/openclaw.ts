@@ -100,4 +100,100 @@ export interface OpenClawStatus {
   error?: string
 }
 
+export type OpenClawChatRole = 'system' | 'user' | 'assistant'
+
+export interface OpenClawChatMessage {
+  role: OpenClawChatRole
+  content: string
+}
+
+export interface OpenClawChatCompletion {
+  content: string
+  model: string
+  usage?: {
+    prompt_tokens?: number
+    completion_tokens?: number
+    total_tokens?: number
+  }
+}
+
+interface OpenClawChatChoice {
+  message?: {
+    content?: string
+  }
+}
+
+interface OpenClawChatCompletionPayload {
+  choices?: OpenClawChatChoice[]
+  usage?: OpenClawChatCompletion['usage']
+  model?: string
+  error?: {
+    message?: string
+  }
+}
+
 export const DEFAULT_OPENCLAW_BRIDGE_URL = 'https://operator.gangniaga.my/puspa-bridge'
+export const DEFAULT_OPENCLAW_AGENT_MODEL = 'openclaw/puspacare'
+
+export function getOpenClawBridgeHeaders(): HeadersInit {
+  const headers: HeadersInit = {
+    Accept: 'application/json',
+  }
+  const token = process.env.OPENCLAW_BRIDGE_TOKEN
+
+  if (token) {
+    headers.Authorization = `Bearer ${token}`
+  }
+
+  return headers
+}
+
+export function isOpenClawGatewayConfigured() {
+  return Boolean(process.env.OPENCLAW_GATEWAY_URL && process.env.OPENCLAW_GATEWAY_TOKEN)
+}
+
+export async function createOpenClawChatCompletion(
+  messages: OpenClawChatMessage[],
+  options?: { temperature?: number }
+): Promise<OpenClawChatCompletion> {
+  const gatewayUrl = process.env.OPENCLAW_GATEWAY_URL?.replace(/\/$/, '')
+  const token = process.env.OPENCLAW_GATEWAY_TOKEN
+  const model = process.env.OPENCLAW_AGENT_MODEL || DEFAULT_OPENCLAW_AGENT_MODEL
+
+  if (!gatewayUrl || !token) {
+    throw new Error('OpenClaw Gateway is not configured')
+  }
+
+  const response = await fetch(`${gatewayUrl}/v1/chat/completions`, {
+    method: 'POST',
+    cache: 'no-store',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      model,
+      messages,
+      temperature: options?.temperature ?? 0.2,
+    }),
+  })
+
+  const payload = await response.json().catch(() => null) as OpenClawChatCompletionPayload | null
+
+  if (!response.ok) {
+    throw new Error(payload?.error?.message || `OpenClaw Gateway returned HTTP ${response.status}`)
+  }
+
+  const content = payload?.choices?.[0]?.message?.content?.trim()
+
+  if (!content) {
+    throw new Error('OpenClaw Gateway returned an empty response')
+  }
+
+  return {
+    content,
+    model: payload?.model || model,
+    usage: payload?.usage,
+  }
+}

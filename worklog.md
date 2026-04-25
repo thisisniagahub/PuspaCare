@@ -13,7 +13,7 @@ Work Log:
   - automations (CRUD + toggle)
   - artifacts (list + create)
   - dashboard (aggregated summary)
-  - intent (AI-powered NL routing via z-ai-web-dev-sdk)
+  - intent (AI-powered NL routing via OpenClaw Gateway)
 - Created ops Zustand store with persisted state (chat messages, active tab)
 - Built Ops Conductor UI module (1317 lines):
   - Three-panel layout (left tasks, center tabs, right trace)

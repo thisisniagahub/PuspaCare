@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { AuthorizationError, requireRole } from '@/lib/auth'
-import { DEFAULT_OPENCLAW_BRIDGE_URL } from '@/lib/openclaw'
+import { DEFAULT_OPENCLAW_BRIDGE_URL, getOpenClawBridgeHeaders } from '@/lib/openclaw'
 
 const DEFAULT_GATEWAY_URL = 'https://operator.gangniaga.my'
 
@@ -12,9 +12,7 @@ export async function GET(request: Request) {
     const response = await fetch(`${bridgeBaseUrl}/snapshot`, {
       method: 'GET',
       cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: getOpenClawBridgeHeaders(),
     })
 
     const payload = await response.json().catch(() => null)

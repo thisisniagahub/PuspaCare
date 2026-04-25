@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     await new Promise((resolve) => setTimeout(resolve, 2000))
 
     // Simulate intelligent extraction based on typical Malaysian IC data
-    // In production, this would be an actual API call to OpenAI/z-ai-web-dev-sdk
+    // In production, this would call the configured OpenClaw vision-capable model
     const extractedData = {
       name: 'Ahmad bin Abu',
       ic: '900101-14-5555',

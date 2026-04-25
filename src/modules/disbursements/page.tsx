@@ -445,6 +445,7 @@ function generateNo(existing: Disbursement[]): string {
 // ─── Component ───────────────────────────────────────────────────────────────
 
 export default function DisbursementsPage() {
+
   // ── State ────────────────────────────────────────────────────────────────
   const [data, setData] = useState<Disbursement[]>(INITIAL_DATA);
   const [search, setSearch] = useState('');
@@ -1209,9 +1210,16 @@ export default function DisbursementsPage() {
 
   // ── Main Render ──────────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-gray-50/80">
+    <div className="min-h-screen bg-[#0a0c10] text-white p-4 lg:p-8">
+      {/* Aurora Background Ambient Layer */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-5%] right-[-5%] w-[30%] h-[30%] bg-emerald-600/10 blur-[100px] animate-pulse" />
+        <div className="absolute bottom-[-5%] left-[-5%] w-[30%] h-[30%] bg-blue-600/10 blur-[100px] animate-pulse delay-1000" />
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto space-y-6">
       {/* Header */}
-      <header className="sticky top-0 z-30 bg-white border-b shadow-sm">
+      <header className="sticky top-0 z-30 bg-white/5 backdrop-blur-xl border-b border-white/10 shadow-sm rounded-2xl">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <div>
@@ -1510,9 +1518,9 @@ export default function DisbursementsPage() {
 
       {/* ── View Sheet ──────────────────────────────────────────────────── */}
       <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          <SheetHeader>
-            <SheetTitle className="flex items-center gap-2">
+        <SheetContent className="w-full sm:max-w-lg overflow-y-auto border-white/10 bg-slate-900 text-white">
+          <SheetHeader className="border-b border-white/10 pb-4">
+            <SheetTitle className="flex items-center gap-2 text-white">
               <Eye className="h-5 w-5" />
               Butiran Pembayaran
             </SheetTitle>
@@ -1525,29 +1533,30 @@ export default function DisbursementsPage() {
 
       {/* ── Alert Dialog for Reject/Cancel ──────────────────────────────── */}
       <AlertDialog open={alertOpen} onOpenChange={setAlertOpen}>
-        <AlertDialogContent>
+        <AlertDialogContent className="border-white/10 bg-slate-900 text-white">
           <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
+            <AlertDialogTitle className="flex items-center gap-2 text-white">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
               {alertAction === 'reject' ? 'Tolak Pembayaran' : 'Batalkan Pembayaran'}
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription className="text-white/70">
               {alertAction === 'reject'
                 ? 'Anda pasti ingin menolak pembayaran ini? Tindakan ini tidak boleh diundur.'
                 : 'Anda pasti ingin membatalkan pembayaran ini? Tindakan ini tidak boleh diundur.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setAlertAction(null)}>Tidak</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setAlertAction(null)} className="border-white/10 bg-white/5 text-white hover:bg-white/10">Tidak</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRejectOrCancel}
-              className="bg-red-600 hover:bg-red-700"
+              className="bg-red-600 hover:bg-red-700 text-white"
             >
               Ya, {alertAction === 'reject' ? 'Tolak' : 'Batalkan'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </div>
   );
 }

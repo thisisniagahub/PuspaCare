@@ -1286,7 +1286,7 @@ const DOC_CATEGORIES: DocCategory[] = [
                 ['Prisma ORM', 'Pengurusan pangkalan data dengan penaipan'],
                 ['SQLite', 'Pangkalan data lalai (boleh ditukar ke PostgreSQL)'],
                 ['Zod', 'Pengesahan data masukan API'],
-                ['z-ai-web-dev-sdk', 'SDK untuk keupayaan AI (server-side sahaja)'],
+                ['OpenClaw Gateway', 'AI provider server-side melalui /v1/chat/completions'],
               ]}
             />
             <H2>Struktur Fail</H2>

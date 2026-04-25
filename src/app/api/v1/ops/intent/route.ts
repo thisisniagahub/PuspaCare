@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthorizationError, requireRole } from '@/lib/auth';
+import { createOpenClawChatCompletion, isOpenClawGatewayConfigured, type OpenClawChatMessage } from '@/lib/openclaw';
 import { z } from 'zod';
 
 // ─── Validation Schema ────────────────────────────────────────────────────────
@@ -61,19 +62,20 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { message } = intentRequestSchema.parse(body);
 
-    // Use z-ai-web-dev-sdk for intent classification
-    const ZAI = (await import('z-ai-web-dev-sdk')).default;
-    const zai = await ZAI.create();
+    const messages: OpenClawChatMessage[] = [
+      { role: 'system', content: INTENT_SYSTEM_PROMPT },
+      { role: 'user', content: message },
+    ];
 
-    const result = await zai.chat.completions.create({
-      messages: [
-        { role: 'system', content: INTENT_SYSTEM_PROMPT },
-        { role: 'user', content: message },
-      ],
-      thinking: { type: 'disabled' },
-    });
+    if (!isOpenClawGatewayConfigured()) {
+      return NextResponse.json(
+        { success: false, error: 'OpenClaw Gateway is not configured' },
+        { status: 503 }
+      );
+    }
 
-    const rawResponse = result?.choices?.[0]?.message?.content || '';
+    const openClawResult = await createOpenClawChatCompletion(messages, { temperature: 0 });
+    const rawResponse = openClawResult.content;
 
     // Parse the JSON response from the AI
     let intentData: Record<string, unknown>;
@@ -113,6 +115,8 @@ export async function POST(request: NextRequest) {
         ? intentData.needsClarification
         : false,
       originalMessage: message,
+      provider: 'openclaw',
+      model: openClawResult.model,
       classifiedAt: new Date().toISOString(),
     };
 
@@ -130,10 +134,10 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
-    console.error('Error in intent classification:', error);
+    console.error('Error in OpenClaw intent classification:', error);
     return NextResponse.json(
-      { success: false, error: 'Failed to classify intent' },
-      { status: 500 }
+      { success: false, error: 'Failed to classify intent through OpenClaw' },
+      { status: 502 }
     );
   }
 }

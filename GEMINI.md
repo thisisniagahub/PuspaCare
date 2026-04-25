@@ -10,7 +10,7 @@ PuspaCare is a SaaS Enterprise platform for **PUSPA** (Pertubuhan Urus Peduli As
 - **Database:** SQLite (local dev) / PostgreSQL (production).
 - **Authentication:** Next-Auth v4 with Credentials Provider.
 - **State Management:** Zustand (for app shell and module-specific stores).
-- **AI Integration:** z-ai-web-dev-sdk, OpenClaw (MCP servers), Ops Conductor.
+- **AI Integration:** OpenClaw Gateway/Bridge (MCP servers), Ops Conductor.
 
 ## Technical Standards
 

@@ -73,25 +73,25 @@ function SystemMetrics() {
   ]
   
   return (
-    <Card className="border-none shadow-xl bg-slate-950 text-slate-200 overflow-hidden">
-      <CardHeader className="border-b border-slate-800 pb-4">
+    <Card className="border border-white/10 shadow-2xl bg-card backdrop-blur-xl text-white overflow-hidden">
+      <CardHeader className="border-b border-white/5 pb-4 bg-white/5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Cpu className="h-5 w-5 text-indigo-400" />
-            <CardTitle className="text-sm font-mono uppercase tracking-widest">System Health (Dev Mode)</CardTitle>
+            <Cpu className="h-5 w-5 text-primary" />
+            <CardTitle className="text-xs font-bold uppercase tracking-widest text-primary">System Health (Dev Mode)</CardTitle>
           </div>
-          <Badge variant="outline" className="text-[10px] font-mono border-indigo-500/50 text-indigo-400 bg-indigo-500/10">Live Metrics</Badge>
+          <Badge variant="outline" className="text-[10px] font-mono border-primary/50 text-primary bg-primary/10">Live Metrics</Badge>
         </div>
       </CardHeader>
       <CardContent className="pt-6">
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="space-y-1">
-            <p className="text-[10px] text-slate-500 uppercase font-bold">API Latency</p>
-            <p className="text-xl font-mono font-bold text-emerald-400">124ms</p>
+            <p className="text-[10px] text-white/40 uppercase font-bold">API Latency</p>
+            <p className="text-xl font-bold text-emerald-400">124ms</p>
           </div>
           <div className="space-y-1">
-            <p className="text-[10px] text-slate-500 uppercase font-bold">Server Load</p>
-            <p className="text-xl font-mono font-bold text-amber-400">1.28%</p>
+            <p className="text-[10px] text-white/40 uppercase font-bold">Server Load</p>
+            <p className="text-xl font-bold text-secondary-fixed-dim">1.28%</p>
           </div>
         </div>
         <div className="h-[120px] w-full">
@@ -99,11 +99,11 @@ function SystemMetrics() {
             <AreaChart data={cpuData}>
               <defs>
                 <linearGradient id="colorUsage" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                  <stop offset="5%" stopColor="#ecb2ff" stopOpacity={0.3}/>
+                  <stop offset="95%" stopColor="#ecb2ff" stopOpacity={0}/>
                 </linearGradient>
               </defs>
-              <Area type="monotone" dataKey="usage" stroke="#6366f1" fillOpacity={1} fill="url(#colorUsage)" strokeWidth={2} />
+              <Area type="monotone" dataKey="usage" stroke="#ecb2ff" fillOpacity={1} fill="url(#colorUsage)" strokeWidth={2} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -115,17 +115,17 @@ function SystemMetrics() {
 function AIStatusCard() {
   const setView = useAppStore((s) => s.setView)
   return (
-    <Card className="border-none shadow-xl bg-gradient-to-br from-indigo-900 to-slate-900 text-white overflow-hidden group cursor-pointer" onClick={() => setView('openclaw-terminal')}>
+    <Card className="border border-white/10 shadow-2xl bg-gradient-to-br from-[#520071] to-[#101415] text-white overflow-hidden group cursor-pointer" onClick={() => setView('openclaw-terminal')}>
       <CardContent className="p-6 relative">
         <div className="absolute right-0 top-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">
           <Terminal className="h-24 w-24" />
         </div>
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
-            <Zap className="h-5 w-5 text-yellow-400 fill-yellow-400" />
-            <h3 className="font-bold text-lg">AI Ops Engine</h3>
+            <Zap className="h-5 w-5 text-primary fill-primary" />
+            <h3 className="font-bold text-lg text-primary">AI Ops Engine</h3>
           </div>
-          <p className="text-sm text-indigo-100/70 mb-4 max-w-[200px]">OpenClaw MCP Gateway is active. 12 agents online.</p>
+          <p className="text-sm text-white/70 mb-4 max-w-[200px]">OpenClaw MCP Gateway is active. 12 agents online.</p>
           <div className="flex items-center gap-2 text-white text-xs font-bold">
             Enter Console <ChevronRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
           </div>
@@ -153,18 +153,18 @@ interface DashboardStats {
 }
 
 const FUND_COLORS: Record<string, string> = {
-  zakat: '#7c3aed',
-  sadaqah: '#059669',
-  waqf: '#d97706',
-  infaq: '#2563eb',
-  general: '#6b7280',
+  zakat: '#ecb2ff',
+  sadaqah: '#00fbfb',
+  waqf: '#e1e2e5',
+  infaq: '#bd00ff',
+  general: '#313536',
 }
 
 const ACTIVITY_BADGE_STYLES: Record<string, string> = {
-  case: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300',
-  donation: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300',
-  member: 'bg-sky-100 text-sky-800 dark:bg-sky-900/40 dark:text-sky-300',
-  programme: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
+  case: 'bg-primary/20 text-primary border border-primary/30',
+  donation: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
+  member: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+  programme: 'bg-amber-500/20 text-amber-400 border border-amber-500/30',
 }
 
 // ---------------------------------------------------------------------------
@@ -199,7 +199,7 @@ function StatCard({
   return (
     <Card 
       onMouseMove={handleMouseMove}
-      className="group relative overflow-hidden border-white/40 bg-white/70 backdrop-blur-md transition-all duration-300 hover:shadow-xl hover:-translate-y-1 dark:bg-slate-900/50"
+      className="group relative overflow-hidden border-white/10 bg-white/5 backdrop-blur-xl transition-all duration-500 hover:shadow-[0_0_40px_rgba(236,178,255,0.1)] hover:-translate-y-1.5 rounded-3xl"
     >
       {/* Spotlight Effect */}
       <div 
@@ -217,11 +217,11 @@ function StatCard({
           <span style={{ color: accentColor }}>{icon}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-muted-foreground">{title}</p>
+          <p className="text-sm font-medium text-white/50">{title}</p>
           <div className="mt-1 flex items-baseline gap-1">
             <AnimatedCounter 
               value={value} 
-              className="text-3xl font-bold tracking-tight"
+              className="text-2xl font-bold tracking-tight text-white"
               format={(v) => isCurrency ? 
                 new Intl.NumberFormat('ms-MY', { style: 'currency', currency: 'MYR', maximumFractionDigits: 0 }).format(v) : 
                 Math.floor(v).toLocaleString('ms-MY')
@@ -229,7 +229,7 @@ function StatCard({
             />
           </div>
           {subtitle && (
-            <p className="mt-0.5 text-xs text-muted-foreground font-medium">{subtitle}</p>
+            <p className="mt-0.5 text-xs text-white/40 font-medium">{subtitle}</p>
           )}
           {trend !== undefined && trend !== 0 && (
             <div className="mt-2 flex items-center gap-1.5">
@@ -240,7 +240,7 @@ function StatCard({
                 {trend > 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
                 {Math.abs(trend)}%
               </div>
-              <span className="text-[10px] text-muted-foreground">vs bulan lepas</span>
+              <span className="text-[10px] text-white/30">vs bulan lepas</span>
             </div>
           )}
         </div>
@@ -366,14 +366,14 @@ export default function DashboardPage() {
       )}
 
       {/* Hero Welcome Banner */}
-      <div className="relative overflow-hidden rounded-[2.5rem] bg-slate-950 p-8 text-white shadow-2xl">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#4B0082] via-[#1e1b4b] to-black opacity-90" />
+      <div className="relative overflow-hidden rounded-[2rem] p-8 text-white shadow-2xl border border-white/10">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#520071] via-[#101415] to-black opacity-95" />
         
         {/* Animated Orbs */}
         <motion.div 
           animate={{ x: [0, 50, 0], y: [0, 30, 0] }}
           transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
-          className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-purple-600/20 blur-[100px]" 
+          className="absolute -right-20 -top-20 h-96 w-96 rounded-full bg-primary/10 blur-[100px]" 
         />
         <motion.div 
           animate={{ x: [0, -40, 0], y: [0, 50, 0] }}
@@ -398,7 +398,7 @@ export default function DashboardPage() {
               </p>
               <div className="mt-4 flex items-center gap-3">
                 <Badge className="bg-white/10 hover:bg-white/20 text-white border-white/20 backdrop-blur-md px-3 py-1">
-                  v2.2.0 Enterprise
+                  v2.2.0 Enterprise Developer
                 </Badge>
                 <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-xs text-purple-200 font-medium tracking-wide">SISTEM AKTIF & TERJAMIN</span>
@@ -426,11 +426,11 @@ export default function DashboardPage() {
 
       {/* Statistic Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-        <StatCard title="Ahli Asnaf" value={stats.jumlahAhliAsnaf} icon={<Users className="h-6 w-6" />} accentColor="#7c3aed" iconBgColor="rgba(124, 58, 237, 0.1)" trend={stats.trendAhli} />
-        <StatCard title="Program Aktif" value={stats.programAktif} subtitle="sedang berjalan" icon={<Heart className="h-6 w-6" />} accentColor="#059669" iconBgColor="rgba(5, 150, 105, 0.1)" trend={stats.trendProgram} />
-        <StatCard title="Jumlah Donasi" value={stats.jumlahDonasi} subtitle="tahun 2024" icon={<HandCoins className="h-6 w-6" />} accentColor="#d97706" iconBgColor="rgba(217, 119, 6, 0.1)" trend={stats.trendDonasi} isCurrency />
-        <StatCard title="Sukarelawan" value={stats.sukarelawanAktif} subtitle="aktif lapangan" icon={<UserCheck className="h-6 w-6" />} accentColor="#0ea5e9" iconBgColor="rgba(14, 165, 233, 0.1)" trend={stats.trendSukarelawan} />
-        <StatCard title="Compliance" value={stats.skorCompliance} subtitle="keseluruhan" icon={<ShieldCheck className="h-6 w-6" />} accentColor="#6366f1" iconBgColor="rgba(99, 102, 241, 0.1)" trend={stats.trendCompliance} />
+        <StatCard title="Ahli Asnaf" value={stats.jumlahAhliAsnaf} icon={<Users className="h-6 w-6" />} accentColor="#ecb2ff" iconBgColor="rgba(236, 178, 255, 0.1)" trend={stats.trendAhli} />
+        <StatCard title="Program Aktif" value={stats.programAktif} subtitle="sedang berjalan" icon={<Heart className="h-6 w-6" />} accentColor="#00fbfb" iconBgColor="rgba(0, 251, 251, 0.1)" trend={stats.trendProgram} />
+        <StatCard title="Jumlah Donasi" value={stats.jumlahDonasi} subtitle="tahun 2024" icon={<HandCoins className="h-6 w-6" />} accentColor="#ffffff" iconBgColor="rgba(255, 255, 255, 0.1)" trend={stats.trendDonasi} isCurrency />
+        <StatCard title="Sukarelawan" value={stats.sukarelawanAktif} subtitle="aktif lapangan" icon={<UserCheck className="h-6 w-6" />} accentColor="#bd00ff" iconBgColor="rgba(189, 0, 255, 0.1)" trend={stats.trendSukarelawan} />
+        <StatCard title="Compliance" value={stats.skorCompliance} subtitle="keseluruhan" icon={<ShieldCheck className="h-6 w-6" />} accentColor="#ecb2ff" iconBgColor="rgba(236, 178, 255, 0.1)" trend={stats.trendCompliance} />
       </div>
 
       {/* Tindakan Pintas (Flowing Menu) */}
@@ -444,12 +444,12 @@ export default function DashboardPage() {
 
       {/* Charts Section */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        <Card className="lg:col-span-2 overflow-hidden border-none shadow-xl bg-white/80 backdrop-blur-xl">
-          <CardHeader className="bg-slate-50/50 pb-8">
+        <Card className="lg:col-span-2 overflow-hidden border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
+          <CardHeader className="bg-white/5 pb-8">
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="text-xl font-bold">Trend Sumbangan</CardTitle>
-                <CardDescription>Analisis kemasukan dana bulanan (2024)</CardDescription>
+                <CardTitle className="text-xl font-bold text-white">Trend Sumbangan</CardTitle>
+                <CardDescription className="text-white/50">Analisis kemasukan dana bulanan (2024)</CardDescription>
               </div>
             </div>
           </CardHeader>
@@ -461,18 +461,18 @@ export default function DashboardPage() {
                   <XAxis dataKey="bulan" axisLine={false} tickLine={false} tick={{ fontSize: 12, fontWeight: 500 }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12 }} tickFormatter={(v) => `RM${v/1000}k`} />
                   <Tooltip cursor={{ fill: '#f1f5f9' }} />
-                  <Bar dataKey="zakat" stackId="a" fill="#7c3aed" radius={[4, 4, 0, 0]} barSize={32} />
-                  <Bar dataKey="sadaqah" stackId="a" fill="#059669" radius={[4, 4, 0, 0]} barSize={32} />
+                  <Bar dataKey="zakat" stackId="a" fill="#ecb2ff" radius={[4, 4, 0, 0]} barSize={32} />
+                  <Bar dataKey="sadaqah" stackId="a" fill="#00fbfb" radius={[4, 4, 0, 0]} barSize={32} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="border-none shadow-xl bg-white/80 backdrop-blur-xl">
-          <CardHeader className="bg-slate-50/50">
-            <CardTitle className="text-xl font-bold">Pecahan Asnaf</CardTitle>
-            <CardDescription>Taburan mengikut kategori</CardDescription>
+        <Card className="border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
+          <CardHeader className="bg-white/5">
+            <CardTitle className="text-xl font-bold text-white">Pecahan Asnaf</CardTitle>
+            <CardDescription className="text-white/50">Taburan mengikut kategori</CardDescription>
           </CardHeader>
           <CardContent className="pt-10">
             <div className="h-[250px] w-full">
@@ -490,9 +490,9 @@ export default function DashboardPage() {
                 <div key={i} className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="h-3 w-3 rounded-full" style={{ backgroundColor: entry.color }} />
-                    <span className="text-sm font-medium text-slate-600">{entry.name}</span>
+                    <span className="text-sm font-medium text-white/70">{entry.name}</span>
                   </div>
-                  <span className="text-sm font-bold">{entry.value}</span>
+                  <span className="text-sm font-bold text-white">{entry.value}</span>
                 </div>
               ))}
             </div>
@@ -501,24 +501,24 @@ export default function DashboardPage() {
       </div>
 
       {/* Activity Timeline */}
-      <Card className="border-none shadow-xl bg-white/80 backdrop-blur-xl">
+      <Card className="border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle className="text-xl font-bold">Log Aktiviti Operasi</CardTitle>
-            <Button variant="ghost" className="text-purple-600 font-bold">Lihat Semua Log</Button>
+            <CardTitle className="text-xl font-bold text-white">Log Aktiviti Operasi</CardTitle>
+            <Button variant="ghost" className="text-emerald-400 font-bold hover:bg-emerald-500/10">Lihat Semua Log</Button>
           </div>
         </CardHeader>
         <CardContent>
           <div className="relative space-y-6 before:absolute before:left-5 before:top-2 before:h-[calc(100%-16px)] before:w-0.5 before:bg-slate-100">
             {activities.map((activity: any, i: number) => (
               <div key={i} className="relative flex items-start gap-6 pl-12 group">
-                <div className="absolute left-3 top-1 z-10 h-4 w-4 rounded-full border-4 border-white bg-purple-600 shadow-sm transition-transform group-hover:scale-125" />
-                <div className="flex-1 rounded-2xl border bg-white/50 p-4 transition-all hover:shadow-md hover:bg-white">
+                <div className="absolute left-3 top-1 z-10 h-4 w-4 rounded-full border-4 border-[#101415] bg-primary shadow-sm transition-transform group-hover:scale-125" />
+                <div className="flex-1 rounded-2xl border border-white/10 bg-white/5 p-4 transition-all hover:shadow-md hover:bg-white/10">
                   <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-bold text-slate-900">{activity.title}</h4>
-                    <span className="text-[10px] font-bold uppercase text-slate-400">{activity.timestamp}</span>
+                    <h4 className="font-bold text-white">{activity.title}</h4>
+                    <span className="text-[10px] font-bold uppercase text-white/40">{activity.timestamp}</span>
                   </div>
-                  <p className="text-sm text-slate-600">{activity.description}</p>
+                  <p className="text-sm text-white/60">{activity.description}</p>
                 </div>
               </div>
             ))}

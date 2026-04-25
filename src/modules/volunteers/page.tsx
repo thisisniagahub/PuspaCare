@@ -239,18 +239,18 @@ function statusColor(status: string): string {
     case 'confirmed':
     case 'completed':
     case 'approved':
-      return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800'
+      return 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30'
     case 'inactive':
     case 'cancelled':
     case 'rejected':
-      return 'bg-gray-100 text-gray-600 dark:bg-gray-800/40 dark:text-gray-400 border-gray-200 dark:border-gray-700'
+      return 'bg-slate-500/20 text-slate-400 border-slate-500/30'
     case 'blacklisted':
-      return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 border-red-200 dark:border-red-800'
+      return 'bg-destructive/20 text-destructive border-destructive/30'
     case 'assigned':
     case 'pending':
-      return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 border-amber-200 dark:border-amber-800'
+      return 'bg-primary/20 text-primary border-primary/30'
     default:
-      return 'bg-gray-100 text-gray-600'
+      return 'bg-slate-500/10 text-slate-400'
   }
 }
 
@@ -638,7 +638,7 @@ export default function VolunteersPage() {
   // ─── Render ──────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50/60 via-white to-violet-50/40 dark:from-slate-950 dark:via-slate-900 dark:to-purple-950/20">
+    <div className="min-h-screen bg-transparent">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
 
         {/* ── Header ──────────────────────────────────────────────────── */}
@@ -660,73 +660,77 @@ export default function VolunteersPage() {
 
         {/* ── Stats Cards ─────────────────────────────────────────────── */}
         <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+          <Card className="relative overflow-hidden bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
             <CardContent className="flex items-center gap-3 p-4 sm:p-5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-purple-100 dark:bg-purple-900/40">
-                <Users className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/20">
+                <Users className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Jumlah Sukarelawan</p>
-                <p className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">{stats.totalVolunteers}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Jumlah Sukarelawan</p>
+                <p className="text-xl sm:text-2xl font-bold text-foreground">{stats.totalVolunteers}</p>
               </div>
             </CardContent>
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-primary to-purple-600" />
           </Card>
 
-          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+          <Card className="relative overflow-hidden bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
             <CardContent className="flex items-center gap-3 p-4 sm:p-5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/40">
-                <UserCheck className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-cyan-500/20">
+                <UserCheck className="h-5 w-5 text-cyan-400" />
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Aktif Bulan Ini</p>
-                <p className="text-xl sm:text-2xl font-bold text-emerald-700 dark:text-emerald-300">{stats.activeThisMonth}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Aktif Bulan Ini</p>
+                <p className="text-xl sm:text-2xl font-bold text-cyan-400">{stats.activeThisMonth}</p>
               </div>
             </CardContent>
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-cyan-400 to-cyan-600" />
           </Card>
 
-          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+          <Card className="relative overflow-hidden bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
             <CardContent className="flex items-center gap-3 p-4 sm:p-5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/40">
-                <Clock className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/20">
+                <Clock className="h-5 w-5 text-amber-400" />
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Jam Khidmat</p>
-                <p className="text-xl sm:text-2xl font-bold text-amber-700 dark:text-amber-300">{stats.totalHours.toFixed(1)}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Total Jam Khidmat</p>
+                <p className="text-xl sm:text-2xl font-bold text-amber-400">{stats.totalHours.toFixed(1)}</p>
               </div>
             </CardContent>
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-amber-400 to-amber-600" />
           </Card>
 
-          <Card className="border-0 shadow-sm bg-white dark:bg-slate-800/50">
+          <Card className="relative overflow-hidden bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
             <CardContent className="flex items-center gap-3 p-4 sm:p-5">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-rose-100 dark:bg-rose-900/40">
-                <Award className="h-5 w-5 text-rose-600 dark:text-rose-400" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-pink-500/20">
+                <Award className="h-5 w-5 text-pink-400" />
               </div>
               <div>
-                <p className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Sijil Dijana</p>
-                <p className="text-xl sm:text-2xl font-bold text-rose-700 dark:text-rose-300">{stats.totalCertificates}</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Sijil Dijana</p>
+                <p className="text-xl sm:text-2xl font-bold text-pink-400">{stats.totalCertificates}</p>
               </div>
             </CardContent>
+            <div className="absolute bottom-0 left-0 h-1 w-full bg-gradient-to-r from-pink-400 to-pink-600" />
           </Card>
         </div>
 
         {/* ── Tabs ─────────────────────────────────────────────────────── */}
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6 bg-white dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 shadow-sm h-auto p-1">
-            <TabsTrigger value="volunteers" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-600 dark:text-gray-300 px-4 py-2 text-sm font-medium">
+          <TabsList className="mb-6 bg-white/5 border border-white/10 shadow-sm h-auto p-1">
+            <TabsTrigger value="volunteers" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground px-4 py-2 text-sm font-medium transition-all">
               <HeartHandshake className="h-4 w-4" />
               <span className="hidden sm:inline">Senarai Sukarelawan</span>
               <span className="sm:hidden">Sukarelawan</span>
             </TabsTrigger>
-            <TabsTrigger value="hours" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-600 dark:text-gray-300 px-4 py-2 text-sm font-medium">
+            <TabsTrigger value="hours" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground px-4 py-2 text-sm font-medium transition-all">
               <Clock className="h-4 w-4" />
               <span className="hidden sm:inline">Log Jam Khidmat</span>
               <span className="sm:hidden">Jam</span>
             </TabsTrigger>
-            <TabsTrigger value="certificates" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-600 dark:text-gray-300 px-4 py-2 text-sm font-medium">
+            <TabsTrigger value="certificates" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground px-4 py-2 text-sm font-medium transition-all">
               <Award className="h-4 w-4" />
               <span className="hidden sm:inline">Sijil</span>
             </TabsTrigger>
-            <TabsTrigger value="deployments" className="gap-2 data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-600 dark:text-gray-300 px-4 py-2 text-sm font-medium">
+            <TabsTrigger value="deployments" className="gap-2 data-[state=active]:bg-primary data-[state=active]:text-white text-muted-foreground px-4 py-2 text-sm font-medium transition-all">
               <MapPin className="h-4 w-4" />
               <span className="hidden sm:inline">Penempatan</span>
               <span className="sm:hidden">Tempat</span>
@@ -766,7 +770,7 @@ export default function VolunteersPage() {
                       </Select>
                       <Button
                         onClick={() => openVolunteerDialog()}
-                        className="shrink-0 gap-2 bg-purple-600 hover:bg-purple-700 text-white"
+                        className="shrink-0 gap-2 bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20 transition-all active:scale-95"
                       >
                         <Plus className="h-4 w-4" />
                         <span className="hidden sm:inline">Daftar Sukarelawan</span>

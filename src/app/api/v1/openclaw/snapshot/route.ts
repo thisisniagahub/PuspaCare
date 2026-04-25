@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { AuthorizationError, requireRole } from '@/lib/auth'
-import { DEFAULT_OPENCLAW_BRIDGE_URL, type OpenClawSnapshot } from '@/lib/openclaw'
+import { DEFAULT_OPENCLAW_BRIDGE_URL, getOpenClawBridgeHeaders, type OpenClawSnapshot } from '@/lib/openclaw'
 
 export async function GET(request: Request) {
   const baseUrl = (process.env.OPENCLAW_BRIDGE_URL || DEFAULT_OPENCLAW_BRIDGE_URL).replace(/\/$/, '')
@@ -10,9 +10,7 @@ export async function GET(request: Request) {
     const response = await fetch(`${baseUrl}/snapshot`, {
       method: 'GET',
       cache: 'no-store',
-      headers: {
-        Accept: 'application/json',
-      },
+      headers: getOpenClawBridgeHeaders(),
     })
 
     const payload = await response.json().catch(() => null)

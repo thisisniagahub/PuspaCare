@@ -363,12 +363,12 @@ function formatDateTime(dateStr: string): string {
 
 function StatusBadge({ status }: { status: VerificationStatus }) {
   const config: Record<VerificationStatus, { variant: 'default' | 'secondary' | 'outline'; className: string; icon: React.ReactNode }> = {
-    Disahkan: { variant: 'default', className: 'bg-emerald-600 hover:bg-emerald-700 text-white', icon: <CheckCircle2 className="h-3 w-3 mr-1" /> },
-    'Lapor Sendiri': { variant: 'secondary', className: 'bg-amber-100 text-amber-800 hover:bg-amber-100', icon: <Clock className="h-3 w-3 mr-1" /> },
-    'Belum Disahkan': { variant: 'outline', className: 'text-gray-500 border-gray-300', icon: <AlertCircle className="h-3 w-3 mr-1" /> },
+    Disahkan: { variant: 'default', className: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30', icon: <CheckCircle2 className="h-3 w-3 mr-1" /> },
+    'Lapor Sendiri': { variant: 'secondary', className: 'bg-primary/20 text-primary border-primary/30', icon: <Clock className="h-3 w-3 mr-1" /> },
+    'Belum Disahkan': { variant: 'outline', className: 'bg-slate-500/10 text-slate-400 border-slate-500/20', icon: <AlertCircle className="h-3 w-3 mr-1" /> },
   }
   const c = config[status]
-  return <Badge variant={c.variant} className={`${c.className} text-xs font-medium`}>{c.icon}{status}</Badge>
+  return <Badge variant={c.variant} className={`${c.className} text-xs font-medium border`}>{c.icon}{status}</Badge>
 }
 
 // ─── Custom Tooltip ──────────────────────────────────────────────────────────
@@ -400,18 +400,25 @@ function CountTooltip({ active, payload, label }: any) {
 // ─── Stat Card Component ─────────────────────────────────────────────────────
 
 function StatCard({ title, value, subtitle, icon, color }: { title: string; value: string; subtitle?: string; icon: React.ReactNode; color: string }) {
+  const isPrimary = color.includes('primary') || color.includes('purple')
+  const isCyan = color.includes('cyan') || color.includes('teal') || color.includes('emerald')
+  const isRed = color.includes('red') || color.includes('destructive')
+  
+  const barColor = isPrimary ? 'bg-primary' : isCyan ? 'bg-cyan-400' : isRed ? 'bg-destructive' : 'bg-slate-500'
+
   return (
-    <Card className="border-0 shadow-sm">
-      <CardContent className="p-5">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-sm font-medium text-gray-500">{title}</p>
-            <p className={`mt-1 text-2xl font-bold ${color}`}>{value}</p>
-            {subtitle && <div className="mt-2 flex items-center text-xs text-gray-500">{subtitle}</div>}
-          </div>
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gray-50">{icon}</div>
+    <Card className="relative overflow-hidden bg-card backdrop-blur-xl border-white/10 shadow-xl shadow-black/20">
+      <CardContent className="flex items-center justify-between p-5">
+        <div>
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">{title}</p>
+          <p className={`mt-1 text-2xl font-bold ${color}`}>{value}</p>
+          {subtitle && <div className="mt-2 flex items-center text-xs text-muted-foreground">{subtitle}</div>}
+        </div>
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/5 border border-white/10">
+          {icon}
         </div>
       </CardContent>
+      <div className={`absolute bottom-0 left-0 h-1 w-full ${barColor}`} />
     </Card>
   )
 }
@@ -456,19 +463,21 @@ function FinancialImpakTab() {
   return (
     <div className="space-y-8">
       {/* Period Selector */}
-      <Card className="border-0 bg-white shadow-sm">
+      <Card className="border-white/10 bg-card backdrop-blur-xl shadow-xl">
         <CardContent className="p-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <Tabs value={periodTab} onValueChange={(v) => { setPeriodTab(v); const d: Record<string, string> = { bulanan: 'Jun 2026', 'suku-tahunan': 'Q2 2026', tahunan: '2026' }; setSelectedPeriod(d[v] || 'Jun 2026') }} className="w-full sm:w-auto">
-              <TabsList className="grid w-full grid-cols-3 sm:w-auto sm:inline-grid">
-                <TabsTrigger value="bulanan" className="text-sm">Bulanan</TabsTrigger>
-                <TabsTrigger value="suku-tahunan" className="text-sm">Suku Tahunan</TabsTrigger>
-                <TabsTrigger value="tahunan" className="text-sm">Tahunan</TabsTrigger>
+              <TabsList className="grid w-full grid-cols-3 sm:w-auto sm:inline-grid bg-white/5 border border-white/10">
+                <TabsTrigger value="bulanan" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-white">Bulanan</TabsTrigger>
+                <TabsTrigger value="suku-tahunan" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-white">Suku Tahunan</TabsTrigger>
+                <TabsTrigger value="tahunan" className="text-sm data-[state=active]:bg-primary data-[state=active]:text-white">Tahunan</TabsTrigger>
               </TabsList>
             </Tabs>
             <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="w-full sm:w-[200px]"><SelectValue placeholder="Pilih tempoh" /></SelectTrigger>
-              <SelectContent>{periodOptions.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}</SelectContent>
+              <SelectTrigger className="w-full sm:w-[200px] bg-white/5 border-white/10 text-foreground"><SelectValue placeholder="Pilih tempoh" /></SelectTrigger>
+              <SelectContent className="bg-slate-900 border-white/10 text-slate-200">
+                {periodOptions.map((opt) => <SelectItem key={opt} value={opt}>{opt}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
         </CardContent>
@@ -476,16 +485,68 @@ function FinancialImpakTab() {
 
       {/* Financial Summary Cards */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card className="border-0 shadow-sm"><CardContent className="p-5"><div className="flex items-center justify-between"><div><p className="text-sm font-medium text-gray-500">Jumlah Pendapatan</p><p className="mt-1 text-2xl font-bold text-emerald-600">{formatRinggit(totalIncome)}</p><div className="mt-2 flex items-center text-xs text-emerald-600"><ArrowUpRight className="mr-1 h-3 w-3" />+12.5% vs tempoh lepas</div></div><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-50"><TrendingUp className="h-6 w-6 text-emerald-600" /></div></div></CardContent></Card>
-        <Card className="border-0 shadow-sm"><CardContent className="p-5"><div className="flex items-center justify-between"><div><p className="text-sm font-medium text-gray-500">Jumlah Perbelanjaan</p><p className="mt-1 text-2xl font-bold text-red-600">{formatRinggit(totalExpenditure)}</p><div className="mt-2 flex items-center text-xs text-red-500"><ArrowUpRight className="mr-1 h-3 w-3" />+8.2% vs tempoh lepas</div></div><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-50"><TrendingDown className="h-6 w-6 text-red-600" /></div></div></CardContent></Card>
-        <Card className="border-0 shadow-sm"><CardContent className="p-5"><div className="flex items-center justify-between"><div><p className="text-sm font-medium text-gray-500">Baki Bersih</p><p className={`mt-1 text-2xl font-bold ${isBalancePositive ? 'text-emerald-600' : 'text-red-600'}`}>{formatRinggit(netBalance)}</p><div className={`mt-2 flex items-center text-xs ${isBalancePositive ? 'text-emerald-600' : 'text-red-500'}`}>{isBalancePositive ? <><ArrowUpRight className="mr-1 h-3 w-3" />Surplus sihat</> : <><ArrowDownRight className="mr-1 h-3 w-3" />Defisit</>}</div></div><div className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-xl ${isBalancePositive ? 'bg-emerald-50' : 'bg-red-50'}`}><DollarSign className={`h-6 w-6 ${isBalancePositive ? 'text-emerald-600' : 'text-red-600'}`} /></div></div></CardContent></Card>
-        <Card className="border-0 shadow-sm"><CardContent className="p-5"><div className="flex items-center justify-between"><div><p className="text-sm font-medium text-gray-500">Tahap Pengesahan</p><p className="mt-1 text-2xl font-bold text-amber-600">{verificationLevel}%</p><div className="mt-2 flex items-center text-xs text-amber-600"><ShieldCheck className="mr-1 h-3 w-3" />{verifiedCount}/{impactMetrics.length} metrik disahkan</div></div><div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-50"><ShieldCheck className="h-6 w-6 text-amber-600" /></div></div></CardContent></Card>
+        <StatCard title="Jumlah Pendapatan" value={formatRinggit(totalIncome)} subtitle="+12.5% vs tempoh lepas" icon={<TrendingUp className="h-6 w-6 text-cyan-400" />} color="text-cyan-400" />
+        <StatCard title="Jumlah Perbelanjaan" value={formatRinggit(totalExpenditure)} subtitle="+8.2% vs tempoh lepas" icon={<TrendingDown className="h-6 w-6 text-destructive" />} color="text-destructive" />
+        <StatCard title="Baki Bersih" value={formatRinggit(netBalance)} subtitle={isBalancePositive ? 'Surplus sihat' : 'Defisit'} icon={<DollarSign className={`h-6 w-6 ${isBalancePositive ? 'text-cyan-400' : 'text-destructive'}`} />} color={isBalancePositive ? 'text-cyan-400' : 'text-destructive'} />
+        <StatCard title="Tahap Pengesahan" value={`${verificationLevel}%`} subtitle={`${verifiedCount}/${impactMetrics.length} metrik disahkan`} icon={<ShieldCheck className="h-6 w-6 text-primary" />} color="text-primary" />
       </div>
 
       {/* Charts Row */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <Card className="border-0 shadow-sm"><CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Pendapatan Mengikut Jenis Dana</CardTitle><CardDescription>Agihan pendapatan berdasarkan sumber dana ISF</CardDescription></CardHeader><CardContent className="pt-2"><div className="h-[240px] sm:h-[320px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={incomeByFundData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" /><XAxis dataKey="name" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} /><Tooltip content={<RinggitTooltip />} /><Bar dataKey="amount" name="Jumlah (RM)" radius={[6, 6, 0, 0]} maxBarSize={52}>{incomeByFundData.map((entry, index) => <Cell key={index} fill={entry.color} />)}</Bar></BarChart></ResponsiveContainer></div><div className="mt-3 flex flex-wrap gap-3">{incomeByFundData.map((entry) => <div key={entry.name} className="flex items-center gap-1.5"><span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ backgroundColor: entry.color }} /><span className="text-xs text-gray-600">{entry.name}</span></div>)}</div></CardContent></Card>
-        <Card className="border-0 shadow-sm"><CardHeader className="pb-2"><CardTitle className="text-base font-semibold">Trend Pendapatan vs Perbelanjaan</CardTitle><CardDescription>Perbandingan bulanan 12 bulan terkini</CardDescription></CardHeader><CardContent className="pt-2"><div className="h-[240px] sm:h-[320px]"><ResponsiveContainer width="100%" height="100%"><AreaChart data={incomeVsExpenditureData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}><defs><linearGradient id="pendapatanGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#16a34a" stopOpacity={0.15} /><stop offset="95%" stopColor="#16a34a" stopOpacity={0.01} /></linearGradient><linearGradient id="perbelanjaanGradient" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#dc2626" stopOpacity={0.12} /><stop offset="95%" stopColor="#dc2626" stopOpacity={0.01} /></linearGradient></defs><CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f0f0f0" /><XAxis dataKey="month" tick={{ fontSize: 12, fill: '#6b7280' }} axisLine={false} tickLine={false} /><YAxis tick={{ fontSize: 11, fill: '#9ca3af' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} /><Tooltip content={<RinggitTooltip />} /><Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px' }} /><Area type="monotone" dataKey="pendapatan" name="Pendapatan" stroke="#16a34a" strokeWidth={2.5} fill="url(#pendapatanGradient)" dot={{ r: 3, fill: '#16a34a' }} activeDot={{ r: 5 }} /><Area type="monotone" dataKey="perbelanjaan" name="Perbelanjaan" stroke="#dc2626" strokeWidth={2.5} fill="url(#perbelanjaanGradient)" dot={{ r: 3, fill: '#dc2626' }} activeDot={{ r: 5 }} /></AreaChart></ResponsiveContainer></div></CardContent></Card>
+        <Card className="border-white/10 bg-card backdrop-blur-xl shadow-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold text-foreground">Pendapatan Mengikut Jenis Dana</CardTitle>
+            <CardDescription className="text-muted-foreground">Agihan pendapatan berdasarkan sumber dana ISF</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="h-[240px] sm:h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={incomeByFundData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip content={<RinggitTooltip />} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
+                  <Bar dataKey="amount" name="Jumlah (RM)" radius={[6, 6, 0, 0]} maxBarSize={52}>
+                    {incomeByFundData.map((entry, index) => (
+                      <Cell key={index} fill={entry.name === 'Zakat' ? '#ecb2ff' : entry.name === 'Sadaqah' ? '#00fbfb' : entry.color} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-white/10 bg-card backdrop-blur-xl shadow-xl">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-semibold text-foreground">Trend Pendapatan vs Perbelanjaan</CardTitle>
+            <CardDescription className="text-muted-foreground">Perbandingan bulanan 12 bulan terkini</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-2">
+            <div className="h-[240px] sm:h-[320px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={incomeVsExpenditureData} margin={{ top: 8, right: 8, left: -10, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="pendapatanGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#00fbfb" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#00fbfb" stopOpacity={0.01} />
+                    </linearGradient>
+                    <linearGradient id="perbelanjaanGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ecb2ff" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#ecb2ff" stopOpacity={0.01} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: '#64748b' }} axisLine={false} tickLine={false} tickFormatter={(v) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip content={<RinggitTooltip />} />
+                  <Legend verticalAlign="top" height={36} iconType="circle" iconSize={8} wrapperStyle={{ fontSize: '12px', color: '#94a3b8' }} />
+                  <Area type="monotone" dataKey="pendapatan" name="Pendapatan" stroke="#00fbfb" strokeWidth={2.5} fill="url(#pendapatanGradient)" dot={{ r: 3, fill: '#00fbfb' }} activeDot={{ r: 5 }} />
+                  <Area type="monotone" dataKey="perbelanjaan" name="Perbelanjaan" stroke="#ecb2ff" strokeWidth={2.5} fill="url(#perbelanjaanGradient)" dot={{ r: 3, fill: '#ecb2ff' }} activeDot={{ r: 5 }} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Expenditure by Programme */}

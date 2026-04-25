@@ -396,6 +396,7 @@ function getStockStatus(currentStock: number, minLevel: number): { label: string
 // ─── Main Component ──────────────────────────────────────────────────
 
 export default function AgihanBulanPage() {
+
   // ─── Distribution State ─────────────────────────────────────────────
   const [distributions, setDistributions] = React.useState<Distribution[]>(INITIAL_DISTRIBUTIONS)
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -891,8 +892,14 @@ export default function AgihanBulanPage() {
   // ─── Render ────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="mx-auto max-w-7xl space-y-6 p-4 sm:p-6 lg:p-8">
+    <div className="min-h-screen bg-[#0a0c10] text-white p-4 lg:p-8">
+      {/* Aurora Background Ambient Layer */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-purple-600/10 blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-emerald-600/10 blur-[120px] animate-pulse delay-700" />
+      </div>
+
+      <div className="relative z-10 max-w-7xl mx-auto space-y-8">
         {/* Page Header */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -1504,7 +1511,7 @@ export default function AgihanBulanPage() {
             )}
 
             {/* ─── Stock Movement Ledger ───────────────────────────────── */}
-            <Card>
+            <Card className="border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl overflow-hidden">
               <CardHeader className="pb-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <CardTitle className="text-lg font-semibold flex items-center gap-2">
