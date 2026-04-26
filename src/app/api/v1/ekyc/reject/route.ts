@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { AuthorizationError, requireRole } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { writeAuditLog, getSessionActor } from '@/lib/audit'
 import { z } from 'zod'
 
 // ─── Zod Schema ───────────────────────────────────────────────
@@ -17,7 +18,8 @@ const rejectSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    await requireRole(request, ['admin', 'developer'])
+    const session = await requireRole(request, ['admin', 'developer'])
+    const actor = getSessionActor(session)
     const body = await request.json()
     const validated = rejectSchema.parse(body)
 
@@ -95,6 +97,18 @@ export async function POST(request: NextRequest) {
             memberNumber: true,
           },
         },
+      },
+    })
+
+    await writeAuditLog({
+      action: 'ekyc_rejected',
+      entity: 'EKYCVerification',
+      entityId: verification.id,
+      userId: session.user.id,
+      details: {
+        memberId: verification.memberId,
+        reason: validated.reason,
+        previousStatus: verification.status,
       },
     })
 

@@ -1,4 +1,4 @@
-// PUSPA App Types
+﻿// PUSPA App Types
 
 export type ViewId =
   | 'dashboard'
@@ -22,6 +22,7 @@ export type ViewId =
   | 'openclaw-agents'
   | 'openclaw-models'
   | 'openclaw-automation'
+  | 'openclaw-graph'
   | 'ekyc'
   | 'tapsecure'
   | 'agihan-bulan'
@@ -29,6 +30,8 @@ export type ViewId =
   | 'docs'
   | 'ops-conductor'
   | 'asnafpreneur'
+  | 'kelas-ai'
+  | 'gudang-barangan'
 
 export interface NavItem {
   id: ViewId
@@ -86,3 +89,4 @@ export interface PaginatedResponse<T> {
   pageSize: number
   totalPages: number
 }
+

@@ -1188,7 +1188,50 @@ function CaseDetailSheet({
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [selectedNextStatus, setSelectedNextStatus] = useState<Status | null>(null);
 
-  if (!caseData) return null;
+  const programme = caseData
+    ? PROGRAMMES.find((p) => p.id === caseData.programmeId) ?? null
+    : null;
+  const member = caseData
+    ? MEMBERS.find((m) => m.id === caseData.memberId) ?? null
+    : null;
+
+  // Compute intelligence outputs unconditionally to keep React Hooks order stable.
+  const eligibility = useMemo(
+    () => (caseData ? computeEligibility(caseData, member, programme) : null),
+    [caseData, member, programme],
+  );
+  const recommendation = useMemo(
+    () => (caseData ? computeRecommendation(caseData, member, programme) : null),
+    [caseData, member, programme],
+  );
+  const riskFlags = useMemo(
+    () => (caseData ? computeRiskFlags(caseData, member, MEMBERS) : []),
+    [caseData, member],
+  );
+  const beneficiary360 = useMemo(
+    () => (caseData && member
+      ? computeBeneficiary360(
+        member,
+        caseData.statusHistory.map((h) => ({
+          ...caseData,
+          status: h.status as Status,
+          createdAt: h.date,
+        } as CaseData)),
+        caseData.disbursements,
+      )
+      : null),
+    [member, caseData],
+  );
+  const nextAction = useMemo(
+    () => (caseData ? computeNextAction(caseData) : null),
+    [caseData],
+  );
+  const disbursementReconciliation = useMemo(
+    () => (caseData ? computeDisbursementReconciliation(caseData.disbursements) : null),
+    [caseData],
+  );
+
+  if (!caseData || !eligibility || !recommendation || !nextAction || !disbursementReconciliation) return null;
 
   const currentStatusIndex = STATUS_WORKFLOW.indexOf(caseData.status);
   const passedStatuses = new Set(caseData.statusHistory.map((s) => s.status));
@@ -1207,21 +1250,6 @@ function CaseDetailSheet({
       setSelectedNextStatus(null);
     }
   };
-
-  const programme = PROGRAMMES.find((p) => p.id === caseData.programmeId);
-  const member = MEMBERS.find((m) => m.id === caseData.memberId);
-
-  // Compute intelligence outputs
-  const eligibility = useMemo(() => computeEligibility(caseData, member, programme), [caseData, member, programme]);
-  const recommendation = useMemo(() => computeRecommendation(caseData, member, programme), [caseData, member, programme]);
-  const riskFlags = useMemo(() => computeRiskFlags(caseData, member, MEMBERS), [caseData, member]);
-  const beneficiary360 = useMemo(() => computeBeneficiary360(member, caseData.statusHistory.map(h => ({ 
-    ...caseData, 
-    status: h.status as any, 
-    createdAt: h.date 
-  } as CaseData)), caseData.disbursements), [member, caseData]);
-  const nextAction = useMemo(() => computeNextAction(caseData), [caseData]);
-  const disbursementReconciliation = useMemo(() => computeDisbursementReconciliation(caseData.disbursements), [caseData.disbursements]);
 
   return (
     <>

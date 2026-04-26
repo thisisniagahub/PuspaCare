@@ -16,7 +16,7 @@ export function normalizeUserRole(role?: string | null): AppRole {
   return 'staff'
 }
 
-export function getAuthSecret(): string | undefined {
+export function getAuthSecret(): string {
   if (process.env.NEXTAUTH_SECRET) {
     return process.env.NEXTAUTH_SECRET
   }
@@ -25,7 +25,7 @@ export function getAuthSecret(): string | undefined {
     return LOCAL_DEV_AUTH_SECRET
   }
 
-  return undefined
+  throw new Error('NEXTAUTH_SECRET environment variable is required in production')
 }
 
 export function getBaseUrl(): string {

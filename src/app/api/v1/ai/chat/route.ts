@@ -26,6 +26,8 @@ Jawab soalan dengan:
 
 Jika tidak pasti, katakan dengan jujur dan cadangkan rujukan kepada pentadbir PUSPA.`;
 
+const REQUEST_TIMEOUT_MS = 30000; // 30 seconds
+
 export async function POST(request: NextRequest) {
   try {
     await requireRole(request, ['developer']);
@@ -53,25 +55,44 @@ export async function POST(request: NextRequest) {
 
     messages.push({ role: 'user', content: message });
 
-    const openClawResult = await createOpenClawChatCompletion(messages);
-    const responseText = openClawResult.content;
-    const estimatedInputTokens = Math.ceil((message.length + (context?.length || 0)) / 4);
-    const estimatedOutputTokens = Math.ceil(responseText.length / 4);
+    // Create timeout controller
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        response: responseText,
-        provider: 'openclaw',
-        model: openClawResult.model,
-        tokens: {
-          input: openClawResult.usage?.prompt_tokens ?? estimatedInputTokens,
-          output: openClawResult.usage?.completion_tokens ?? estimatedOutputTokens,
-          total: openClawResult.usage?.total_tokens ?? estimatedInputTokens + estimatedOutputTokens,
+    try {
+      const openClawResult = await createOpenClawChatCompletion(messages, {
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+
+      const responseText = openClawResult.content;
+      const estimatedInputTokens = Math.ceil((message.length + (context?.length || 0)) / 4);
+      const estimatedOutputTokens = Math.ceil(responseText.length / 4);
+
+      return NextResponse.json({
+        success: true,
+        data: {
+          response: responseText,
+          provider: 'openclaw',
+          model: openClawResult.model,
+          tokens: {
+            input: openClawResult.usage?.prompt_tokens ?? estimatedInputTokens,
+            output: openClawResult.usage?.completion_tokens ?? estimatedOutputTokens,
+            total: openClawResult.usage?.total_tokens ?? estimatedInputTokens + estimatedOutputTokens,
+          },
+          timestamp: new Date().toISOString(),
         },
-        timestamp: new Date().toISOString(),
-      },
-    });
+      });
+    } catch (abortError) {
+      clearTimeout(timeoutId);
+      if (abortError instanceof Error && abortError.name === 'AbortError') {
+        return NextResponse.json(
+          { success: false, error: 'Permintaan timed out selepas 30 saat' },
+          { status: 504 }
+        );
+      }
+      throw abortError;
+    }
   } catch (error) {
     if (error instanceof AuthorizationError) {
       return NextResponse.json(

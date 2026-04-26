@@ -80,10 +80,17 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Parse tags JSON for each document
-    const parsedDocs = documents.map((doc) => ({
-      ...doc,
-      tags: doc.tags ? JSON.parse(doc.tags as string) : [],
-    }));
+    const parsedDocs = documents.map((doc) => {
+      let parsedTags: string[] = []
+      if (doc.tags) {
+        try {
+          parsedTags = JSON.parse(doc.tags as string)
+        } catch {
+          parsedTags = []
+        }
+      }
+      return { ...doc, tags: parsedTags }
+    })
 
     return NextResponse.json({
       success: true,

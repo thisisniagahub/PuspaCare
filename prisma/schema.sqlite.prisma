@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -31,7 +32,25 @@ model User {
   createdCases Case[]          @relation("CaseCreator")
   assignedCases Case[]         @relation("CaseAssignee")
   deviceBindings DeviceBinding[]
-  securityLogs   SecurityLog[]
+securityLogs   SecurityLog[]
+}
+
+// Bot API Key for service accounts (e.g., PuspaCareBot)
+model BotApiKey {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "PuspaCareBot"
+  key         String   @unique // hashed API key, never plain text
+  keyPrefix   String   // first 8 chars for display, e.g., "psbot_abc"
+  role        String   @default("bot") // bot, admin_bot, ops_bot
+  permissions String   @default("[]") // array of allowed permissions
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([keyPrefix])
+  @@index([isActive])
 }
 
 // ============ MEMBER / ASNAF (Phase 3) ============
@@ -155,6 +174,8 @@ model Case {
   @@index([caseNumber])
   @@index([status])
   @@index([memberId])
+  @@index([applicantIC])
+  @@index([applicantPhone])
 }
 
 model CaseNote {
@@ -214,6 +235,9 @@ model Donation {
 
   @@index([fundType])
   @@index([status])
+  @@index([donorIC])
+  @@index([donorEmail])
+  @@index([donorPhone])
 }
 
 // ============ DISBURSEMENT ============

@@ -1,97 +1,42 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { getAuthSecret } from '@/lib/auth-shared'
-import { buildRateLimitHeaders, rateLimit } from '@/lib/rate-limit'
 
-const STATIC_FILE_PATTERN = /\.[^/]+$/
-
-function isPublicPath(pathname: string) {
-  return (
-    pathname === '/login' ||
-    pathname.startsWith('/api/auth') ||
-    pathname.startsWith('/_next') ||
-    pathname === '/favicon.ico' ||
-    STATIC_FILE_PATTERN.test(pathname)
+function buildUnauthorizedApiResponse() {
+  return NextResponse.json(
+    {
+      success: false,
+      error: 'Sesi tidak sah atau pengguna belum log masuk',
+    },
+    { status: 401 },
   )
 }
 
-export async function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl
-  const authSecret = getAuthSecret()
-  const token = authSecret
-    ? await getToken({
-        req: request,
-        secret: authSecret,
-      })
-    : null
+export default async function proxy(request: NextRequest) {
+  const token = await getToken({
+    req: request,
+    secret: getAuthSecret(),
+  })
 
-  if (pathname === '/login') {
-    if (token) {
-      return NextResponse.redirect(new URL('/', request.url))
-    }
-
+  if (token?.sub && token.isActive !== false) {
     return NextResponse.next()
   }
 
-  if (isPublicPath(pathname)) {
-    return NextResponse.next()
+  if (request.nextUrl.pathname.startsWith('/api/')) {
+    return buildUnauthorizedApiResponse()
   }
 
-  if (pathname.startsWith('/api/v1/')) {
-    const limit = rateLimit(request, {
-      limit: 100,
-      windowMs: 15 * 60 * 1000,
-      keyPrefix: 'api',
-    })
+  const loginUrl = new URL('/login', request.url)
+  loginUrl.searchParams.set(
+    'callbackUrl',
+    `${request.nextUrl.pathname}${request.nextUrl.search}`,
+  )
 
-    if (!limit.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: 'Terlalu banyak permintaan. Sila cuba semula sebentar lagi.',
-        },
-        {
-          status: 429,
-          headers: buildRateLimitHeaders(limit),
-        },
-      )
-    }
-
-    if (token) {
-      return NextResponse.next()
-    }
-
-    const apiKey = request.headers.get('x-api-key')
-    const validKey = process.env.API_SECRET_KEY
-
-    if (validKey && apiKey === validKey) {
-      return NextResponse.next()
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Akses API memerlukan sesi sah atau API key yang sah.',
-      },
-      { status: 401 },
-    )
-  }
-
-  if (!token) {
-    const loginUrl = new URL('/login', request.url)
-    const callbackUrl = `${pathname}${request.nextUrl.search}`
-
-    if (callbackUrl !== '/') {
-      loginUrl.searchParams.set('callbackUrl', callbackUrl)
-    }
-
-    return NextResponse.redirect(loginUrl)
-  }
-
-  return NextResponse.next()
+  return NextResponse.redirect(loginUrl)
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image).*)'],
+  matcher: [
+    '/((?!api/auth|login|public|puspa-logo-official.png|puspa-logo-transparent.png|puspa-logo.png|_next/static|_next/image|favicon.ico).*)',
+  ],
 }

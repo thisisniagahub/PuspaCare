@@ -154,7 +154,7 @@ export function isOpenClawGatewayConfigured() {
 
 export async function createOpenClawChatCompletion(
   messages: OpenClawChatMessage[],
-  options?: { temperature?: number }
+  options?: { temperature?: number; signal?: AbortSignal }
 ): Promise<OpenClawChatCompletion> {
   const gatewayUrl = process.env.OPENCLAW_GATEWAY_URL?.replace(/\/$/, '')
   const token = process.env.OPENCLAW_GATEWAY_TOKEN
@@ -177,6 +177,7 @@ export async function createOpenClawChatCompletion(
       messages,
       temperature: options?.temperature ?? 0.2,
     }),
+    signal: options?.signal,
   })
 
   const payload = await response.json().catch(() => null) as OpenClawChatCompletionPayload | null

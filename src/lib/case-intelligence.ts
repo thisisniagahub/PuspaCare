@@ -1,4 +1,39 @@
-import { CaseData, Member, Disbursement, Programme } from '@/modules/cases/page.tsx';
+type CaseData = {
+  id: string;
+  status?: string;
+  category?: string;
+  amountRequested?: number | null;
+};
+
+type HouseholdMember = {
+  isStudent?: boolean;
+};
+
+type Member = {
+  id: string;
+  status?: string;
+  ic?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  monthlyIncome?: number | null;
+  householdSize?: number | null;
+  householdMembers?: HouseholdMember[];
+};
+
+type Disbursement = {
+  id: string;
+  amount?: number | null;
+  recipientBank?: string | null;
+  recipientAcc?: string | null;
+  reference?: string | null;
+  scheduledDate?: string | Date | null;
+  status?: string | null;
+};
+
+type Programme = {
+  id: string;
+  category?: string | null;
+};
 
 // Types for intelligence outputs
 export interface EligibilityResult {
@@ -147,7 +182,7 @@ export function computeRecommendation(
       infak: 'financial_assistance',
       bantuan_kerajaan: 'financial_assistance',
     };
-    const mapped = categoryMap[casedata.category];
+    const mapped = casedata.category ? categoryMap[casedata.category] : undefined;
     if (mapped) {
       // Find first programme with matching category
       // In real app, we'd have a list of all programmes; here we just keep null

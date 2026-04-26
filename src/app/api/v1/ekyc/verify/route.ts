@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { AuthorizationError, requireRole } from '@/lib/auth'
 import { db } from '@/lib/db'
+import { writeAuditLog, getSessionActor } from '@/lib/audit'
 import { z } from 'zod'
 
 // ─── Zod Schema ───────────────────────────────────────────────
@@ -17,8 +18,12 @@ const verifySchema = z.object({
 // ─── POST: Verify an eKYC submission ──────────────────────────
 
 export async function POST(request: NextRequest) {
+  let auditUserId: string | undefined
+
   try {
     const session = await requireRole(request, ['admin', 'developer'])
+    auditUserId = session.user.id
+    const actor = getSessionActor(session)
     const body = await request.json()
     const validated = verifySchema.parse(body)
 
@@ -130,6 +135,19 @@ export async function POST(request: NextRequest) {
       },
     })
 
+    await writeAuditLog({
+      action: 'ekyc_verified',
+      entity: 'EKYCVerification',
+      entityId: verification.id,
+      userId: session.user.id,
+      details: {
+        memberId: verification.memberId,
+        riskLevel: validated.riskLevel || 'low',
+        walletLimit: newWalletLimit,
+        previousLimit: verification.walletLimit,
+      },
+    })
+
     return NextResponse.json({
       success: true,
       data: updated,
@@ -149,6 +167,12 @@ export async function POST(request: NextRequest) {
       )
     }
     console.error('Error verifying eKYC:', error)
+    await writeAuditLog({
+      action: 'ekyc_verify_failed',
+      entity: 'EKYCVerification',
+      userId: auditUserId,
+      details: { error: error instanceof Error ? error.message : 'Unknown error' },
+    })
     return NextResponse.json(
       { success: false, error: 'Gagal mengesahkan eKYC' },
       { status: 500 }

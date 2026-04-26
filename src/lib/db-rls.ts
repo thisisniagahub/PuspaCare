@@ -1,39 +1,16 @@
 import { db } from '@/lib/db';
 import { PrismaClient } from '@prisma/client';
 
-const BRANCH_AWARE_MODELS = ['Member', 'Case'];
-
+/**
+ * Branch-scoped Prisma access is intentionally disabled until the schema has
+ * real branchId columns on every branch-aware model and the queries can enforce
+ * those predicates. Passing a branchId now fails closed instead of silently
+ * returning an unscoped client.
+ */
 export function getScopedDb(branchId?: string): PrismaClient {
-  if (!branchId) {
-    return db as unknown as PrismaClient;
+  if (branchId) {
+    throw new Error('[db-rls] Branch scoping is unavailable because branchId is not in the schema');
   }
 
-  return db.$extends({
-    query: {
-      $allModels: {
-        async $allOperations({ model, operation, args, query }) {
-          const supportedOperations = [
-            'findMany',
-            'findUnique',
-            'findFirst',
-            'update',
-            'updateMany',
-            'delete',
-            'deleteMany',
-            'count',
-          ];
-
-          if (
-            model &&
-            BRANCH_AWARE_MODELS.includes(model) &&
-            supportedOperations.includes(operation as string)
-          ) {
-            (args as any).where = { ...(args as any).where, branchId };
-          }
-
-          return query(args);
-        },
-      },
-    },
-  }) as unknown as PrismaClient;
+  return db as unknown as PrismaClient;
 }

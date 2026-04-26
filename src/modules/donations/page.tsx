@@ -96,6 +96,7 @@ import {
   Smartphone,
   Landmark,
   Loader2,
+  PieChart as PieChartIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { api } from '@/lib/api'
@@ -182,18 +183,18 @@ interface DonationFormData {
 // ─── Constants ───────────────────────────────────────────────────────
 
 const FUND_TYPE_CONFIG: Record<FundType, { label: string; color: string; bgClass: string }> = {
-  zakat: { label: 'Zakat', color: '#ecb2ff', bgClass: 'bg-primary/20 text-primary border-primary/30' },
-  sadaqah: { label: 'Sadaqah', color: '#00fbfb', bgClass: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30' },
-  waqf: { label: 'Waqf', color: '#3b82f6', bgClass: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-  infaq: { label: 'Infaq', color: '#f472b6', bgClass: 'bg-pink-500/20 text-pink-400 border-pink-500/30' },
-  am: { label: 'Sumbangan Am', color: '#94a3b8', bgClass: 'bg-slate-500/20 text-slate-400 border-slate-500/30' },
+  zakat: { label: 'Zakat', color: '#ecb2ff', bgClass: 'bg-primary/10 text-primary border-primary/20' },
+  sadaqah: { label: 'Sadaqah', color: '#00fbfb', bgClass: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' },
+  waqf: { label: 'Waqf', color: '#3b82f6', bgClass: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+  infaq: { label: 'Infaq', color: '#f472b6', bgClass: 'bg-pink-500/10 text-pink-400 border-pink-500/20' },
+  am: { label: 'Sumbangan Am', color: '#94a3b8', bgClass: 'bg-slate-500/10 text-slate-400 border-slate-500/20' },
 }
 
 const STATUS_CONFIG: Record<DonationStatus, { label: string; color: string; bgClass: string; icon: React.ElementType }> = {
-  diterima: { label: 'Diterima', color: '#059669', bgClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300', icon: CheckCircle2 },
-  menunggu: { label: 'Menunggu', color: '#d97706', bgClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300', icon: Clock },
-  gagal: { label: 'Gagal', color: '#dc2626', bgClass: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300', icon: XCircle },
-  dikembalikan: { label: 'Dikembalikan', color: '#6b7280', bgClass: 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300', icon: RotateCcw },
+  diterima: { label: 'Diterima', color: '#34d399', bgClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', icon: CheckCircle2 },
+  menunggu: { label: 'Menunggu', color: '#fbbf24', bgClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20', icon: Clock },
+  gagal: { label: 'Gagal', color: '#f87171', bgClass: 'bg-red-500/10 text-red-400 border-red-500/20', icon: XCircle },
+  dikembalikan: { label: 'Dikembalikan', color: '#94a3b8', bgClass: 'bg-slate-500/10 text-slate-400 border-slate-500/20', icon: RotateCcw },
 }
 
 const METHOD_CONFIG: Record<PaymentMethod, { label: string; icon: React.ElementType }> = {
@@ -797,11 +798,14 @@ export default function DonationsPage() {
         </div>
 
         {/* ─── ISF Fund Breakdown Chart ────────────────────────────── */}
-        <Card>
+        <Card className="border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl overflow-hidden">
           <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Pecahan Dana ISF</CardTitle>
+            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+              <PieChartIcon className="h-5 w-5 text-purple-400" />
+              Pecahan Dana ISF
+            </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col items-center gap-4 sm:flex-row">
+          <CardContent className="flex flex-col items-center gap-4 sm:flex-row pb-6">
             <div className="relative h-[200px] w-[200px] shrink-0 sm:h-[240px] sm:w-[240px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -813,7 +817,8 @@ export default function DonationsPage() {
                     outerRadius={100}
                     paddingAngle={3}
                     dataKey="value"
-                    strokeWidth={0}
+                    strokeWidth={2}
+                    stroke="rgba(255,255,255,0.05)"
                   >
                     {isfBreakdown.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -829,16 +834,16 @@ export default function DonationsPage() {
                 const total = confirmedDonations.reduce((s, d) => s + d.amount, 0)
                 const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0'
                 return (
-                  <div key={item.name} className="flex items-center gap-3 rounded-lg border p-3">
+                  <div key={item.name} className="flex items-center gap-3 rounded-2xl border border-white/5 bg-white/5 p-3 hover:bg-white/10 transition-colors">
                     <div
-                      className="h-4 w-4 shrink-0 rounded"
-                      style={{ backgroundColor: item.fill }}
+                      className="h-4 w-4 shrink-0 rounded-full"
+                      style={{ backgroundColor: item.fill, boxShadow: `0 0 10px ${item.fill}80` }}
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium">
                         {FUND_TYPE_CONFIG[item.name as FundType]?.label}
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-xs text-muted-foreground font-mono">
                         {formatCurrency(item.value)} ({pct}%)
                       </p>
                     </div>
@@ -850,10 +855,10 @@ export default function DonationsPage() {
         </Card>
 
         {/* ─── Filter Bar ──────────────────────────────────────────── */}
-        <Card>
+        <Card className="border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 mb-4">
-              <Filter className="h-4 w-4 text-muted-foreground" />
+              <Filter className="h-4 w-4 text-purple-400" />
               <span className="text-sm font-medium">Carian & Penapis</span>
             </div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -916,7 +921,7 @@ export default function DonationsPage() {
         </Card>
 
         {/* ─── Desktop Data Table ──────────────────────────────────── */}
-        <Card className="hidden md:block">
+        <Card className="hidden md:block border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl overflow-hidden">
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <Table>

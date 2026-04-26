@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
@@ -25,7 +25,7 @@ import {
   FileText,
   CalendarDays,
   Filter,
-  ArrowUpDown,
+  ArrowUpDown, Calculator, CheckCircle, Package, Bot,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -79,7 +79,10 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+} from '@/components/ui/alert-dialog'
+
+import { KifayahCalculator } from './components/kifayah-calculator';
+import { HistoryTimeline } from './components/history-timeline';
 
 import {
   Form,
@@ -549,6 +552,28 @@ function mapMemberFromApi(member: MemberApiRecord): Member {
     notes: member.notes || '',
     joinDate: member.joinedAt.split('T')[0],
   };
+}
+
+function InfoRow({
+  label,
+  value,
+  icon,
+  mono = false,
+}: {
+  label: string
+  value?: React.ReactNode
+  icon?: React.ReactNode
+  mono?: boolean
+}) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`flex items-center gap-1.5 text-right font-medium ${mono ? 'font-mono' : ''}`}>
+        {icon}
+        {value ?? '-'}
+      </span>
+    </div>
+  )
 }
 
 // ===================== Component =====================
@@ -1638,7 +1663,7 @@ export default function MembersPage() {
                         <Banknote className="h-4 w-4" /> Maklumat Kewangan
                       </h4>
                       <div className="space-y-2.5 rounded-lg border border-slate-100 bg-slate-50/50 p-4 dark:border-slate-700 dark:bg-slate-900/30">
-                        <InfoRow label="Pendapatan Bulanan" value={formatCurrency(viewingMember.monthlyIncome)} />
+                        <InfoRow label="Pendapatan Bulanan" value={formatCurrency(viewingMember.monthlyIncome)} />  
                         <InfoRow label="Saiz Isi Rumah" value={`${viewingMember.householdSize} orang`} icon={<Home className="h-3.5 w-3.5" />} />
                         {viewingMember.bankAccount && (
                           <InfoRow label="No. Akaun Bank" value={viewingMember.bankAccount} mono />
@@ -1647,6 +1672,7 @@ export default function MembersPage() {
                           <InfoRow label="Nama Bank" value={viewingMember.bankName} />
                         )}
                       </div>
+                      <KifayahCalculator member={viewingMember} />
                     </section>
 
                     {/* Notes */}
@@ -1661,13 +1687,13 @@ export default function MembersPage() {
                       </section>
                     )}
 
-                    {/* Related Cases — empty state when no data */}
+                    {/* 360-Degree Interaction Timeline */}
                     <section>
                       <h4 className="mb-3 flex items-center gap-2 text-sm font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                        <CalendarDays className="h-4 w-4" /> Kes Berkaitan
+                        <CalendarDays className="h-4 w-4" /> Susur Masa 360° (Rekod Interaksi)
                       </h4>
-                      <div className="rounded-lg border border-dashed border-slate-200 p-4 text-center dark:border-slate-700">
-                        <p className="text-xs text-muted-foreground">Tiada kes berkaitan direkodkan.</p>
+                      <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700 dark:bg-slate-900/50">
+                        <HistoryTimeline />
                       </div>
                     </section>
 
@@ -1744,18 +1770,4 @@ export default function MembersPage() {
   );
 }
 
-// ===================== Sub-Components =====================
 
-function InfoRow({ label, value, icon, mono }: { label: string; value: string; icon?: React.ReactNode; mono?: boolean }) {
-  return (
-    <div className="flex items-start justify-between gap-4">
-      <span className="flex shrink-0 items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-        {icon}
-        {label}
-      </span>
-      <span className={`text-right text-sm font-medium text-slate-800 dark:text-slate-200 ${mono ? 'font-mono' : ''}`}>
-        {value}
-      </span>
-    </div>
-  );
-}

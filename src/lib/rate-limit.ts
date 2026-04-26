@@ -14,10 +14,6 @@ export interface RateLimitResult {
 }
 
 function pruneBuckets(now: number) {
-  if (buckets.size < 500) {
-    return
-  }
-
   for (const [key, value] of buckets.entries()) {
     if (value.resetAt <= now) {
       buckets.delete(key)
@@ -25,14 +21,28 @@ function pruneBuckets(now: number) {
   }
 }
 
-export function getClientIp(request: Request): string {
-  const forwardedFor = request.headers.get('x-forwarded-for')
+const TRUSTED_PROXY_IPS = new Set(
+  process.env.TRUSTED_PROXY_IPS?.split(',').map(ip => ip.trim()) || []
+)
 
-  if (forwardedFor) {
-    return forwardedFor.split(',')[0].trim()
+export function getClientIp(request: Request): string {
+  // Only trust X-Forwarded-For and X-Real-IP if request comes from trusted proxy
+  const forwardedFor = request.headers.get('x-forwarded-for')
+  const realIp = request.headers.get('x-real-ip')
+
+  // Check if the direct connection is from a trusted proxy
+  const directIp = request.headers.get('x-forwarded-client-ip') ||
+                   request.headers.get('x-vercel-forwarded-for') ||
+                   realIp
+
+  if (TRUSTED_PROXY_IPS.size > 0 && directIp && TRUSTED_PROXY_IPS.has(directIp)) {
+    if (forwardedFor) {
+      return forwardedFor.split(',')[0].trim()
+    }
   }
 
-  return request.headers.get('x-real-ip') || 'unknown'
+  // Fallback: use real IP without trust (for development/non-proxy setups)
+  return realIp || 'unknown'
 }
 
 export function rateLimit(request: Request, options: RateLimitOptions): RateLimitResult {

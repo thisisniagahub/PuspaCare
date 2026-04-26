@@ -1,16 +1,88 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { AuthorizationError, requireAuth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { getScopedDb } from '@/lib/db-rls';
 import { createWithGeneratedUniqueValue } from '@/lib/sequence';
 import { z } from 'zod';
 
-const caseCreateSchema = z.object({
+const CASE_STATUSES = [
+  'draft',
+  'submitted',
+  'verifying',
+  'verified',
+  'scoring',
+  'scored',
+  'approved',
+  'disbursing',
+  'disbursed',
+  'follow_up',
+  'closed',
+  'rejected',
+] as const;
+
+const PRIORITIES = ['urgent', 'high', 'normal', 'low'] as const;
+const CATEGORIES = ['zakat', 'sedekah', 'wakaf', 'infak', 'government_aid'] as const;
+
+const LEGACY_STATUS_MAP: Record<string, (typeof CASE_STATUSES)[number]> = {
+  OPEN: 'submitted',
+  IN_PROGRESS: 'verifying',
+  PENDING_VERIFICATION: 'verifying',
+  APPROVED: 'approved',
+  DISBURSED: 'disbursed',
+  CLOSED: 'closed',
+  REJECTED: 'rejected',
+};
+
+const LEGACY_PRIORITY_MAP: Record<string, (typeof PRIORITIES)[number]> = {
+  LOW: 'low',
+  MEDIUM: 'normal',
+  HIGH: 'high',
+  URGENT: 'urgent',
+};
+
+const LEGACY_CATEGORY_MAP: Record<string, (typeof CATEGORIES)[number]> = {
+  FINANCIAL: 'zakat',
+  MEDICAL: 'zakat',
+  EDUCATION: 'sedekah',
+  HOUSING: 'zakat',
+  FOOD: 'sedekah',
+  COUNSELING: 'sedekah',
+  LEGAL: 'sedekah',
+  OTHER: 'sedekah',
+};
+
+function normalizeEnumValue<T extends readonly [string, ...string[]]>(
+  values: T,
+  legacyMap: Record<string, T[number]> = {}
+) {
+  return z.preprocess((value) => {
+    if (typeof value !== 'string') return value;
+    const trimmed = value.trim();
+    const lower = trimmed.toLowerCase();
+    if ((values as readonly string[]).includes(lower)) return lower;
+    return legacyMap[trimmed] ?? legacyMap[trimmed.toUpperCase()] ?? value;
+  }, z.enum(values));
+}
+
+function getCasesDb(session: Awaited<ReturnType<typeof requireAuth>>) {
+  const branchId = (session.user as { branchId?: string | null }).branchId;
+
+  if (branchId) {
+    throw new AuthorizationError('Branch-scoped case access is not available', 403);
+  }
+
+  return db;
+}
+
+const statusSchema = normalizeEnumValue(CASE_STATUSES, LEGACY_STATUS_MAP);
+const prioritySchema = normalizeEnumValue(PRIORITIES, LEGACY_PRIORITY_MAP);
+const categorySchema = normalizeEnumValue(CATEGORIES, LEGACY_CATEGORY_MAP);
+
+const caseMutableSchema = z.object({
   title: z.string().min(1, 'Title is required'),
   description: z.string().optional(),
-  status: z.enum(['OPEN', 'IN_PROGRESS', 'PENDING_VERIFICATION', 'APPROVED', 'DISBURSED', 'CLOSED', 'REJECTED']).optional().default('OPEN'),
-  priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional().default('MEDIUM'),
-  category: z.enum(['FINANCIAL', 'MEDICAL', 'EDUCATION', 'HOUSING', 'FOOD', 'COUNSELING', 'LEGAL', 'OTHER']).optional(),
+  status: statusSchema.optional(),
+  priority: prioritySchema.optional(),
+  category: categorySchema.optional(),
   amount: z.number().nonnegative().optional(),
   applicantName: z.string().optional(),
   applicantIC: z.string().optional(),
@@ -18,12 +90,19 @@ const caseCreateSchema = z.object({
   applicantAddress: z.string().optional(),
   memberId: z.string().optional(),
   programmeId: z.string().optional(),
-  creatorId: z.string().optional(),
   assigneeId: z.string().optional(),
   verificationScore: z.number().min(0).max(100).optional(),
   welfareScore: z.number().min(0).max(100).optional(),
   notes: z.string().optional(),
 });
+
+const caseCreateSchema = caseMutableSchema.extend({
+  status: statusSchema.optional().default('draft'),
+  priority: prioritySchema.optional().default('normal'),
+  category: categorySchema.optional().default('zakat'),
+});
+
+const caseUpdateSchema = caseMutableSchema.partial();
 
 async function generateCaseNumber(scopedDb: any = db): Promise<string> {
   const lastCase = await scopedDb.case.findFirst({
@@ -41,8 +120,7 @@ async function generateCaseNumber(scopedDb: any = db): Promise<string> {
 export async function GET(request: NextRequest) {
   try {
     const session = await requireAuth(request);
-    const branchId = (session.user as any).branchId || 'mock-branch-id';
-    const scopedDb = getScopedDb(branchId);
+    const scopedDb = getCasesDb(session);
 
     const searchParams = request.nextUrl.searchParams;
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
@@ -61,9 +139,9 @@ export async function GET(request: NextRequest) {
         { description: { contains: search, mode: 'insensitive' } },
       ];
     }
-    if (status) where.status = status;
-    if (priority) where.priority = priority;
-    if (category) where.category = category;
+    if (status) where.status = statusSchema.parse(status);
+    if (priority) where.priority = prioritySchema.parse(priority);
+    if (category) where.category = categorySchema.parse(category);
 
     const [cases, total] = await Promise.all([
       scopedDb.case.findMany({
@@ -91,6 +169,12 @@ export async function GET(request: NextRequest) {
         { status: error.status }
       );
     }
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { success: false, error: 'Validation failed', details: error.issues },
+        { status: 400 }
+      );
+    }
     console.error('Error fetching cases:', error);
     return NextResponse.json(
       { success: false, error: 'Failed to fetch cases' },
@@ -102,8 +186,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const session = await requireAuth(request);
-    const branchId = (session.user as any).branchId || 'mock-branch-id';
-    const scopedDb = getScopedDb(branchId);
+    const scopedDb = getCasesDb(session);
 
     const body = await request.json();
     const validated = caseCreateSchema.parse(body);
@@ -116,6 +199,7 @@ export async function POST(request: NextRequest) {
           data: {
             ...validated,
             caseNumber,
+            creatorId: session.user.id,
           } as any,
           include: {
             member: true,
@@ -153,8 +237,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const session = await requireAuth(request);
-    const branchId = (session.user as any).branchId || 'mock-branch-id';
-    const scopedDb = getScopedDb(branchId);
+    const scopedDb = getCasesDb(session);
 
     const body = await request.json();
     const { id, ...updateData } = body;
@@ -174,11 +257,10 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    const partialSchema = caseCreateSchema.partial();
-    const validated = partialSchema.parse(updateData);
+    const validated = caseUpdateSchema.parse(updateData);
 
     const dataToUpdate: Record<string, unknown> = { ...validated };
-    if (validated.status === 'CLOSED' && !existing.closedAt) {
+    if (validated.status === 'closed' && !existing.closedAt) {
       dataToUpdate.closedAt = new Date();
     }
 
@@ -220,8 +302,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const session = await requireAuth(request);
-    const branchId = (session.user as any).branchId || 'mock-branch-id';
-    const scopedDb = getScopedDb(branchId);
+    const scopedDb = getCasesDb(session);
 
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');

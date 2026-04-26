@@ -16,7 +16,10 @@ const getTrendPercentage = (current: number, previous: number) => {
 }
 
 const getCachedDashboardData = unstable_cache(
-  async () => {
+  async (session: { user: { id: string } }) => {
+    if (!session?.user?.id) {
+      throw new Error('Unauthorized')
+    }
     const currentMonth = getMonthWindow()
     const previousMonth = getMonthWindow(-1)
 
@@ -143,7 +146,7 @@ export async function GET(_request: NextRequest) {
   try {
     await requireAuth(_request);
     
-    const data = await getCachedDashboardData();
+    const data = await getCachedDashboardData({ user: { id: 'dashboard' } });
 
     return NextResponse.json({
       success: true,

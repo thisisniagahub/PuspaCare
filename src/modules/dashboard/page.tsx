@@ -61,6 +61,7 @@ import {
 } from 'recharts'
 import { AnimatedCounter } from '@/components/ui/animated-counter'
 import { FlowingMenu } from '@/components/ui/flowing-menu'
+import { PluginSlot } from '@/components/plugins/PluginSlot'
 
 // ---------------------------------------------------------------------------
 // Developer Specific Components
@@ -364,6 +365,9 @@ export default function DashboardPage() {
           </div>
         </section>
       )}
+
+      {/* 🧩 Plugin Injection Slot */}
+      <PluginSlot name="DashboardWidgetSlot" />
 
       {/* Hero Welcome Banner */}
       <div className="relative overflow-hidden rounded-[2rem] p-8 text-white shadow-2xl border border-white/10">

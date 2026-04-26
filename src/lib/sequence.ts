@@ -50,3 +50,4 @@ export async function createWithGeneratedUniqueValue<TValue, TResult>({
 
   throw lastError ?? new Error('Gagal menjana nombor unik selepas beberapa percubaan')
 }
+

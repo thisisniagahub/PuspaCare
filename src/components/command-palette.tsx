@@ -2,8 +2,11 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import Image from 'next/image'
+import { useSession } from 'next-auth/react'
 import { useAppStore } from '@/stores/app-store'
 import { canAccessView } from '@/lib/access-control'
+import { normalizeUserRole } from '@/lib/auth-shared'
+import { SIDEBAR_GROUPS } from '@/components/sidebar/sidebar-config'
 import {
   CommandDialog,
   CommandEmpty,
@@ -14,63 +17,65 @@ import {
 } from '@/components/ui/command'
 import type { ViewId } from '@/types'
 
-const VIEW_ITEMS: { id: ViewId; label: string; keywords: string[] }[] = [
-  { id: 'dashboard', label: 'Dashboard', keywords: ['home', 'utama', 'papan pemuka'] },
-  { id: 'members', label: 'Ahli Asnaf', keywords: ['ahli', 'asnaf', 'member', 'penerima'] },
-  { id: 'cases', label: 'Kes', keywords: ['kes', 'case', 'permohonan', 'application'] },
-  { id: 'programmes', label: 'Program', keywords: ['program', 'aktiviti', 'projek'] },
-  { id: 'asnafpreneur', label: 'ASNAFPRENEUR AI SaaS', keywords: ['asnafpreneur', 'ai saas', 'enterprise', 'startup', 'program digital', 'keusahawanan ai'] },
-  { id: 'donations', label: 'Donasi', keywords: ['donasi', 'sumbangan', 'derma', 'zakat'] },
-  { id: 'disbursements', label: 'Pembayaran', keywords: ['pembayaran', 'disbursement', 'bayar'] },
-  { id: 'compliance', label: 'Compliance', keywords: ['compliance', 'pematuhan', 'audit'] },
-  { id: 'admin', label: 'Pentadbiran', keywords: ['admin', 'tetapan', 'settings', 'profil'] },
-  { id: 'reports', label: 'Laporan Kewangan', keywords: ['laporan', 'report', 'kewangan', 'financial'] },
-  { id: 'activities', label: 'Aktiviti', keywords: ['aktiviti', 'activity', 'kanban'] },
-  { id: 'ai', label: 'Alat AI', keywords: ['ai', 'kecerdasan buatan', 'chatbot'] },
-  { id: 'volunteers', label: 'Sukarelawan', keywords: ['sukarelawan', 'volunteer'] },
-  { id: 'donors', label: 'Penderma', keywords: ['penderma', 'donor', 'crm'] },
-  { id: 'documents', label: 'Dokumen', keywords: ['dokumen', 'document', 'fail', 'file'] },
-  { id: 'agihan-bulan', label: 'Agihan Bulan', keywords: ['agihan', 'bulan', 'makan ruji', 'staple food', 'distribusi'] },
-  { id: 'sedekah-jumaat', label: 'Sedekah Jumaat', keywords: ['sedekah', 'jumaat', 'rumah kebajikan', 'mahad tahfiz', 'makanan tengahari'] },
-  { id: 'openclaw-mcp', label: 'Pelayan MCP', keywords: ['mcp', 'server', 'ai ops', 'dalaman'] },
-  { id: 'openclaw-plugins', label: 'Sambungan AI', keywords: ['plugin', 'sambungan', 'ai ops', 'dalaman'] },
-  { id: 'openclaw-integrations', label: 'Gateway & Channel', keywords: ['integrasi', 'integration', 'gateway', 'channel', 'ai ops'] },
-  { id: 'openclaw-terminal', label: 'Console Operator', keywords: ['terminal', 'console', 'operator', 'ai ops'] },
-  { id: 'openclaw-agents', label: 'Ejen AI', keywords: ['agent', 'ejen', 'ai', 'automasi'] },
-  { id: 'openclaw-models', label: 'Enjin Model', keywords: ['model', 'llm', 'engine', 'ai ops'] },
-  { id: 'openclaw-automation', label: 'Automasi Latar', keywords: ['automasi', 'automation', 'cron', 'ai ops'] },
-  { id: 'ops-conductor', label: 'Ops Conductor', keywords: ['conductor', 'ops', 'operasi', 'chat', 'task', 'work', 'reminder', 'trace'] },
-]
+const KEYWORDS: Partial<Record<ViewId, string[]>> = {
+  dashboard: ['home', 'utama', 'papan pemuka'],
+  members: ['ahli', 'asnaf', 'member', 'penerima'],
+  cases: ['kes', 'case', 'permohonan', 'application', 'bantuan'],
+  programmes: ['program', 'aktiviti', 'projek', 'inkubasi'],
+  asnafpreneur: ['asnafpreneur', 'ai saas', 'enterprise', 'startup', 'program digital', 'keusahawanan ai'],
+  'kelas-ai': ['kelas ai', 'vibe coding', 'kurikulum', 'sponsor', 'asnaf digital'],
+  donations: ['donasi', 'sumbangan', 'derma', 'zakat'],
+  disbursements: ['pembayaran', 'disbursement', 'bayar'],
+  'gudang-barangan': ['gudang', 'barangan', 'pre-loved', 'inventori', 'stok', 'jualan', 'agihan barang'],
+  compliance: ['compliance', 'pematuhan', 'audit'],
+  admin: ['admin', 'tetapan', 'settings', 'profil'],
+  reports: ['laporan', 'report', 'kewangan', 'financial'],
+  activities: ['aktiviti', 'activity', 'kanban', 'operasi'],
+  ai: ['ai', 'kecerdasan buatan', 'chatbot'],
+  volunteers: ['sukarelawan', 'volunteer', 'mentor'],
+  donors: ['penderma', 'donor', 'crm'],
+  documents: ['dokumen', 'document', 'fail', 'file'],
+  'agihan-bulan': ['agihan', 'bulan', 'makan ruji', 'staple food', 'distribusi'],
+  'sedekah-jumaat': ['sedekah', 'jumaat', 'rumah kebajikan', 'mahad tahfiz', 'makanan tengahari'],
+  ekyc: ['ekyc', 'identiti', 'verification'],
+  tapsecure: ['tapsecure', 'fingerprint', 'biometrik'],
+  docs: ['panduan', 'docs', 'help', 'bantuan sistem'],
+  'openclaw-mcp': ['mcp', 'server', 'ai ops', 'dalaman'],
+  'openclaw-plugins': ['plugin', 'sambungan', 'ai ops', 'dalaman'],
+  'openclaw-integrations': ['integrasi', 'integration', 'gateway', 'channel', 'ai ops'],
+  'openclaw-terminal': ['terminal', 'console', 'operator', 'ai ops'],
+  'openclaw-agents': ['agent', 'ejen', 'ai', 'automasi'],
+  'openclaw-models': ['model', 'llm', 'engine', 'ai ops'],
+  'openclaw-automation': ['automasi', 'automation', 'cron', 'ai ops'],
+  'ops-conductor': ['conductor', 'ops', 'operasi', 'chat', 'task', 'work', 'reminder', 'trace'],
+}
 
-const SECTIONS = [
-  {
-    heading: 'Utama',
-    ids: ['dashboard', 'members', 'cases', 'programmes', 'asnafpreneur', 'donations', 'disbursements'] as ViewId[],
-  },
-  {
-    heading: 'Compliance & Laporan',
-    ids: ['compliance', 'reports'] as ViewId[],
-  },
-  {
-    heading: 'Pengurusan',
-    ids: ['activities', 'volunteers', 'donors', 'documents', 'agihan-bulan', 'sedekah-jumaat'] as ViewId[],
-  },
-  {
-    heading: 'AI & Automasi',
-    ids: ['ops-conductor', 'ai', 'openclaw-mcp', 'openclaw-plugins', 'openclaw-integrations', 'openclaw-terminal', 'openclaw-agents', 'openclaw-models', 'openclaw-automation'] as ViewId[],
-  },
-]
+const VIEW_ITEMS = SIDEBAR_GROUPS.flatMap((group) =>
+  group.items.map((item) => ({
+    id: item.id,
+    label: item.label,
+    keywords: KEYWORDS[item.id] ?? [],
+  })),
+)
+
+const SECTIONS = SIDEBAR_GROUPS.map((group) => ({
+  heading: group.subGroup ? `${group.title} · ${group.subGroup}` : group.title,
+  ids: group.items.map((item) => item.id),
+}))
 
 export function CommandPalette() {
-  const { commandPaletteOpen, setCommandPaletteOpen, setView, userRole } = useAppStore()
+  const { commandPaletteOpen, setCommandPaletteOpen, setView } = useAppStore()
+  const { data: session } = useSession()
   const [query, setQuery] = useState('')
+  const effectiveRole = normalizeUserRole(session?.user?.role)
 
   const handleSelect = useCallback(
     (viewId: ViewId) => {
+      if (!canAccessView(viewId, effectiveRole)) return
       setView(viewId)
       setCommandPaletteOpen(false)
     },
-    [setView, setCommandPaletteOpen],
+    [effectiveRole, setView, setCommandPaletteOpen],
   )
 
   // Filter items based on search query
@@ -78,7 +83,7 @@ export function CommandPalette() {
     const visibleSections = SECTIONS
       .map((section) => ({
         ...section,
-        ids: section.ids.filter((id) => canAccessView(id, userRole)),
+        ids: section.ids.filter((id) => canAccessView(id, effectiveRole)),
       }))
       .filter((section) => section.ids.length > 0)
 
@@ -98,7 +103,7 @@ export function CommandPalette() {
         ids: section.ids.filter((id) => matchingIds.has(id)),
       }))
       .filter((section) => section.ids.length > 0)
-  }, [query, userRole])
+  }, [effectiveRole, query])
 
   return (
     <CommandDialog open={commandPaletteOpen} onOpenChange={setCommandPaletteOpen}>

@@ -1320,31 +1320,7 @@ export default function OpsConductor() {
       case 'tasks': return renderTasksTab()
       case 'dashboard': return renderDashboardTab()
       case 'automations': return renderAutomationsTab()
-      case 'projects':
-        return (
-          <div className="p-4 space-y-4">
-            <div className="w-full">
-              {/* Note: This is inside the main render loop where ACTIONS and selectedAction must be in scope */}
-              <Select
-                value={selectedAction?.id || ''}
-                onValueChange={(val) => {
-                  const act = ACTIONS.find((a) => a.id === val);
-                  if (act) setSelectedAction(act);
-                }}
-              >
-                <SelectTrigger className="w-full bg-white/5 border-white/10 text-foreground" title="Tapis Projek">
-                  <SelectValue placeholder="Pilih tindakan projek..." />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-white/10 text-white">
-                   {ACTIONS.filter(a => a.category === 'project').map(a => (
-                     <SelectItem key={a.id} value={a.id}>{a.label}</SelectItem>
-                   ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {renderProjectsTab()}
-          </div>
-        )
+      case 'projects': return renderProjectsTab()
       case 'agents': return renderAgentsTab()
       case 'trace': return renderTraceTabCenter()
       default: return renderChatTab()

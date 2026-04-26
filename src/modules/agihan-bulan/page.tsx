@@ -194,21 +194,21 @@ const KAWASAN_CONFIG: Record<Kawasan, { label: string }> = {
 }
 
 const KATEGORI_CONFIG: Record<KategoriAsnaf, { label: string; color: string; bgClass: string }> = {
-  fakir: { label: 'Fakir', color: '#6b7280', bgClass: 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300' },
-  miskin: { label: 'Miskin', color: '#dc2626', bgClass: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300' },
-  amil: { label: 'Amil', color: BRAND_COLOR, bgClass: 'bg-purple-100 text-purple-800 dark:bg-purple-900/40 dark:text-purple-300' },
-  muallaf: { label: 'Muallaf', color: '#059669', bgClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
-  gharim: { label: 'Gharim', color: '#d97706', bgClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
-  fisabillillah: { label: 'Fisabillillah', color: '#2563eb', bgClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
-  ibnus_sabil: { label: 'Ibnus Sabil', color: '#7c3aed', bgClass: 'bg-violet-100 text-violet-800 dark:bg-violet-900/40 dark:text-violet-300' },
-  riqab: { label: 'Riqab', color: '#0891b2', bgClass: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/40 dark:text-cyan-300' },
+  fakir: { label: 'Fakir', color: '#94a3b8', bgClass: 'bg-slate-500/10 text-slate-400 border-slate-500/20' },
+  miskin: { label: 'Miskin', color: '#f87171', bgClass: 'bg-red-500/10 text-red-400 border-red-500/20' },
+  amil: { label: 'Amil', color: BRAND_COLOR, bgClass: 'bg-purple-500/10 text-purple-400 border-purple-500/20' },
+  muallaf: { label: 'Muallaf', color: '#34d399', bgClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+  gharim: { label: 'Gharim', color: '#fbbf24', bgClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+  fisabillillah: { label: 'Fisabillillah', color: '#60a5fa', bgClass: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+  ibnus_sabil: { label: 'Ibnus Sabil', color: '#a78bfa', bgClass: 'bg-violet-500/10 text-violet-400 border-violet-500/20' },
+  riqab: { label: 'Riqab', color: '#22d3ee', bgClass: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20' },
 }
 
 const STATUS_CONFIG: Record<DistributionStatus, { label: string; color: string; bgClass: string; icon: React.ElementType }> = {
-  dibahagi: { label: 'Dibahagi', color: '#059669', bgClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300', icon: CheckCircle2 },
-  dalam_proses: { label: 'Dalam Proses', color: '#d97706', bgClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300', icon: Clock },
-  menunggu_kelulusan: { label: 'Menunggu Kelulusan', color: '#2563eb', bgClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300', icon: RotateCcw },
-  gagal: { label: 'Gagal', color: '#dc2626', bgClass: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300', icon: XCircle },
+  dibahagi: { label: 'Dibahagi', color: '#34d399', bgClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20', icon: CheckCircle2 },
+  dalam_proses: { label: 'Dalam Proses', color: '#fbbf24', bgClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20', icon: Clock },
+  menunggu_kelulusan: { label: 'Menunggu Kelulusan', color: '#60a5fa', bgClass: 'bg-blue-500/10 text-blue-400 border-blue-500/20', icon: RotateCcw },
+  gagal: { label: 'Gagal', color: '#f87171', bgClass: 'bg-red-500/10 text-red-400 border-red-500/20', icon: XCircle },
 }
 
 const DELIVERY_CONFIG: Record<DeliveryMethod, { label: string; icon: React.ElementType }> = {
@@ -245,10 +245,10 @@ const STOCK_ITEMS: StockItem[] = [
 ]
 
 const STOCK_SOURCE_CONFIG: Record<StockSource, { label: string; bgClass: string }> = {
-  derma: { label: 'Derma', bgClass: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/40 dark:text-emerald-300' },
-  pembelian: { label: 'Pembelian', bgClass: 'bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300' },
-  pindahan: { label: 'Pindahan', bgClass: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300' },
-  pelarasan: { label: 'Pelarasan', bgClass: 'bg-gray-100 text-gray-800 dark:bg-gray-900/40 dark:text-gray-300' },
+  derma: { label: 'Derma', bgClass: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' },
+  pembelian: { label: 'Pembelian', bgClass: 'bg-blue-500/10 text-blue-400 border-blue-500/20' },
+  pindahan: { label: 'Pindahan', bgClass: 'bg-amber-500/10 text-amber-400 border-amber-500/20' },
+  pelarasan: { label: 'Pelarasan', bgClass: 'bg-slate-500/10 text-slate-400 border-slate-500/20' },
 }
 
 // ─── Initial Data (empty — populated from API) ──────────────────────────
@@ -327,7 +327,7 @@ function formatDate(dateStr: string): string {
 function getKategoriBadge(kategori: KategoriAsnaf) {
   const config = KATEGORI_CONFIG[kategori]
   return (
-    <Badge variant="outline" className={cn('font-medium border-0', config.bgClass)}>
+    <Badge variant="outline" className={cn('font-medium border', config.bgClass)}>
       {config.label}
     </Badge>
   )
@@ -337,7 +337,7 @@ function getStatusBadge(status: DistributionStatus) {
   const config = STATUS_CONFIG[status]
   const Icon = config.icon
   return (
-    <Badge variant="outline" className={cn('font-medium gap-1 border-0', config.bgClass)}>
+    <Badge variant="outline" className={cn('font-medium gap-1 border', config.bgClass)}>
       <Icon className="h-3 w-3" />
       {config.label}
     </Badge>
@@ -945,7 +945,7 @@ export default function AgihanBulanPage() {
             {/* ─── Summary Cards ──────────────────────────────────────── */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {/* Jumlah Penerima */}
-              <Card className="relative overflow-hidden">
+              <Card className="relative overflow-hidden border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -955,7 +955,7 @@ export default function AgihanBulanPage() {
                     </div>
                     <div
                       className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-                      style={{ backgroundColor: `${BRAND_COLOR}1A` }}
+                      style={{ backgroundColor: `${BRAND_COLOR}2A` }}
                     >
                       <Users className="h-6 w-6" style={{ color: BRAND_COLOR }} />
                     </div>
@@ -968,7 +968,7 @@ export default function AgihanBulanPage() {
               </Card>
 
               {/* Bulan Ini Agihan */}
-              <Card className="relative overflow-hidden">
+              <Card className="relative overflow-hidden border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -976,8 +976,8 @@ export default function AgihanBulanPage() {
                       <p className="text-2xl font-bold">{thisMonthCount}</p>
                       <p className="text-xs text-muted-foreground">Agihan bulan semasa</p>
                     </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/40">
-                      <Package className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
+                      <Package className="h-6 w-6 text-emerald-400" />
                     </div>
                   </div>
                 </CardContent>
@@ -985,7 +985,7 @@ export default function AgihanBulanPage() {
               </Card>
 
               {/* Jumlah Kawasan */}
-              <Card className="relative overflow-hidden">
+              <Card className="relative overflow-hidden border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -993,8 +993,8 @@ export default function AgihanBulanPage() {
                       <p className="text-2xl font-bold">{totalAreas}</p>
                       <p className="text-xs text-muted-foreground">Kawasan liputan</p>
                     </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
-                      <MapPin className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10">
+                      <MapPin className="h-6 w-6 text-amber-400" />
                     </div>
                   </div>
                 </CardContent>
@@ -1002,7 +1002,7 @@ export default function AgihanBulanPage() {
               </Card>
 
               {/* Perbelanjaan Bulan Ini */}
-              <Card className="relative overflow-hidden">
+              <Card className="relative overflow-hidden border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -1012,8 +1012,8 @@ export default function AgihanBulanPage() {
                         {distributions.filter(d => d.status === 'dibahagi').length} agihan berjaya
                       </p>
                     </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-100 dark:bg-red-900/40">
-                      <DollarSign className="h-6 w-6 text-red-600 dark:text-red-400" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
+                      <DollarSign className="h-6 w-6 text-red-400" />
                     </div>
                   </div>
                 </CardContent>
@@ -1022,10 +1022,10 @@ export default function AgihanBulanPage() {
             </div>
 
             {/* ─── Filter Bar ──────────────────────────────────────────── */}
-            <Card>
+            <Card className="border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
               <CardContent className="p-4">
                 <div className="flex items-center gap-2 mb-4">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
+                  <Filter className="h-4 w-4 text-purple-400" />
                   <span className="text-sm font-medium">Carian & Penapis</span>
                 </div>
                 <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -1069,7 +1069,7 @@ export default function AgihanBulanPage() {
             </Card>
 
             {/* ─── Desktop Data Table ──────────────────────────────────── */}
-            <Card className="hidden md:block">
+            <Card className="hidden md:block border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl overflow-hidden">
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <Table>
@@ -1280,7 +1280,7 @@ export default function AgihanBulanPage() {
             {/* ─── Inventory Summary Cards ─────────────────────────────── */}
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {/* Jumlah Item */}
-              <Card className="relative overflow-hidden">
+              <Card className="relative overflow-hidden border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -1290,7 +1290,7 @@ export default function AgihanBulanPage() {
                     </div>
                     <div
                       className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl"
-                      style={{ backgroundColor: `${BRAND_COLOR}1A` }}
+                      style={{ backgroundColor: `${BRAND_COLOR}2A` }}
                     >
                       <Warehouse className="h-6 w-6" style={{ color: BRAND_COLOR }} />
                     </div>
@@ -1300,7 +1300,7 @@ export default function AgihanBulanPage() {
               </Card>
 
               {/* Nilai Stok */}
-              <Card className="relative overflow-hidden">
+              <Card className="relative overflow-hidden border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -1308,8 +1308,8 @@ export default function AgihanBulanPage() {
                       <p className="text-2xl font-bold">{formatCurrency(totalStockValue)}</p>
                       <p className="text-xs text-muted-foreground">Jumlah nilai inventori</p>
                     </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-900/40">
-                      <DollarSign className="h-6 w-6 text-emerald-600 dark:text-emerald-400" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10">
+                      <DollarSign className="h-6 w-6 text-emerald-400" />
                     </div>
                   </div>
                 </CardContent>
@@ -1317,16 +1317,16 @@ export default function AgihanBulanPage() {
               </Card>
 
               {/* Stok Rendah */}
-              <Card className="relative overflow-hidden">
+              <Card className="relative overflow-hidden border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
                       <p className="text-sm text-muted-foreground">Stok Rendah</p>
-                      <p className="text-2xl font-bold text-red-600">{lowStockCount}</p>
+                      <p className="text-2xl font-bold text-red-400">{lowStockCount}</p>
                       <p className="text-xs text-muted-foreground">Item bawah paras minimum</p>
                     </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-100 dark:bg-red-900/40">
-                      <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-red-500/10">
+                      <AlertTriangle className="h-6 w-6 text-red-400" />
                     </div>
                   </div>
                 </CardContent>
@@ -1334,7 +1334,7 @@ export default function AgihanBulanPage() {
               </Card>
 
               {/* Pergerakan Bulan Ini */}
-              <Card className="relative overflow-hidden">
+              <Card className="relative overflow-hidden border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl">
                 <CardContent className="p-4 sm:p-6">
                   <div className="flex items-center justify-between">
                     <div className="space-y-1">
@@ -1342,8 +1342,8 @@ export default function AgihanBulanPage() {
                       <p className="text-2xl font-bold">{thisMonthMovementCount}</p>
                       <p className="text-xs text-muted-foreground">Transaksi stok bulan semasa</p>
                     </div>
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-100 dark:bg-amber-900/40">
-                      <History className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-amber-500/10">
+                      <History className="h-6 w-6 text-amber-400" />
                     </div>
                   </div>
                 </CardContent>
@@ -1352,7 +1352,7 @@ export default function AgihanBulanPage() {
             </div>
 
             {/* ─── Current Stock Table ──────────────────────────────────── */}
-            <Card>
+            <Card className="border border-white/10 shadow-2xl bg-white/5 backdrop-blur-2xl rounded-3xl overflow-hidden">
               <CardHeader className="pb-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -1409,7 +1409,7 @@ export default function AgihanBulanPage() {
                             </TableCell>
                             <TableCell className="text-right font-mono text-sm">{formatCurrency(stockValue)}</TableCell>
                             <TableCell className="px-2">
-                              <Progress value={progressPercent} className={cn('h-2', status.barColor)} />
+                              <Progress value={progressPercent} className="h-2 bg-white/10" indicatorClassName={status.barColor} />
                             </TableCell>
                             <TableCell>
                               <DropdownMenu>

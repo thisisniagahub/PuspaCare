@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "debian-openssl-3.0.x"]
 }
 
 datasource db {
@@ -716,4 +717,22 @@ model AutomationJob {
 
   @@index([isEnabled])
   @@index([nextRunAt])
+}
+
+// Bot API Key for service accounts (e.g., PuspaCareBot)
+model BotApiKey {
+  id          String   @id @default(cuid())
+  name        String   // e.g., "PuspaCareBot"
+  key         String   @unique // hashed API key, never plain text
+  keyPrefix   String   // first 8 chars for display, e.g., "psbot_abc"
+  role        String   @default("bot") // bot, admin_bot, ops_bot
+  permissions Json     @default("[]") // array of allowed permissions
+  lastUsedAt  DateTime?
+  expiresAt   DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([keyPrefix])
+  @@index([isActive])
 }

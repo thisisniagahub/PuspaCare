@@ -22,13 +22,17 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
+  if (request.nextUrl.pathname.startsWith('/api/v1/bot/')) {
+    return NextResponse.next()
+  }
+
   if (request.nextUrl.pathname.startsWith('/api/')) {
     return buildUnauthorizedApiResponse()
   }
 
   const loginUrl = new URL('/login', request.url)
   loginUrl.searchParams.set(
-    'callbackUrl',
+    `callbackUrl`,
     `${request.nextUrl.pathname}${request.nextUrl.search}`,
   )
 
