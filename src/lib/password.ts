@@ -13,8 +13,8 @@ function scrypt(password: string, salt: string, keylen: number, options: ScryptO
 }
 const KEY_LENGTH = 64
 const HASH_PREFIX = 'scrypt'
-// scrypt cost parameters: N=32768, r=8, p=2 (memory-hard, secure)
-const SCRYPT_N = 1 << 15 // 32768
+// scrypt cost parameters: N=16384, r=8, p=2 (memory-hard, secure)
+const SCRYPT_N = 1 << 14 // 16384
 const SCRYPT_R = 8
 const SCRYPT_P = 2
 

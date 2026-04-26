@@ -1,0 +1,17 @@
+# Force Unix line endings for shell scripts
+*.sh text eol=lf
+*.bash text eol=lf
+
+# Standard text files
+*.tsx text
+*.ts text
+*.js text
+*.json text
+*.prisma text
+*.md text
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.ico binary
