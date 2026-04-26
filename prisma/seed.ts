@@ -41,8 +41,16 @@ async function main() {
   // ============================================================
   // 2. ADMIN USER
   // ============================================================
-  const admin = await db.user.create({
-    data: {
+  const admin = await db.user.upsert({
+    where: { email: 'admin@puspa.org.my' },
+    update: {
+      password: adminPasswordHash,
+      name: 'Pentadbir PUSPA',
+      role: 'admin',
+      phone: '03-4107 8899',
+      isActive: true,
+    },
+    create: {
       email: 'admin@puspa.org.my',
       password: adminPasswordHash,
       name: 'Pentadbir PUSPA',
