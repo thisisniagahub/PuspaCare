@@ -28,14 +28,25 @@ if [ -n "$DATABASE_URL" ] && echo "$DATABASE_URL" | grep -q "postgresql"; then
 
   # Switch schema provider: sqlite → postgresql
   sed -i 's/provider  = "sqlite"/provider  = "postgresql"/' prisma/schema.prisma
-  sed -i 's|// directUrl = env("DIRECT_URL")|directUrl = env("DIRECT_URL")|' prisma/schema.prisma
+  
+  # Enable directUrl if DIRECT_URL is available
+  if [ -n "$DIRECT_URL" ]; then
+    sed -i 's|// directUrl = env("DIRECT_URL")|directUrl = env("DIRECT_URL")|' prisma/schema.prisma
+    echo "[prod] directUrl enabled for connection pooling"
+  fi
+  
   echo "[prod] Schema → PostgreSQL"
 
   npx prisma generate
   echo "[prod] Prisma client generated"
 
-  npx next build
-  echo "[prod] Next.js build complete"
+  # Check if we should skip build (useful for debugging)
+  if [ "$SKIP_NEXT_BUILD" = "true" ]; then
+    echo "[prod] Skipping next build as requested"
+  else
+    npx next build
+    echo "[prod] Next.js build complete"
+  fi
 
   # Restore schema so git checkout stays clean
   sed -i 's/provider  = "postgresql"/provider  = "sqlite"/' prisma/schema.prisma

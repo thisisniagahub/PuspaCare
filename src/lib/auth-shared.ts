@@ -21,11 +21,12 @@ export function getAuthSecret(): string {
     return process.env.NEXTAUTH_SECRET
   }
 
-  if (process.env.NODE_ENV === 'development') {
+  // During CI/Build on Vercel, we can fallback to allow the build to complete
+  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PHASE === 'phase-production-build') {
     return LOCAL_DEV_AUTH_SECRET
   }
 
-  throw new Error('NEXTAUTH_SECRET environment variable is required in production')
+  throw new Error('NEXTAUTH_SECRET environment variable is required in production runtime')
 }
 
 export function getBaseUrl(): string {
