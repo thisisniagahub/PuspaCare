@@ -12,6 +12,18 @@
 
 set -e
 
+restore_sqlite_schema() {
+  if grep -q 'provider  = "postgresql"' prisma/schema.prisma 2>/dev/null; then
+    sed -i 's/provider  = "postgresql"/provider  = "sqlite"/' prisma/schema.prisma
+  fi
+
+  if grep -q '^[[:space:]]*directUrl = env("DIRECT_URL")' prisma/schema.prisma 2>/dev/null; then
+    sed -i 's|directUrl = env("DIRECT_URL")|// directUrl = env("DIRECT_URL")|' prisma/schema.prisma
+  fi
+}
+
+trap restore_sqlite_schema EXIT
+
 echo "=== PUSPA NGO — Build Preparation ==="
 
 # ── Auto-map Vercel Supabase Integration env vars ──
@@ -57,6 +69,11 @@ else
 
   npx prisma generate
   npx next build
+  if command -v bun >/dev/null 2>&1; then
+    bun run scripts/prepare-standalone.ts
+  else
+    echo "[local] bun not found — skipping standalone asset preparation"
+  fi
   echo "[local] Build complete"
 fi
 

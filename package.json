@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "dev:watch": "next dev -p 3000",
-    "build": "next build && bun run scripts/prepare-standalone.ts",
+    "build": "bash scripts/prepare-production.sh",
     "start": "bun run scripts/start-standalone.ts",
     "lint": "eslint .",
     "db:push": "prisma db push",
