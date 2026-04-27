@@ -488,7 +488,13 @@ async function main() {
 
   const members = []
   for (const m of membersData) {
-    members.push(await db.member.create({ data: m }))
+    members.push(
+      await db.member.upsert({
+        where: { ic: m.ic },
+        update: m,
+        create: m,
+      })
+    )
   }
   console.log(`✅ Members created: ${members.length} records`)
 

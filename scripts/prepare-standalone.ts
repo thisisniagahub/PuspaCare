@@ -13,15 +13,22 @@ async function copyIfExists(from: string, to: string) {
 }
 
 const root = process.cwd()
+const standaloneRoot = path.join(root, '.next', 'standalone')
+const standaloneTargets = [
+  standaloneRoot,
+  path.join(standaloneRoot, path.basename(root)),
+]
 
-await copyIfExists(
-  path.join(root, '.next', 'static'),
-  path.join(root, '.next', 'standalone', '.next', 'static')
-)
+for (const targetRoot of standaloneTargets) {
+  await copyIfExists(
+    path.join(root, '.next', 'static'),
+    path.join(targetRoot, '.next', 'static')
+  )
 
-await copyIfExists(
-  path.join(root, 'public'),
-  path.join(root, '.next', 'standalone', 'public')
-)
+  await copyIfExists(
+    path.join(root, 'public'),
+    path.join(targetRoot, 'public')
+  )
+}
 
 console.log('Standalone assets prepared')

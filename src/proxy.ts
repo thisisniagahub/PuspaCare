@@ -12,7 +12,19 @@ function buildUnauthorizedApiResponse() {
   )
 }
 
+const PUBLIC_API_PATHS = new Set([
+  '/api/v1/auth/login',
+  '/api/v1/auth/logout',
+  '/api/v1/auth/me',
+])
+
 export default async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname
+
+  if (PUBLIC_API_PATHS.has(pathname)) {
+    return NextResponse.next()
+  }
+
   const token = await getToken({
     req: request,
     secret: getAuthSecret(),
@@ -22,18 +34,18 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
-  if (request.nextUrl.pathname.startsWith('/api/v1/bot/')) {
+  if (pathname.startsWith('/api/v1/bot/')) {
     return NextResponse.next()
   }
 
-  if (request.nextUrl.pathname.startsWith('/api/')) {
+  if (pathname.startsWith('/api/')) {
     return buildUnauthorizedApiResponse()
   }
 
   const loginUrl = new URL('/login', request.url)
   loginUrl.searchParams.set(
-    `callbackUrl`,
-    `${request.nextUrl.pathname}${request.nextUrl.search}`,
+    'callbackUrl',
+    `${pathname}${request.nextUrl.search}`,
   )
 
   return NextResponse.redirect(loginUrl)
