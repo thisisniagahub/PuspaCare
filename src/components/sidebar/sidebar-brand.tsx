@@ -16,8 +16,16 @@ export function SidebarBrand({ collapsed, onNavigateHome }: { collapsed: boolean
       )}
       aria-label="Pergi ke Dashboard"
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-cyan-100 transition-[box-shadow] duration-200 dark:bg-cyan-950/50 dark:ring-cyan-800/50 motion-reduce:transition-none">
-        <Image src="/puspa-logo-official.png" alt="PUSPA Logo" width={40} height={40} className="object-contain" priority />
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white shadow-md ring-1 ring-slate-200 transition-all duration-200 hover:shadow-lg dark:bg-white dark:ring-slate-100 motion-reduce:transition-none">
+        <Image 
+          src="/puspa-logo-official.png" 
+          alt="PUSPA Logo" 
+          width={32} 
+          height={32} 
+          className="object-contain drop-shadow-sm" 
+          priority 
+          unoptimized
+        />
       </span>
       <span
         className={cn(

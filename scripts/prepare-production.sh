@@ -30,16 +30,20 @@ echo "=== PUSPA NGO — Build Preparation ==="
 # Some integrations set POSTGRES_* but old manual DATABASE_URL/DIRECT_URL values may
 # still contain placeholder instructions. Treat placeholders as unset so production
 # does not silently fall back to SQLite.
-is_placeholder_url() {
-  echo "$1" | grep -Eq 'Settings[[:space:]]*(→|->)[[:space:]]*Database|Transaction pooler URI|Direct connection URI'
+is_database_url_usable() {
+  echo "$1" | grep -Eiq '^(postgres|postgresql|file):'
 }
 
-if [ -n "$DATABASE_URL" ] && is_placeholder_url "$DATABASE_URL"; then
+is_placeholder_value() {
+  echo "$1" | grep -Eiq 'Settings[[:space:]]*(→|->)[[:space:]]*Database|Project[[:space:]]*(→|->)|Transaction pooler URI|Direct connection URI|anon public key|publishable key|Project URL'
+}
+
+if [ -n "$DATABASE_URL" ] && { is_placeholder_value "$DATABASE_URL" || ! is_database_url_usable "$DATABASE_URL"; }; then
   unset DATABASE_URL
   echo "[vercel-integration] Ignoring placeholder DATABASE_URL"
 fi
 
-if [ -n "$DIRECT_URL" ] && is_placeholder_url "$DIRECT_URL"; then
+if [ -n "$DIRECT_URL" ] && { is_placeholder_value "$DIRECT_URL" || ! is_database_url_usable "$DIRECT_URL"; }; then
   unset DIRECT_URL
   echo "[vercel-integration] Ignoring placeholder DIRECT_URL"
 fi
@@ -64,6 +68,34 @@ elif [ -n "$POSTGRES_URL" ] && [ -z "$DIRECT_URL" ]; then
   export DIRECT_URL="$POSTGRES_URL"
 fi
 
+# Supabase's Vercel integration exposes SUPABASE_* names, while the app reads
+# NEXT_PUBLIC_SUPABASE_* during the Next.js build.
+if [ -n "$NEXT_PUBLIC_SUPABASE_URL" ] && is_placeholder_value "$NEXT_PUBLIC_SUPABASE_URL"; then
+  unset NEXT_PUBLIC_SUPABASE_URL
+  echo "[vercel-integration] Ignoring placeholder NEXT_PUBLIC_SUPABASE_URL"
+fi
+
+if [ -n "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ] && is_placeholder_value "$NEXT_PUBLIC_SUPABASE_ANON_KEY"; then
+  unset NEXT_PUBLIC_SUPABASE_ANON_KEY
+  echo "[vercel-integration] Ignoring placeholder NEXT_PUBLIC_SUPABASE_ANON_KEY"
+fi
+
+if [ -n "$SUPABASE_URL" ] && [ -z "$NEXT_PUBLIC_SUPABASE_URL" ]; then
+  export NEXT_PUBLIC_SUPABASE_URL="$SUPABASE_URL"
+  echo "[vercel-integration] Using SUPABASE_URL as NEXT_PUBLIC_SUPABASE_URL"
+fi
+
+if [ -n "$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY" ] && [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+  export NEXT_PUBLIC_SUPABASE_ANON_KEY="$NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+  echo "[vercel-integration] Using NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY as NEXT_PUBLIC_SUPABASE_ANON_KEY"
+elif [ -n "$SUPABASE_ANON_KEY" ] && [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+  export NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_ANON_KEY"
+  echo "[vercel-integration] Using SUPABASE_ANON_KEY as NEXT_PUBLIC_SUPABASE_ANON_KEY"
+elif [ -n "$SUPABASE_PUBLISHABLE_KEY" ] && [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+  export NEXT_PUBLIC_SUPABASE_ANON_KEY="$SUPABASE_PUBLISHABLE_KEY"
+  echo "[vercel-integration] Using SUPABASE_PUBLISHABLE_KEY as NEXT_PUBLIC_SUPABASE_ANON_KEY"
+fi
+
 # ── Detect Supabase/Postgres (production) vs SQLite (local) ──
 if [ -n "$DATABASE_URL" ] && echo "$DATABASE_URL" | grep -iq "postgres"; then
   echo "[prod] Supabase PostgreSQL detected"
@@ -79,7 +111,7 @@ if [ -n "$DATABASE_URL" ] && echo "$DATABASE_URL" | grep -iq "postgres"; then
   
   echo "[prod] Schema → PostgreSQL"
 
-  npx prisma generate
+  ./node_modules/.bin/prisma generate
   echo "[prod] Prisma client generated"
 
   # Check if we should skip build (useful for debugging)
@@ -97,7 +129,7 @@ if [ -n "$DATABASE_URL" ] && echo "$DATABASE_URL" | grep -iq "postgres"; then
 else
   echo "[local] No Supabase env — using SQLite"
 
-  npx prisma generate
+  ./node_modules/.bin/prisma generate
   npx next build
   if command -v bun >/dev/null 2>&1; then
     bun run scripts/prepare-standalone.ts

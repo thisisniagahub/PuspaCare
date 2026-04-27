@@ -16,14 +16,15 @@ function LoginCard({ loading }: { loading: boolean }) {
     <Card className="border-white/70 bg-white/80 shadow-[0_30px_80px_-50px_rgba(15,23,42,0.6)] backdrop-blur">
       <CardHeader className="space-y-4 pb-4">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 ring-1 ring-violet-200">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white ring-1 ring-slate-200 shadow-md">
             <Image
               src="/puspa-logo-official.png"
               alt="PUSPA"
               width={36}
               height={36}
-              className="object-contain"
+              className="object-contain drop-shadow-sm"
               priority
+              unoptimized
             />
           </div>
           <div>
@@ -102,13 +103,14 @@ function LoginContent() {
     <div className="grid w-full gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
       <section className="hidden rounded-[32px] border border-white/50 bg-white/35 p-8 shadow-[0_30px_90px_-45px_rgba(76,29,149,0.55)] backdrop-blur xl:block">
         <div className="max-w-lg space-y-6">
-          <div className="inline-flex items-center gap-3 rounded-full border border-violet-200/70 bg-white/80 px-4 py-2 text-sm font-medium text-violet-900">
+          <div className="inline-flex items-center gap-3 rounded-full border border-violet-200/70 bg-white px-4 py-2 text-sm font-medium text-violet-900 shadow-sm">
             <Image
               src="/puspa-logo-official.png"
               alt="PUSPA"
               width={28}
               height={28}
-              className="object-contain"
+              className="object-contain drop-shadow-sm"
+              unoptimized
             />
             Sistem Pengurusan NGO PUSPA
           </div>
@@ -141,14 +143,15 @@ function LoginContent() {
       <Card className="border-white/70 bg-white/80 shadow-[0_30px_80px_-50px_rgba(15,23,42,0.6)] backdrop-blur">
         <CardHeader className="space-y-4 pb-4">
           <div className="flex items-center gap-4">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 ring-1 ring-violet-200">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white ring-1 ring-slate-200 shadow-md">
               <Image
                 src="/puspa-logo-official.png"
                 alt="PUSPA"
                 width={36}
                 height={36}
-                className="object-contain"
+                className="object-contain drop-shadow-sm"
                 priority
+                unoptimized
               />
             </div>
             <div>
