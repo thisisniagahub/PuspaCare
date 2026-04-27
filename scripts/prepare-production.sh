@@ -26,16 +26,46 @@ trap restore_sqlite_schema EXIT
 
 echo "=== PUSPA NGO — Build Preparation ==="
 
-# ── Auto-map Vercel Supabase Integration env vars ──
-# If SUPABASE_DB_URL exists but DATABASE_URL doesn't, use it.
-if [ -n "$SUPABASE_DB_URL" ] && [ -z "$DATABASE_URL" ]; then
-  export DATABASE_URL="$SUPABASE_DB_URL"
-  export DIRECT_URL="$SUPABASE_DB_URL"
-  echo "[vercel-integration] Using SUPABASE_DB_URL as DATABASE_URL"
+# ── Auto-map hosted Postgres/Supabase env vars ──
+# Some integrations set POSTGRES_* but old manual DATABASE_URL/DIRECT_URL values may
+# still contain placeholder instructions. Treat placeholders as unset so production
+# does not silently fall back to SQLite.
+is_placeholder_url() {
+  echo "$1" | grep -Eq 'Settings[[:space:]]*(→|->)[[:space:]]*Database|Transaction pooler URI|Direct connection URI'
+}
+
+if [ -n "$DATABASE_URL" ] && is_placeholder_url "$DATABASE_URL"; then
+  unset DATABASE_URL
+  echo "[vercel-integration] Ignoring placeholder DATABASE_URL"
 fi
 
-# ── Detect Supabase (production) vs SQLite (local) ──
-if [ -n "$DATABASE_URL" ] && echo "$DATABASE_URL" | grep -q "postgresql"; then
+if [ -n "$DIRECT_URL" ] && is_placeholder_url "$DIRECT_URL"; then
+  unset DIRECT_URL
+  echo "[vercel-integration] Ignoring placeholder DIRECT_URL"
+fi
+
+if [ -n "$POSTGRES_PRISMA_URL" ] && [ -z "$DATABASE_URL" ]; then
+  export DATABASE_URL="$POSTGRES_PRISMA_URL"
+  echo "[vercel-integration] Using POSTGRES_PRISMA_URL as DATABASE_URL"
+elif [ -n "$SUPABASE_DB_URL" ] && [ -z "$DATABASE_URL" ]; then
+  export DATABASE_URL="$SUPABASE_DB_URL"
+  echo "[vercel-integration] Using SUPABASE_DB_URL as DATABASE_URL"
+elif [ -n "$POSTGRES_URL" ] && [ -z "$DATABASE_URL" ]; then
+  export DATABASE_URL="$POSTGRES_URL"
+  echo "[vercel-integration] Using POSTGRES_URL as DATABASE_URL"
+fi
+
+if [ -n "$POSTGRES_URL_NON_POOLING" ] && [ -z "$DIRECT_URL" ]; then
+  export DIRECT_URL="$POSTGRES_URL_NON_POOLING"
+  echo "[vercel-integration] Using POSTGRES_URL_NON_POOLING as DIRECT_URL"
+elif [ -n "$SUPABASE_DB_URL" ] && [ -z "$DIRECT_URL" ]; then
+  export DIRECT_URL="$SUPABASE_DB_URL"
+elif [ -n "$POSTGRES_URL" ] && [ -z "$DIRECT_URL" ]; then
+  export DIRECT_URL="$POSTGRES_URL"
+fi
+
+# ── Detect Supabase/Postgres (production) vs SQLite (local) ──
+if [ -n "$DATABASE_URL" ] && echo "$DATABASE_URL" | grep -iq "postgres"; then
   echo "[prod] Supabase PostgreSQL detected"
 
   # Switch schema provider: sqlite → postgresql

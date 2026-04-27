@@ -66,3 +66,4 @@ verify-test.ts
 .local-scripts/
 *.local-secret
 *.secret.txt
+.env*.local

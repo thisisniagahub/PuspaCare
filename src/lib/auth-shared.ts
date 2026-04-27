@@ -21,8 +21,11 @@ export function getAuthSecret(): string {
     return process.env.NEXTAUTH_SECRET
   }
 
-  // During CI/Build on Vercel, we can fallback to allow the build to complete
-  if (process.env.NODE_ENV === 'development' || process.env.NEXT_PHASE === 'phase-production-build') {
+  // During CI/Build or Local Dev, we fallback to allow the build/dev to complete
+  const isProduction = process.env.NODE_ENV === 'production'
+  const isBuildPhase = process.env.NEXT_PHASE === 'phase-production-build'
+
+  if (!isProduction || isBuildPhase) {
     return LOCAL_DEV_AUTH_SECRET
   }
 
